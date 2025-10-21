@@ -1,0 +1,180 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import VideoPlayer from "../../components/video/VideoPlayer";
+import VideoInfo from "../../components/video/VideoInfo";
+import RelatedVideos from "../../components/video/RelatedVideos";
+import Link from "next/link";
+
+interface Video {
+  _id: string;
+  title: string;
+  channelAvatar: string;
+  channelName: string;
+  duration: string;
+  viewCount: number;
+  thumbnailUrl: string;
+  videoSourceUrl: string;
+  createdAt: string;
+}
+
+export default function WatchPage() {
+  const [video, setVideo] = useState<Video | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const params = useParams();
+  const router = useRouter();
+  const videoId = params.id as string;
+
+  useEffect(() => {
+    if (videoId) {
+      fetchVideo();
+    }
+  }, [videoId]);
+
+  const fetchVideo = async () => {
+    try {
+      const response = await fetch(`/api/videos/${videoId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setVideo(data.data);
+      } else {
+        setError("Video not found");
+      }
+    } catch (error) {
+      setError("Error loading video");
+      console.error("Error fetching video:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewIncrement = async () => {
+    if (!video) return;
+
+    try {
+      await fetch(`/api/videos/${videoId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...video,
+          viewCount: video.viewCount + 1,
+        }),
+      });
+
+      // Update local state
+      setVideo((prev) =>
+        prev ? { ...prev, viewCount: prev.viewCount + 1 } : null,
+      );
+    } catch (error) {
+      console.error("Error incrementing view count:", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="animate-pulse">
+            <div className="aspect-video bg-gray-200 rounded-lg mb-6"></div>
+            <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="h-8 bg-gray-200 rounded"></div>
+                <div className="h-20 bg-gray-200 rounded"></div>
+                <div className="h-40 bg-gray-200 rounded"></div>
+              </div>
+              <div className="lg:col-span-1 space-y-4">
+                <div className="h-6 bg-gray-200 rounded"></div>
+                <div className="space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="h-24 bg-gray-200 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !video) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            {error || "Video not found"}
+          </h1>
+          <p className="text-gray-600 mb-4">
+            The video you're looking for doesn't exist or has been removed.
+          </p>
+          <Link
+            href="/videos"
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+          >
+            Browse All Videos
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <div className="mb-4">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M7.707 14.707a1 1 0 01-1.414 0L2.586 11a2 2 0 010-2.828L6.293 4.465a1 1 0 011.414 1.414L4.414 9H17a1 1 0 110 2H4.414l3.293 3.293a1 1 0 010 1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span>Back</span>
+          </button>
+        </div>
+
+        <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Video Player */}
+            <VideoPlayer
+              src={video.videoSourceUrl}
+              poster={video.thumbnailUrl}
+              title={video.title}
+              onViewIncrement={handleViewIncrement}
+            />
+
+            {/* Video Info */}
+            <VideoInfo video={video} />
+
+            {/* Comments Section Placeholder */}
+            <div className="bg-white rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Comments
+              </h3>
+              <div className="text-center py-8 text-gray-500">
+                <p>Comments feature coming soon!</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-1 mt-8 lg:mt-0">
+            <RelatedVideos currentVideoId={videoId} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
