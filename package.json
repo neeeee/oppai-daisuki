@@ -6,12 +6,20 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "setup-admin": "node scripts/generate-admin-hash.js"
   },
   "dependencies": {
+    "@auth/mongodb-adapter": "^3.11.0",
+    "@heroicons/react": "^2.2.0",
     "@uploadthing/react": "^7.3.3",
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^17.2.3",
+    "jose": "^6.1.0",
     "mongoose": "^8.19.2",
     "next": "15.5.5",
+    "next-auth": "^5.0.0-beta.29",
+    "rate-limiter-flexible": "^8.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "uploadthing": "^7.7.4"
@@ -19,6 +27,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

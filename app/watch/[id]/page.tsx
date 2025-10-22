@@ -111,7 +111,8 @@ export default function WatchPage() {
             {error || "Video not found"}
           </h1>
           <p className="text-gray-600 mb-4">
-            The video you're looking for doesn't exist or has been removed.
+            The video you&apos;re looking for doesn&apos;t exist or has been
+            removed.
           </p>
           <Link
             href="/videos"
@@ -127,7 +128,6 @@ export default function WatchPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back Button */}
         <div className="mb-4">
           <button
             onClick={() => router.back()}
@@ -145,9 +145,7 @@ export default function WatchPage() {
         </div>
 
         <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Video Player */}
             <VideoPlayer
               src={video.videoSourceUrl}
               poster={video.thumbnailUrl}
@@ -155,21 +153,9 @@ export default function WatchPage() {
               onViewIncrement={handleViewIncrement}
             />
 
-            {/* Video Info */}
             <VideoInfo video={video} />
-
-            {/* Comments Section Placeholder */}
-            <div className="bg-white rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Comments
-              </h3>
-              <div className="text-center py-8 text-gray-500">
-                <p>Comments feature coming soon!</p>
-              </div>
-            </div>
           </div>
 
-          {/* Sidebar */}
           <div className="lg:col-span-1 mt-8 lg:mt-0">
             <RelatedVideos currentVideoId={videoId} />
           </div>

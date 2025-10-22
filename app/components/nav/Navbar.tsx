@@ -1,3 +1,13 @@
+import NavItem from "./NavItem";
+
+const pages = [
+  { title: "Videos", href: "/videos" },
+  { title: "Photos", href: "/photos" },
+  { title: "Idols", href: "/idols" },
+  { title: "Genres", href: "/genres" },
+  { title: "News", href: "/news" },
+];
+
 const Navbar: React.FC = () => {
   return (
     <nav className="bg-black w-full">
@@ -5,36 +15,9 @@ const Navbar: React.FC = () => {
         <div className="flex h-16 items-center space-x-8">
           <div className="text-xl font-semibold text-white">0π-dsk</div>
           <div className="flex space-x-8">
-            <a
-              href="#videos"
-              className="text-white text-shadow-2xs hover:text-blue-600 font-medium transition-colors"
-            >
-              Videos
-            </a>
-            <a
-              href="#photos"
-              className="text-white text-shadow-2xs hover:text-blue-600 font-medium transition-colors"
-            >
-              Photos
-            </a>
-            <a
-              href="#models"
-              className="text-white text-shadow-2xs hover:text-blue-600 font-medium transition-colors"
-            >
-              Models
-            </a>
-            <a
-              href="#genre"
-              className="text-white text-shadow-2xs hover:text-blue-600 font-medium transition-colors"
-            >
-              Genre
-            </a>
-            <a
-              href="#news"
-              className="text-white text-shadow-2xs hover:text-blue-600 font-medium transition-colors"
-            >
-              News
-            </a>
+            {pages.map((page) => (
+              <NavItem key={page.title} title={page.title} href={page.href} />
+            ))}
           </div>
         </div>
       </div>

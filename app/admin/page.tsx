@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import EnhancedVideoForm from "../components/video/VideoForm";
 import VideoList from "../components/video/VideoList";
 
@@ -17,14 +18,17 @@ interface Video {
 }
 
 export default function AdminVideos() {
+  const { data: session, status } = useSession();
   const [videos, setVideos] = useState<Video[]>([]);
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchVideos();
-  }, []);
+    if (status === "authenticated" && session?.user?.role === "admin") {
+      fetchVideos();
+    }
+  }, [status, session]);
 
   const fetchVideos = async () => {
     try {
@@ -92,62 +96,74 @@ export default function AdminVideos() {
     }
   };
 
-  if (loading) {
+  if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2"></div>
+          <div className="text-gray-600">Loading admin dashboard...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated" || session?.user?.role !== "admin") {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="text-red-600 text-xl mb-2">Access Denied</div>
+          <div className="text-gray-600">Admin privileges required</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Video Admin Dashboard
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Manage your video library with file uploads
-          </p>
-        </div>
-
-        <div className="mb-6">
-          {!showForm && !editingVideo && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 font-medium text-lg"
-            >
-              Add New Video
-            </button>
-          )}
-        </div>
-
-        {showForm && (
-          <div className="mb-8">
-            <EnhancedVideoForm
-              onSubmit={handleAddVideo}
-              onCancel={() => setShowForm(false)}
-            />
-          </div>
-        )}
-
-        {editingVideo && (
-          <div className="mb-8">
-            <EnhancedVideoForm
-              onSubmit={handleEditVideo}
-              initialData={editingVideo}
-              onCancel={() => setEditingVideo(null)}
-            />
-          </div>
-        )}
-
-        <VideoList
-          videos={videos}
-          onEdit={setEditingVideo}
-          onRefresh={fetchVideos}
-        />
+    <>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">
+          Video Admin Dashboard
+        </h1>
+        <p className="mt-2 text-gray-600">
+          Manage your video library with file uploads
+        </p>
       </div>
-    </div>
+
+      <div className="mb-6">
+        {!showForm && !editingVideo && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 font-medium text-lg"
+          >
+            Add New Video
+          </button>
+        )}
+      </div>
+
+      {showForm && (
+        <div className="mb-8">
+          <EnhancedVideoForm
+            onSubmit={handleAddVideo}
+            onCancel={() => setShowForm(false)}
+          />
+        </div>
+      )}
+
+      {editingVideo && (
+        <div className="mb-8">
+          <EnhancedVideoForm
+            onSubmit={handleEditVideo}
+            initialData={editingVideo}
+            onCancel={() => setEditingVideo(null)}
+          />
+        </div>
+      )}
+
+      <VideoList
+        videos={videos}
+        onEdit={setEditingVideo}
+        onRefresh={fetchVideos}
+      />
+    </>
   );
 }
