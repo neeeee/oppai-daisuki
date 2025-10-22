@@ -7,7 +7,10 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "setup-admin": "node scripts/generate-admin-hash.js"
+    "setup-admin": "node scripts/generate-admin-hash.js",
+    "init-db": "node scripts/init-database.js",
+    "db:seed": "node scripts/init-database.js",
+    "db:stats": "node -e \"require('./scripts/init-database.js').getDatabaseStats()\""
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.0",
