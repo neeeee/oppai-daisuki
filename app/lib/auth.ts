@@ -5,14 +5,49 @@ import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import bcrypt from "bcryptjs";
 import { MongoClient } from "mongodb";
 import { AdminUser, LoginAttempt } from "./types";
+import * as fs from "fs";
+import * as path from "path";
+
+// Explicitly load environment variables from .env.local
+if (typeof window === "undefined") {
+  try {
+    const envPath = path.join(process.cwd(), ".env.local");
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, "utf8");
+      const envLines = envContent.split("\n");
+
+      envLines.forEach(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine && !trimmedLine.startsWith("#")) {
+          const [key, ...valueParts] = trimmedLine.split("=");
+          if (key && valueParts.length > 0) {
+            const value = valueParts.join("=").replace(/^["']|["']$/g, "");
+            process.env[key.trim()] = value;
+          }
+        }
+      });
+
+      console.log("[AUTH] Manually loaded environment variables from .env.local");
+    } else {
+      console.warn("[AUTH] .env.local file not found at:", envPath);
+    }
+  } catch (error) {
+    console.warn("[AUTH] Could not manually load .env.local:", error.message);
+  }
+}
 
 const client = new MongoClient(process.env.MONGODB_URI!);
 const clientPromise = Promise.resolve(client);
 
 // Security configuration
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL!;
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH!;
-const ALLOWED_IPS = process.env.ALLOWED_ADMIN_IPS?.split(",") || [];
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "";
+const ADMIN_PASSWORD_HASH = (process.env.ADMIN_PASSWORD_HASH || "").trim();
+
+
+const ALLOWED_IPS = (process.env.ALLOWED_ADMIN_IPS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
 const SESSION_MAX_AGE = 30 * 60; // 30 minutes
@@ -20,9 +55,27 @@ const SESSION_MAX_AGE = 30 * 60; // 30 minutes
 const loginAttempts = new Map<string, LoginAttempt>();
 
 // Rate limiting and security functions
+function normalizeIP(ip: string): string {
+  let v = (ip || "").trim();
+  // Normalize IPv4-mapped IPv6 addresses like ::ffff:127.0.0.1
+  if (v.startsWith("::ffff:")) v = v.substring(7);
+  return v;
+}
+
 function isIPAllowed(ip: string): boolean {
+  const candidate = normalizeIP(ip);
+
+  // Empty allowlist disables the check
   if (ALLOWED_IPS.length === 0) return true;
-  return ALLOWED_IPS.includes(ip);
+
+  // Build a normalized set from the allowlist
+  const allowedSet = new Set(ALLOWED_IPS.map(normalizeIP));
+
+  // Treat loopback equivalents as interchangeable
+  if (allowedSet.has("127.0.0.1")) allowedSet.add("::1");
+  if (allowedSet.has("::1")) allowedSet.add("127.0.0.1");
+
+  return allowedSet.has(candidate);
 }
 
 function checkRateLimit(ip: string): {
@@ -87,17 +140,22 @@ const config: NextAuthConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials, request) {
-        const ip =
-          request.headers?.get("x-forwarded-for") ||
-          request.headers?.get("x-real-ip") ||
-          "unknown";
+        const fwd = request.headers?.get("x-forwarded-for") || "";
+        const xri = request.headers?.get("x-real-ip") || "";
+        let ip = (fwd.split(",")[0] || "").trim() || xri.trim() || "unknown";
+        if (ip.startsWith("::ffff:")) {
+          ip = ip.substring(7);
+        }
 
         console.log(`[SECURITY] Admin login attempt from IP: ${ip}`);
+        console.log(
+          `[SECURITY][DEBUG] Allowlist enabled: ${ALLOWED_IPS.length > 0}, size=${ALLOWED_IPS.length}, candidateIP="${ip}"`,
+        );
 
         // Check IP allowlist
         if (!isIPAllowed(ip)) {
           console.log(
-            `[SECURITY] Blocked login attempt from unauthorized IP: ${ip}`,
+            `[SECURITY] Blocked login attempt from unauthorized IP: ${ip} (allowlist size=${ALLOWED_IPS.length})`,
           );
           throw new Error("Access denied from this IP address");
         }
@@ -115,18 +173,33 @@ const config: NextAuthConfig = {
         }
 
         // Verify credentials
-        const isEmailValid = credentials.email === ADMIN_EMAIL;
-        const isPasswordValid = ADMIN_PASSWORD_HASH
-          ? await bcrypt.compare(
-              credentials.password as string,
+        const emailInput = String(credentials.email || "")
+          .trim()
+          .toLowerCase();
+        const adminEmail = ADMIN_EMAIL.trim().toLowerCase();
+        const isEmailValid = emailInput === adminEmail;
+
+        const passwordInput = String(credentials.password || "");
+        let isPasswordValid = false;
+
+
+
+        if (ADMIN_PASSWORD_HASH) {
+          try {
+            isPasswordValid = await bcrypt.compare(
+              passwordInput,
               ADMIN_PASSWORD_HASH,
-            )
-          : false;
+            );
+
+          } catch (error) {
+            isPasswordValid = false;
+          }
+        }
 
         if (!isEmailValid || !isPasswordValid) {
           recordLoginAttempt(ip, false);
           console.log(
-            `[SECURITY] Failed login attempt for ${credentials.email} from IP: ${ip}`,
+            `[SECURITY] Failed login attempt for ${emailInput} from IP: ${ip}`,
           );
           throw new Error("Invalid credentials");
         }

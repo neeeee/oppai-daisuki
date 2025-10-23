@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatCount } from "../../lib/utils/dateUtils";
 
 interface Video {
   _id: string;
@@ -19,15 +20,6 @@ interface VideoCardProps {
 }
 
 export default function VideoCard({ video }: VideoCardProps) {
-  const formatViewCount = (count: number) => {
-    if (count >= 1000000) {
-      return `${(count / 1000000).toFixed(1)}M`;
-    } else if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}K`;
-    }
-    return count.toString();
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -74,7 +66,7 @@ export default function VideoCard({ video }: VideoCardProps) {
               </h3>
               <p className="text-sm text-gray-600 mb-1">{video.channelName}</p>
               <div className="flex items-center text-xs text-gray-500 space-x-1">
-                <span>{formatViewCount(video.viewCount)} views</span>
+                <span>{formatCount(video.viewCount)} views</span>
                 <span>•</span>
                 <span>{formatDate(video.createdAt)}</span>
               </div>

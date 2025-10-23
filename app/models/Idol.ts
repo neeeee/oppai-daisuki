@@ -61,21 +61,25 @@ const IdolSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    hobbies: [{
-      type: String,
-      trim: true,
-    }],
-    specialSkills: [{
-      type: String,
-      trim: true,
-    }],
+    hobbies: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    specialSkills: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
     careerStart: {
       type: Date,
     },
     status: {
       type: String,
-      enum: ['active', 'retired', 'hiatus'],
-      default: 'active',
+      enum: ["active", "retired", "hiatus"],
+      default: "active",
     },
     agency: {
       type: String,
@@ -103,14 +107,18 @@ const IdolSchema = new mongoose.Schema(
         trim: true,
       },
     },
-    genres: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Genre',
-    }],
-    tags: [{
-      type: String,
-      trim: true,
-    }],
+    genres: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Genre",
+      },
+    ],
+    tags: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
     isVerified: {
       type: Boolean,
       default: false,
@@ -157,11 +165,16 @@ const IdolSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Create indexes for better query performance
-IdolSchema.index({ name: 'text', stageName: 'text', bio: 'text', tags: 'text' });
+IdolSchema.index({
+  name: "text",
+  stageName: "text",
+  bio: "text",
+  tags: "text",
+});
 IdolSchema.index({ slug: 1 });
 IdolSchema.index({ status: 1 });
 IdolSchema.index({ isVerified: 1 });
@@ -172,37 +185,53 @@ IdolSchema.index({ favoriteCount: -1 });
 IdolSchema.index({ photoCount: -1 });
 IdolSchema.index({ videoCount: -1 });
 IdolSchema.index({ genres: 1 });
-IdolSchema.index({ 'metadata.featured': 1 });
+IdolSchema.index({ "metadata.featured": 1 });
 
 // Virtual for age calculation
-IdolSchema.virtual('age').get(function() {
+IdolSchema.virtual("age").get(function () {
   if (!this.birthDate) return null;
   const today = new Date();
   const birthDate = new Date(this.birthDate);
   let age = today.getFullYear() - birthDate.getFullYear();
   const monthDiff = today.getMonth() - birthDate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
     age--;
   }
   return age;
 });
 
-// Pre-save middleware to generate slug from name
-IdolSchema.pre('save', function(next) {
-  if (this.isModified('name') || this.isNew) {
-    const nameToSlugify = this.stageName || this.name;
-    this.slug = nameToSlugify
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim('-');
+// Generate slug function
+function generateIdolSlug(name: string, stageName?: string): string {
+  const nameToSlugify = stageName || name;
+  return nameToSlugify
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+// Pre-validate middleware to generate slug BEFORE validation runs
+IdolSchema.pre("validate", function (next) {
+  if (this.name && (!this.slug || this.isModified("name") || this.isModified("stageName"))) {
+    this.slug = generateIdolSlug(this.name, this.stageName);
+  }
+  next();
+});
+
+// Pre-save middleware as backup
+IdolSchema.pre("save", function (next) {
+  if (this.name && (!this.slug || this.isModified("name") || this.isModified("stageName"))) {
+    this.slug = generateIdolSlug(this.name, this.stageName);
   }
   next();
 });
 
 // Ensure virtuals are included in JSON output
-IdolSchema.set('toJSON', { virtuals: true });
-IdolSchema.set('toObject', { virtuals: true });
+IdolSchema.set("toJSON", { virtuals: true });
+IdolSchema.set("toObject", { virtuals: true });
 
 export default mongoose.models.Idol || mongoose.model("Idol", IdolSchema);

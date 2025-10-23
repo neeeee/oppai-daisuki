@@ -15,12 +15,15 @@ export async function GET(request: NextRequest) {
     const gallery = searchParams.get("gallery");
     const idol = searchParams.get("idol");
     const tags = searchParams.get("tags");
+    const tag = searchParams.get("tag");
     const search = searchParams.get("search");
-    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortBy = searchParams.get("sortBy") || "uploadDate";
     const sortOrder = searchParams.get("sortOrder") || "desc";
+    const isAdult = searchParams.get("isAdult");
+    const includeStats = searchParams.get("includeStats") === "true";
 
     // Build query
-    const query: any = { isPublic: true };
+    const query: Record<string, unknown> = { isPublic: true };
 
     if (category) {
       query.category = category;
@@ -35,8 +38,18 @@ export async function GET(request: NextRequest) {
     }
 
     if (tags) {
-      const tagArray = tags.split(",").map(tag => tag.trim());
+      const tagArray = tags.split(",").map((tag) => tag.trim());
       query.tags = { $in: tagArray };
+    }
+
+    if (tag) {
+      query.tags = { $in: [tag.trim()] };
+    }
+
+    if (isAdult === "false") {
+      query.isAdult = false;
+    } else if (isAdult === "true") {
+      query.isAdult = true;
     }
 
     if (search) {
@@ -47,7 +60,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build sort object
-    const sort: any = {};
+    const sort: Record<string, 1 | -1> = {};
     sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
     // Execute query with population
@@ -64,6 +77,22 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(total / limit);
 
+    // Include additional stats if requested
+    let stats = null;
+    if (includeStats) {
+      const [totalPhotos, featuredCount, trendingCount] = await Promise.all([
+        Photo.countDocuments({ isPublic: true }),
+        Photo.countDocuments({ isPublic: true, "metadata.featured": true }),
+        Photo.countDocuments({ isPublic: true, "metadata.trending": true }),
+      ]);
+
+      stats = {
+        totalPhotos,
+        featuredCount,
+        trendingCount,
+      };
+    }
+
     return NextResponse.json({
       success: true,
       data: photos,
@@ -75,12 +104,13 @@ export async function GET(request: NextRequest) {
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1,
       },
+      stats,
     });
-  } catch (error) {
-    console.error("Error fetching photos:", error);
+  } catch (error: unknown) {
+    console.error("Error fetching photos:", error as Error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch photos" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -95,8 +125,11 @@ export async function POST(request: NextRequest) {
     const { title, imageUrl, thumbnailUrl } = body;
     if (!title || !imageUrl || !thumbnailUrl) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields: title, imageUrl, thumbnailUrl" },
-        { status: 400 }
+        {
+          success: false,
+          error: "Missing required fields: title, imageUrl, thumbnailUrl",
+        },
+        { status: 400 },
       );
     }
 
@@ -105,18 +138,14 @@ export async function POST(request: NextRequest) {
 
     // Update related gallery photo count if gallery is specified
     if (photo.gallery) {
-      await Gallery.findByIdAndUpdate(
-        photo.gallery,
-        { $inc: { photoCount: 1 } }
-      );
+      await Gallery.findByIdAndUpdate(photo.gallery, {
+        $inc: { photoCount: 1 },
+      });
     }
 
     // Update related idol photo count if idol is specified
     if (photo.idol) {
-      await Idol.findByIdAndUpdate(
-        photo.idol,
-        { $inc: { photoCount: 1 } }
-      );
+      await Idol.findByIdAndUpdate(photo.idol, { $inc: { photoCount: 1 } });
     }
 
     // Populate the created photo
@@ -124,23 +153,30 @@ export async function POST(request: NextRequest) {
       .populate("gallery", "title slug")
       .populate("idol", "name stageName slug profileImage");
 
-    return NextResponse.json({
-      success: true,
-      data: populatedPhoto,
-    }, { status: 201 });
-  } catch (error) {
-    console.error("Error creating photo:", error);
+    return NextResponse.json(
+      {
+        success: true,
+        data: populatedPhoto,
+      },
+      { status: 201 },
+    );
+  } catch (error: unknown) {
+    console.error("Error creating photo:", error as Error);
 
-    if (error.name === "ValidationError") {
+    if ((error as any)?.name === "ValidationError") {
       return NextResponse.json(
-        { success: false, error: "Validation failed", details: error.errors },
-        { status: 400 }
+        {
+          success: false,
+          error: "Validation failed",
+          details: (error as any).errors,
+        },
+        { status: 400 },
       );
     }
 
     return NextResponse.json(
       { success: false, error: "Failed to create photo" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -155,7 +191,7 @@ export async function DELETE(request: NextRequest) {
     if (!ids) {
       return NextResponse.json(
         { success: false, error: "Photo IDs are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -168,18 +204,20 @@ export async function DELETE(request: NextRequest) {
     const result = await Photo.deleteMany({ _id: { $in: photoIds } });
 
     // Update gallery and idol counters
-    const galleryUpdates = new Map();
-    const idolUpdates = new Map();
+    const galleryUpdates = new Map<string, number>();
+    const idolUpdates = new Map<string, number>();
 
-    photos.forEach(photo => {
+    photos.forEach((photo) => {
       if (photo.gallery) {
-        galleryUpdates.set(photo.gallery.toString(),
-          (galleryUpdates.get(photo.gallery.toString()) || 0) + 1
+        galleryUpdates.set(
+          photo.gallery.toString(),
+          (galleryUpdates.get(photo.gallery.toString()) || 0) + 1,
         );
       }
       if (photo.idol) {
-        idolUpdates.set(photo.idol.toString(),
-          (idolUpdates.get(photo.idol.toString()) || 0) + 1
+        idolUpdates.set(
+          photo.idol.toString(),
+          (idolUpdates.get(photo.idol.toString()) || 0) + 1,
         );
       }
     });
@@ -187,10 +225,10 @@ export async function DELETE(request: NextRequest) {
     // Update counters
     await Promise.all([
       ...Array.from(galleryUpdates.entries()).map(([galleryId, count]) =>
-        Gallery.findByIdAndUpdate(galleryId, { $inc: { photoCount: -count } })
+        Gallery.findByIdAndUpdate(galleryId, { $inc: { photoCount: -count } }),
       ),
       ...Array.from(idolUpdates.entries()).map(([idolId, count]) =>
-        Idol.findByIdAndUpdate(idolId, { $inc: { photoCount: -count } })
+        Idol.findByIdAndUpdate(idolId, { $inc: { photoCount: -count } }),
       ),
     ]);
 
@@ -199,11 +237,11 @@ export async function DELETE(request: NextRequest) {
       message: `${result.deletedCount} photos deleted successfully`,
       deletedCount: result.deletedCount,
     });
-  } catch (error) {
-    console.error("Error deleting photos:", error);
+  } catch (error: unknown) {
+    console.error("Error deleting photos:", error as Error);
     return NextResponse.json(
       { success: false, error: "Failed to delete photos" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -121,12 +121,8 @@ export default function AdminVideos() {
   return (
     <>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Video Admin Dashboard
-        </h1>
-        <p className="mt-2 text-gray-600">
-          Manage your video library with file uploads
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900">Videos CMS</h1>
+        <p className="mt-2 text-gray-600">Manage your video library</p>
       </div>
 
       <div className="mb-6">
@@ -161,7 +157,7 @@ export default function AdminVideos() {
 
       <VideoList
         videos={videos}
-        onEdit={setEditingVideo}
+        onEdit={(v) => setEditingVideo(v as any)}
         onRefresh={fetchVideos}
       />
     </>

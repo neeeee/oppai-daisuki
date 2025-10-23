@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "../../lib/mongodb";
 import News from "../../models/News";
-import Idol from "../../models/Idol";
+
 import Genre from "../../models/Genre";
+import mongoose from "mongoose";
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,17 +23,18 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
     const sortBy = searchParams.get("sortBy") || "publishedAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
-    const includeUnpublished = searchParams.get("includeUnpublished") === "true";
+    const includeUnpublished =
+      searchParams.get("includeUnpublished") === "true";
 
     // Build query
-    const query: any = {};
+    const query: Record<string, unknown> = {};
 
     if (!includeUnpublished) {
       query.status = "published";
       query.isPublic = true;
       query.$or = [
         { publishedAt: { $lte: new Date() } },
-        { publishedAt: { $exists: false } }
+        { publishedAt: { $exists: false } },
       ];
     }
 
@@ -65,7 +67,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (tags) {
-      const tagArray = tags.split(",").map(tag => tag.trim());
+      const tagArray = tags.split(",").map((tag) => tag.trim());
       query.tags = { $in: tagArray };
     }
 
@@ -77,7 +79,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build sort object
-    const sort: any = {};
+    const sort: Record<string, 1 | -1> = {};
     sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
     // Execute query with population
@@ -106,11 +108,12 @@ export async function GET(request: NextRequest) {
         hasPrevPage: page > 1,
       },
     });
-  } catch (error) {
-    console.error("Error fetching news:", error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error("Error fetching news:", err);
     return NextResponse.json(
       { success: false, error: "Failed to fetch news" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -125,8 +128,11 @@ export async function POST(request: NextRequest) {
     const { title, content, author } = body;
     if (!title || !content || !author?.name) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields: title, content, author.name" },
-        { status: 400 }
+        {
+          success: false,
+          error: "Missing required fields: title, content, author.name",
+        },
+        { status: 400 },
       );
     }
 
@@ -137,7 +143,7 @@ export async function POST(request: NextRequest) {
     if (article.relatedGenres && article.relatedGenres.length > 0) {
       await Genre.updateMany(
         { _id: { $in: article.relatedGenres } },
-        { $inc: { "contentCounts.news": 1 } }
+        { $inc: { "contentCounts.news": 1 } },
       );
     }
 
@@ -146,30 +152,37 @@ export async function POST(request: NextRequest) {
       .populate("relatedIdols", "name stageName slug profileImage")
       .populate("relatedGenres", "name slug color");
 
-    return NextResponse.json({
-      success: true,
-      data: populatedArticle,
-    }, { status: 201 });
-  } catch (error) {
-    console.error("Error creating news:", error);
+    return NextResponse.json(
+      {
+        success: true,
+        data: populatedArticle,
+      },
+      { status: 201 },
+    );
+  } catch (error: unknown) {
+    const err = error as any;
+    console.error("Error creating news:", err);
 
-    if (error.name === "ValidationError") {
+    if (err?.name === "ValidationError") {
       return NextResponse.json(
-        { success: false, error: "Validation failed", details: error.errors },
-        { status: 400 }
+        { success: false, error: "Validation failed", details: err.errors },
+        { status: 400 },
       );
     }
 
-    if (error.code === 11000) {
+    if (err?.code === 11000) {
       return NextResponse.json(
-        { success: false, error: "A news article with this slug already exists" },
-        { status: 409 }
+        {
+          success: false,
+          error: "A news article with this slug already exists",
+        },
+        { status: 409 },
       );
     }
 
     return NextResponse.json(
       { success: false, error: "Failed to create news article" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -184,7 +197,7 @@ export async function PUT(request: NextRequest) {
     if (!id) {
       return NextResponse.json(
         { success: false, error: "News article ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -195,41 +208,46 @@ export async function PUT(request: NextRequest) {
     if (!currentArticle) {
       return NextResponse.json(
         { success: false, error: "News article not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Update article
-    const updatedArticle = await News.findByIdAndUpdate(
-      id,
-      body,
-      { new: true, runValidators: true }
-    )
+    const updatedArticle = await News.findByIdAndUpdate(id, body, {
+      new: true,
+      runValidators: true,
+    })
       .populate("relatedIdols", "name stageName slug profileImage")
       .populate("relatedGenres", "name slug color");
 
     if (!updatedArticle) {
       return NextResponse.json(
         { success: false, error: "News article not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Update genre counts if genres changed
-    const oldGenres = currentArticle.relatedGenres?.map(g => g.toString()) || [];
-    const newGenres = updatedArticle.relatedGenres?.map(g => g._id.toString()) || [];
+    const oldGenres =
+      currentArticle.relatedGenres?.map((g: mongoose.Types.ObjectId) =>
+        g.toString(),
+      ) || [];
+    const newGenres =
+      updatedArticle.relatedGenres?.map((g: { _id: mongoose.Types.ObjectId }) =>
+        g._id.toString(),
+      ) || [];
 
-    const addedGenres = newGenres.filter(g => !oldGenres.includes(g));
-    const removedGenres = oldGenres.filter(g => !newGenres.includes(g));
+    const addedGenres = newGenres.filter((g) => !oldGenres.includes(g));
+    const removedGenres = oldGenres.filter((g) => !newGenres.includes(g));
 
     await Promise.all([
       Genre.updateMany(
         { _id: { $in: addedGenres } },
-        { $inc: { "contentCounts.news": 1 } }
+        { $inc: { "contentCounts.news": 1 } },
       ),
       Genre.updateMany(
         { _id: { $in: removedGenres } },
-        { $inc: { "contentCounts.news": -1 } }
+        { $inc: { "contentCounts.news": -1 } },
       ),
     ]);
 
@@ -237,26 +255,30 @@ export async function PUT(request: NextRequest) {
       success: true,
       data: updatedArticle,
     });
-  } catch (error) {
-    console.error("Error updating news:", error);
+  } catch (error: unknown) {
+    const err = error as any;
+    console.error("Error updating news:", err);
 
-    if (error.name === "ValidationError") {
+    if (err?.name === "ValidationError") {
       return NextResponse.json(
-        { success: false, error: "Validation failed", details: error.errors },
-        { status: 400 }
+        { success: false, error: "Validation failed", details: err.errors },
+        { status: 400 },
       );
     }
 
-    if (error.code === 11000) {
+    if (err?.code === 11000) {
       return NextResponse.json(
-        { success: false, error: "A news article with this slug already exists" },
-        { status: 409 }
+        {
+          success: false,
+          error: "A news article with this slug already exists",
+        },
+        { status: 409 },
       );
     }
 
     return NextResponse.json(
       { success: false, error: "Failed to update news article" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -271,7 +293,7 @@ export async function DELETE(request: NextRequest) {
     if (!ids) {
       return NextResponse.json(
         { success: false, error: "News article IDs are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -284,24 +306,25 @@ export async function DELETE(request: NextRequest) {
     const result = await News.deleteMany({ _id: { $in: articleIds } });
 
     // Update genre counters
-    const genreUpdates = new Map();
+    const genreUpdates = new Map<string, number>();
 
-    articles.forEach(article => {
+    articles.forEach((article) => {
       if (article.relatedGenres && article.relatedGenres.length > 0) {
-        article.relatedGenres.forEach(genreId => {
+        article.relatedGenres.forEach((genreId: mongoose.Types.ObjectId) => {
           const genreIdStr = genreId.toString();
-          genreUpdates.set(genreIdStr,
-            (genreUpdates.get(genreIdStr) || 0) + 1
-          );
+          genreUpdates.set(genreIdStr, (genreUpdates.get(genreIdStr) || 0) + 1);
         });
       }
     });
 
     // Update genre counters
     await Promise.all(
-      Array.from(genreUpdates.entries()).map(([genreId, count]) =>
-        Genre.findByIdAndUpdate(genreId, { $inc: { "contentCounts.news": -count } })
-      )
+      Array.from(genreUpdates.entries()).map(
+        ([genreId, count]: [string, number]) =>
+          Genre.findByIdAndUpdate(genreId, {
+            $inc: { "contentCounts.news": -count },
+          }),
+      ),
     );
 
     return NextResponse.json({
@@ -309,11 +332,12 @@ export async function DELETE(request: NextRequest) {
       message: `${result.deletedCount} news articles deleted successfully`,
       deletedCount: result.deletedCount,
     });
-  } catch (error) {
-    console.error("Error deleting news:", error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error("Error deleting news:", err);
     return NextResponse.json(
       { success: false, error: "Failed to delete news articles" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   UserCircleIcon,
@@ -14,11 +15,26 @@ import {
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [lastActivity, setLastActivity] = useState<Date>(new Date());
 
+  const cmsNav = [
+    { href: "/admin", label: "Videos" },
+    { href: "/admin/news", label: "News" },
+    { href: "/admin/idols", label: "Idols" },
+    { href: "/admin/genres", label: "Genres" },
+    { href: "/admin/galleries", label: "Galleries" },
+    { href: "/admin/photos", label: "Photos" },
+  ];
+
   useEffect(() => {
     if (status === "loading") return; // Don't redirect while loading
+
+    // Allow unauthenticated access on the login route
+    if (pathname?.startsWith("/admin/login")) {
+      return;
+    }
 
     if (status === "unauthenticated") {
       const currentPath = window.location.pathname;
@@ -31,7 +47,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       router.push("/admin/login?error=access_denied");
       return;
     }
-  }, [status, session, router]);
+  }, [status, session, router, pathname]);
 
   useEffect(() => {
     // Update last activity time on user interaction
@@ -88,6 +104,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     // Force session refresh to extend session time
     window.location.reload();
   };
+
+  // Allow login route to render without admin gating
+  if (pathname?.startsWith("/admin/login")) {
+    return <>{children}</>;
+  }
 
   if (status === "loading") {
     return (
@@ -186,6 +207,33 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </div>
+
+      {/* Admin Sub-navigation */}
+      <nav className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ul className="flex flex-wrap gap-3 py-3 text-sm">
+            {cmsNav.map((item) => {
+              const active =
+                pathname === item.href ||
+                (item.href !== "/admin" && pathname?.startsWith(item.href));
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={`px-3 py-1.5 rounded-md transition-colors ${
+                      active
+                        ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </nav>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

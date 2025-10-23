@@ -5,8 +5,8 @@ import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function AdminLogin() {
-  const [email, setEmail] = useState("admin@test.com");
-  const [password, setPassword] = useState("testPassword123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -176,11 +176,16 @@ export default function AdminLogin() {
           {process.env.NODE_ENV === "development" && (
             <div className="mt-6 p-4 bg-blue-50 rounded-md">
               <h3 className="text-sm font-medium text-blue-800 mb-2">
-                Test Credentials
+                Development Mode
               </h3>
               <div className="text-xs text-blue-600">
-                <p>Email: admin@test.com</p>
-                <p>Password: testPassword123!</p>
+                <p>
+                  Use the admin credentials configured in your .env.local file
+                </p>
+                <p>
+                  Run 'npm run setup-admin' if you haven't set up admin
+                  credentials yet
+                </p>
               </div>
             </div>
           )}

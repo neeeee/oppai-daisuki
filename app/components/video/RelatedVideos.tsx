@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { formatCount } from "../../lib/utils/dateUtils";
 
 interface Video {
   _id: string;
@@ -36,10 +37,19 @@ export default function RelatedVideos({
       const data = await response.json();
 
       if (data.success) {
-        // Filter out current video and shuffle
+        // Filter out current video and use deterministic shuffling based on video IDs
         const filtered = data.data.videos
           .filter((video: Video) => video._id !== currentVideoId)
-          .sort(() => Math.random() - 0.5)
+          .sort((a, b) => {
+            // Use video ID hash for deterministic but pseudo-random ordering
+            const hashA = a._id
+              .split("")
+              .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const hashB = b._id
+              .split("")
+              .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            return hashA - hashB;
+          })
           .slice(0, limit);
         setVideos(filtered);
       }
@@ -48,15 +58,6 @@ export default function RelatedVideos({
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatViewCount = (count: number) => {
-    if (count >= 1000000) {
-      return `${(count / 1000000).toFixed(1)}M`;
-    } else if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}K`;
-    }
-    return count.toString();
   };
 
   const formatDate = (dateString: string) => {
@@ -91,7 +92,9 @@ export default function RelatedVideos({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900">Related Videos</h3>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        Related Videos
+      </h3>
       <div className="space-y-4">
         {videos.map((video) => (
           <Link
@@ -110,7 +113,7 @@ export default function RelatedVideos({
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1 group-hover:text-indigo-600">
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-indigo-600">
                 {video.title}
               </h4>
               <div className="flex items-center space-x-2 mb-1">
@@ -119,10 +122,12 @@ export default function RelatedVideos({
                   alt={video.channelName}
                   className="w-4 h-4 rounded-full"
                 />
-                <p className="text-xs text-gray-600">{video.channelName}</p>
+                <p className="text-xs text-gray-600 dark:text-white">
+                  {video.channelName}
+                </p>
               </div>
-              <div className="flex items-center text-xs text-gray-500 space-x-1">
-                <span>{formatViewCount(video.viewCount)} views</span>
+              <div className="flex items-center text-xs text-gray-500 dark:text-white space-x-1">
+                <span>{formatCount(video.viewCount)} views</span>
                 <span>•</span>
                 <span>{formatDate(video.createdAt)}</span>
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatCount } from "../../lib/utils/dateUtils";
 
 interface Video {
   _id: string;
@@ -21,15 +22,6 @@ interface VideoInfoProps {
 export default function VideoInfo({ video }: VideoInfoProps) {
   const [showFullDescription, setShowFullDescription] = useState(false);
 
-  const formatViewCount = (count: number) => {
-    if (count >= 1000000) {
-      return `${(count / 1000000).toFixed(1)}M`;
-    } else if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}K`;
-    }
-    return count.toLocaleString();
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -45,17 +37,19 @@ export default function VideoInfo({ video }: VideoInfoProps) {
 Enjoy this content from ${video.channelName}!
 
 Video duration: ${video.duration}
-Views: ${formatViewCount(video.viewCount)}
+Views: ${formatCount(video.viewCount)}
 
 #video #content #${video.channelName.toLowerCase().replace(/\s+/g, "")}`;
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-gray-900">{video.title}</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        {video.title}
+      </h1>
 
       <div className="flex items-center justify-between border-b border-gray-200 pb-4">
-        <div className="flex items-center space-x-4 text-sm text-gray-600">
-          <span>{formatViewCount(video.viewCount)} views</span>
+        <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-white">
+          <span>{formatCount(video.viewCount)} views</span>
           <span>•</span>
           <span>{formatDate(video.createdAt)}</span>
         </div>
@@ -70,21 +64,18 @@ Views: ${formatViewCount(video.viewCount)}
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-gray-900">
+              <h3 className="font-semibold text-gray-900 dark:text-white">
                 {video.channelName}
               </h3>
-              <p className="text-sm text-gray-600">Creator</p>
+              <p className="text-sm text-gray-600 dark:text-white">Creator</p>
             </div>
-            <button className="px-4 py-2 bg-red-600 text-white rounded-full text-sm font-medium hover:bg-red-700 transition-colors">
-              Subscribe
-            </button>
           </div>
         </div>
       </div>
 
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
         <div
-          className={`text-sm text-gray-700 ${showFullDescription ? "" : "line-clamp-3"}`}
+          className={`text-sm text-gray-700 dark:text-white ${showFullDescription ? "" : "line-clamp-3"}`}
         >
           {description.split("\n").map((line, index) => (
             <p key={index} className={index > 0 ? "mt-2" : ""}>

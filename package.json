@@ -8,6 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "setup-admin": "node scripts/generate-admin-hash.js",
+    "setup-test-admin": "node scripts/generate-test-hash.js",
+    "debug-hash": "node scripts/debug-hash.js",
+    "test-env": "node scripts/test-env.js",
+    "fix-admin": "node scripts/fix-admin-auth.js",
     "init-db": "node scripts/init-database.js",
     "db:seed": "node scripts/init-database.js",
     "db:stats": "node -e \"require('./scripts/init-database.js').getDatabaseStats()\""

@@ -3,12 +3,13 @@ import Video from "../../../models/Video";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } },
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
-    const video = await Video.findById(params.id);
+    const { id } = await params;
+    const video = await Video.findById(id);
     if (!video) {
       return NextResponse.json({ success: false }, { status: 404 });
     }

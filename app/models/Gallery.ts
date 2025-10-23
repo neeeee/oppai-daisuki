@@ -50,6 +50,10 @@ const GallerySchema = new mongoose.Schema(
     dateTaken: {
       type: Date,
     },
+    isAdult: {
+      type: Boolean,
+      default: false,
+    },
     viewCount: {
       type: Number,
       default: 0,
@@ -57,6 +61,29 @@ const GallerySchema = new mongoose.Schema(
     likeCount: {
       type: Number,
       default: 0,
+    },
+    downloadCount: {
+      type: Number,
+      default: 0,
+    },
+    photos: [
+      {
+        type: String,
+      },
+    ],
+    metadata: {
+      featured: {
+        type: Boolean,
+        default: false,
+      },
+      trending: {
+        type: Boolean,
+        default: false,
+      },
+      qualityScore: {
+        type: Number,
+        default: 0,
+      },
     },
     idol: {
       type: mongoose.Schema.Types.ObjectId,
@@ -77,9 +104,14 @@ GallerySchema.index({ title: "text", description: "text", tags: "text" });
 GallerySchema.index({ slug: 1 });
 GallerySchema.index({ category: 1 });
 GallerySchema.index({ isPublic: 1 });
+GallerySchema.index({ isAdult: 1 });
 GallerySchema.index({ createdAt: -1 });
 GallerySchema.index({ viewCount: -1 });
 GallerySchema.index({ likeCount: -1 });
+GallerySchema.index({ downloadCount: -1 });
+GallerySchema.index({ "metadata.featured": 1 });
+GallerySchema.index({ "metadata.trending": 1 });
+GallerySchema.index({ "metadata.qualityScore": -1 });
 GallerySchema.index({ idol: 1 });
 GallerySchema.index({ genre: 1 });
 
@@ -91,7 +123,7 @@ GallerySchema.pre("save", function (next) {
       .replace(/[^a-z0-9\s-]/g, "")
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-")
-      .trim("-");
+      .replace(/^-+|-+$/g, "");
   }
   next();
 });

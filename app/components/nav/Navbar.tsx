@@ -3,6 +3,7 @@ import NavItem from "./NavItem";
 const pages = [
   { title: "Videos", href: "/videos" },
   { title: "Photos", href: "/photos" },
+  { title: "Galleries", href: "/galleries" },
   { title: "Idols", href: "/idols" },
   { title: "Genres", href: "/genres" },
   { title: "News", href: "/news" },

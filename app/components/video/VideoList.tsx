@@ -1,9 +1,32 @@
 import { useState } from "react";
 
-export default function VideoList({ videos, onEdit, onDelete, onRefresh }) {
-  const [deletingId, setDeletingId] = useState(null);
+interface Video {
+  _id: string;
+  title: string;
+  channelAvatar: string;
+  channelName: string;
+  duration: string;
+  viewCount: number;
+  thumbnailUrl: string;
+  createdAt: string;
+}
 
-  const handleDelete = async (id) => {
+type VideoListProps = {
+  videos: Video[];
+  onEdit: (video: Video) => void;
+  onDelete?: (id: string) => void | Promise<void>;
+  onRefresh: () => void;
+};
+
+export default function VideoList({
+  videos,
+  onEdit,
+  onDelete,
+  onRefresh,
+}: VideoListProps) {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this video?")) return;
 
     setDeletingId(id);
@@ -24,7 +47,7 @@ export default function VideoList({ videos, onEdit, onDelete, onRefresh }) {
     }
   };
 
-  const formatViewCount = (count) => {
+  const formatViewCount = (count: number) => {
     if (count >= 1000000) {
       return `${(count / 1000000).toFixed(1)}M`;
     } else if (count >= 1000) {
@@ -44,7 +67,7 @@ export default function VideoList({ videos, onEdit, onDelete, onRefresh }) {
           <p className="text-gray-500">No videos added yet.</p>
         ) : (
           <div className="space-y-4">
-            {videos.map((video) => (
+            {videos.map((video: Video) => (
               <div
                 key={video._id}
                 className="border border-gray-200 rounded-lg p-4"
@@ -72,7 +95,11 @@ export default function VideoList({ videos, onEdit, onDelete, onRefresh }) {
                       <span>{formatViewCount(video.viewCount)} views</span>
                       <span>{video.duration}</span>
                       <span>
-                        {new Date(video.createdAt).toLocaleDateString()}
+                        {new Date(video.createdAt).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </span>
                     </div>
                   </div>
