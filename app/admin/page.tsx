@@ -1,165 +1,184 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import EnhancedVideoForm from "../components/video/VideoForm";
-import VideoList from "../components/video/VideoList";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-interface Video {
-  _id: string;
-  title: string;
-  channelAvatar: string;
-  channelName: string;
-  duration: string;
-  viewCount: number;
-  thumbnailUrl: string;
-  videoSourceUrl: string;
-  createdAt: string;
-}
-
-export default function AdminVideos() {
+export default function AdminDashboard() {
   const { data: session, status } = useSession();
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [editingVideo, setEditingVideo] = useState<Video | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    if (status === "authenticated" && session?.user?.role === "admin") {
-      fetchVideos();
+    if (status === "unauthenticated") {
+      router.push("/admin/login");
     }
-  }, [status, session]);
+  }, [status, router]);
 
-  const fetchVideos = async () => {
-    try {
-      const response = await fetch("/api/videos");
-      const data = await response.json();
-      if (data.success) {
-        setVideos(data.data);
-      }
-    } catch (error) {
-      console.error("Error fetching videos:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddVideo = async (formData: Omit<Video, "_id" | "createdAt">) => {
-    try {
-      const response = await fetch("/api/videos", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        await fetchVideos();
-        setShowForm(false);
-        alert("Video added successfully!");
-      } else {
-        const errorData = await response.json();
-        alert(`Failed to add video: ${errorData.error || "Unknown error"}`);
-      }
-    } catch (error) {
-      alert("Error adding video");
-      console.error("Error adding video:", error);
-    }
-  };
-
-  const handleEditVideo = async (
-    formData: Omit<Video, "_id" | "createdAt">,
-  ) => {
-    if (!editingVideo) return;
-
-    try {
-      const response = await fetch(`/api/videos/${editingVideo._id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        await fetchVideos();
-        setEditingVideo(null);
-        alert("Video updated successfully!");
-      } else {
-        const errorData = await response.json();
-        alert(`Failed to update video: ${errorData.error || "Unknown error"}`);
-      }
-    } catch (error) {
-      alert("Error updating video");
-      console.error("Error updating video:", error);
-    }
-  };
-
-  if (status === "loading" || loading) {
+  if (status === "loading") {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2"></div>
-          <div className="text-gray-600">Loading admin dashboard...</div>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
       </div>
     );
   }
 
-  if (status === "unauthenticated" || session?.user?.role !== "admin") {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="text-red-600 text-xl mb-2">Access Denied</div>
-          <div className="text-gray-600">Admin privileges required</div>
-        </div>
-      </div>
-    );
+  if (status === "unauthenticated") {
+    return null;
   }
+
+  const adminSections = [
+    {
+      name: "Videos",
+      description: "Manage idol videos with genre and idol associations",
+      icon: "📺",
+      href: "/admin/videos",
+      color: "bg-red-500",
+    },
+    {
+      name: "Photos",
+      description: "Upload and manage photo collections",
+      icon: "📸",
+      href: "/admin/photos",
+      color: "bg-blue-500",
+    },
+    {
+      name: "Galleries",
+      description: "Organize photos into galleries",
+      icon: "🖼️",
+      href: "/admin/galleries",
+      color: "bg-purple-500",
+    },
+    {
+      name: "Idols",
+      description: "Manage idol profiles and information",
+      icon: "👤",
+      href: "/admin/idols",
+      color: "bg-pink-500",
+    },
+    {
+      name: "Genres",
+      description: "Create and manage content genres",
+      icon: "📂",
+      href: "/admin/genres",
+      color: "bg-indigo-500",
+    },
+    {
+      name: "News",
+      description: "Publish news articles and updates",
+      icon: "📰",
+      href: "/admin/news",
+      color: "bg-green-500",
+    },
+  ];
 
   return (
-    <>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Videos CMS</h1>
-        <p className="mt-2 text-gray-600">Manage your video library</p>
-      </div>
-
-      <div className="mb-6">
-        {!showForm && !editingVideo && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 font-medium text-lg"
-          >
-            Add New Video
-          </button>
-        )}
-      </div>
-
-      {showForm && (
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="mb-8">
-          <EnhancedVideoForm
-            onSubmit={handleAddVideo}
-            onCancel={() => setShowForm(false)}
-          />
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="mt-2 text-gray-600">
+            Welcome back! Manage your content from here.
+          </p>
         </div>
-      )}
 
-      {editingVideo && (
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total Videos</p>
+                <p className="text-2xl font-bold text-gray-900">—</p>
+              </div>
+              <div className="text-3xl">📺</div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total Photos</p>
+                <p className="text-2xl font-bold text-gray-900">—</p>
+              </div>
+              <div className="text-3xl">📸</div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total Galleries</p>
+                <p className="text-2xl font-bold text-gray-900">—</p>
+              </div>
+              <div className="text-3xl">🖼️</div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total Idols</p>
+                <p className="text-2xl font-bold text-gray-900">—</p>
+              </div>
+              <div className="text-3xl">👤</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Admin Sections Grid */}
         <div className="mb-8">
-          <EnhancedVideoForm
-            onSubmit={handleEditVideo}
-            initialData={editingVideo}
-            onCancel={() => setEditingVideo(null)}
-          />
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Content Management
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {adminSections.map((section) => (
+              <Link
+                key={section.name}
+                href={section.href}
+                className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all overflow-hidden"
+              >
+                <div className="p-6">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div
+                      className={`${section.color} w-12 h-12 rounded-lg flex items-center justify-center text-2xl`}
+                    >
+                      {section.icon}
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                      {section.name}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-gray-600">{section.description}</p>
+                  <div className="mt-4 flex items-center text-indigo-600 text-sm font-medium">
+                    Manage
+                    <svg
+                      className="ml-1 w-4 h-4 group-hover:translate-x-1 transition-transform"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
-      )}
 
-      <VideoList
-        videos={videos}
-        onEdit={(v) => setEditingVideo(v as any)}
-        onRefresh={fetchVideos}
-      />
-    </>
+        {/* Recent Activity */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Recent Activity
+          </h2>
+          <div className="text-sm text-gray-500">
+            Activity tracking coming soon...
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

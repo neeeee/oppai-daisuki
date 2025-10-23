@@ -55,11 +55,11 @@ export async function GET(
         )
         .lean(),
 
-      // Get recent videos (if videos have idol relationship - for now mock some data)
-      Video.find({})
+      // Get recent videos for this idol
+      Video.find({ idol: idol._id, isPublic: true })
         .sort({ createdAt: -1 })
         .limit(6)
-        .select("title thumbnailUrl duration viewCount channelName createdAt")
+        .select("title thumbnailUrl duration viewCount channelName channelAvatar createdAt")
         .lean(),
     ]);
 

@@ -1,49 +1,326 @@
+import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "../../lib/mongodb";
 import Video from "../../models/Video";
-import { NextRequest, NextResponse } from "next/server";
+import Idol from "../../models/Idol";
+import Genre from "../../models/Genre";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    console.log("Attempting to connect to MongoDB...");
     await dbConnect();
-    console.log("Connected to MongoDB, fetching videos...");
-    const videos = await Video.find({}).sort({ createdAt: -1 });
-    console.log(`Found ${videos.length} videos`);
-    return NextResponse.json({ success: true, data: videos });
-  } catch (error) {
-    console.error("Error in GET /api/videos:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: (error as Error).message,
+
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "12", 10);
+    const idol = searchParams.get("idol");
+    const genre = searchParams.get("genre");
+    const category = searchParams.get("category");
+    const tags = searchParams.get("tags");
+    const search = searchParams.get("search");
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
+    const isAdult = searchParams.get("isAdult");
+
+    // Build query
+    const query: any = { isPublic: true };
+
+    if (idol) {
+      query.idol = idol;
+    }
+
+    if (genre) {
+      query.genres = genre;
+    }
+
+    if (category) {
+      query.category = category;
+    }
+
+    if (tags) {
+      const tagArray = tags.split(",").map((tag) => tag.trim());
+      query.tags = { $in: tagArray };
+    }
+
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    if (isAdult === "false") {
+      query.isAdult = false;
+    } else if (isAdult === "true") {
+      query.isAdult = true;
+    }
+
+    // Calculate skip for pagination
+    const skip = (page - 1) * limit;
+
+    // Build sort object
+    const sort: any = {};
+    sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+    // Execute query with population
+    const [videos, total] = await Promise.all([
+      Video.find(query)
+        .populate("idol", "name stageName slug profileImage")
+        .populate("genres", "name slug color")
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Video.countDocuments(query),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      success: true,
+      data: videos,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
       },
-      { status: 400 },
+    });
+  } catch (error) {
+    console.error("Error fetching videos:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch videos" },
+      { status: 500 }
     );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("POST request received");
-    const body = await request.json();
-    console.log("Request body:", body);
-
-    console.log("Attempting to connect to MongoDB...");
     await dbConnect();
-    console.log("Connected to MongoDB, creating video...");
 
+    const body = await request.json();
+
+    // Validate required fields
+    const { title, idol, thumbnailUrl, videoSourceUrl, channelAvatar, channelName, duration } = body;
+    if (!title || !idol || !thumbnailUrl || !videoSourceUrl || !channelAvatar || !channelName || !duration) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    // Create video
     const video = await Video.create(body);
-    console.log("Video created successfully:", video._id);
 
-    return NextResponse.json({ success: true, data: video }, { status: 201 });
-  } catch (error) {
-    console.error("Error in POST /api/videos:", error);
+    // Update idol video count
+    if (video.idol) {
+      await Idol.findByIdAndUpdate(video.idol, {
+        $inc: { videoCount: 1 },
+      });
+    }
+
+    // Update genre video counts
+    if (video.genres && video.genres.length > 0) {
+      await Genre.updateMany(
+        { _id: { $in: video.genres } },
+        { $inc: { "contentCounts.videos": 1 } }
+      );
+    }
+
+    // Populate the created video
+    const populatedVideo = await Video.findById(video._id)
+      .populate("idol", "name stageName slug profileImage")
+      .populate("genres", "name slug color");
+
     return NextResponse.json(
       {
-        success: false,
-        error: (error as Error).message,
+        success: true,
+        data: populatedVideo,
       },
-      { status: 400 },
+      { status: 201 }
+    );
+  } catch (error: any) {
+    console.error("Error creating video:", error);
+
+    if (error.name === "ValidationError") {
+      return NextResponse.json(
+        { success: false, error: "Validation failed", details: error.errors },
+        { status: 400 }
+      );
+    }
+
+    if (error.code === 11000) {
+      return NextResponse.json(
+        { success: false, error: "A video with this slug already exists" },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: false, error: "Failed to create video" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    await dbConnect();
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "Video ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+
+    // Get the current video to compare changes
+    const currentVideo = await Video.findById(id);
+    if (!currentVideo) {
+      return NextResponse.json(
+        { success: false, error: "Video not found" },
+        { status: 404 }
+      );
+    }
+
+    // Update video
+    const updatedVideo = await Video.findByIdAndUpdate(id, body, {
+      new: true,
+      runValidators: true,
+    })
+      .populate("idol", "name stageName slug profileImage")
+      .populate("genres", "name slug color");
+
+    if (!updatedVideo) {
+      return NextResponse.json(
+        { success: false, error: "Video not found" },
+        { status: 404 }
+      );
+    }
+
+    // Update idol counts if idol changed
+    if (currentVideo.idol?.toString() !== updatedVideo.idol?._id?.toString()) {
+      if (currentVideo.idol) {
+        await Idol.findByIdAndUpdate(currentVideo.idol, {
+          $inc: { videoCount: -1 },
+        });
+      }
+      if (updatedVideo.idol) {
+        await Idol.findByIdAndUpdate(updatedVideo.idol._id, {
+          $inc: { videoCount: 1 },
+        });
+      }
+    }
+
+    // Update genre counts if genres changed
+    const oldGenres = currentVideo.genres?.map((g) => g.toString()) || [];
+    const newGenres = updatedVideo.genres?.map((g: any) => g._id.toString()) || [];
+
+    const addedGenres = newGenres.filter((g) => !oldGenres.includes(g));
+    const removedGenres = oldGenres.filter((g) => !newGenres.includes(g));
+
+    await Promise.all([
+      Genre.updateMany(
+        { _id: { $in: addedGenres } },
+        { $inc: { "contentCounts.videos": 1 } }
+      ),
+      Genre.updateMany(
+        { _id: { $in: removedGenres } },
+        { $inc: { "contentCounts.videos": -1 } }
+      ),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      data: updatedVideo,
+    });
+  } catch (error: any) {
+    console.error("Error updating video:", error);
+
+    if (error.name === "ValidationError") {
+      return NextResponse.json(
+        { success: false, error: "Validation failed", details: error.errors },
+        { status: 400 }
+      );
+    }
+
+    if (error.code === 11000) {
+      return NextResponse.json(
+        { success: false, error: "A video with this slug already exists" },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: false, error: "Failed to update video" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    await dbConnect();
+
+    const { searchParams } = new URL(request.url);
+    const ids = searchParams.get("ids");
+
+    if (!ids) {
+      return NextResponse.json(
+        { success: false, error: "Video IDs are required" },
+        { status: 400 }
+      );
+    }
+
+    const videoIds = ids.split(",");
+
+    // Get videos before deletion to update counters
+    const videos = await Video.find({ _id: { $in: videoIds } });
+
+    // Delete videos
+    const result = await Video.deleteMany({ _id: { $in: videoIds } });
+
+    // Update idol and genre counters
+    const idolUpdates = new Map();
+    const genreUpdates = new Map();
+
+    videos.forEach((video) => {
+      if (video.idol) {
+        const idolId = video.idol.toString();
+        idolUpdates.set(idolId, (idolUpdates.get(idolId) || 0) + 1);
+      }
+
+      if (video.genres && video.genres.length > 0) {
+        video.genres.forEach((genreId) => {
+          const genreIdStr = genreId.toString();
+          genreUpdates.set(genreIdStr, (genreUpdates.get(genreIdStr) || 0) + 1);
+        });
+      }
+    });
+
+    // Update counters
+    await Promise.all([
+      ...Array.from(idolUpdates.entries()).map(([idolId, count]) =>
+        Idol.findByIdAndUpdate(idolId, { $inc: { videoCount: -count } })
+      ),
+      ...Array.from(genreUpdates.entries()).map(([genreId, count]) =>
+        Genre.findByIdAndUpdate(genreId, { $inc: { "contentCounts.videos": -count } })
+      ),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      message: `${result.deletedCount} videos deleted successfully`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error("Error deleting videos:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to delete videos" },
+      { status: 500 }
     );
   }
 }

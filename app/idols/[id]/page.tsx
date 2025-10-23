@@ -444,14 +444,14 @@ export default function IdolProfilePage() {
           {/* Sidebar - Profile Info */}
           <div className="space-y-6">
             {/* Basic Info Card */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold mb-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+              <h2 className="text-lg font-semibold text-black dark:text-white mb-4">
                 Profile Information
               </h2>
 
               {idol.bio && (
                 <div className="mb-4">
-                  <p className="text-gray-700 text-sm leading-relaxed">
+                  <p className="text-black text-sm dark:text-white leading-relaxed">
                     {idol.bio}
                   </p>
                 </div>

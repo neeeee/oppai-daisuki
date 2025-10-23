@@ -204,7 +204,7 @@ IdolSchema.virtual("age").get(function () {
 });
 
 // Generate slug function
-function generateIdolSlug(name: string, stageName?: string): string {
+function generateIdolSlug(name: string, stageName?: string | null | undefined): string {
   const nameToSlugify = stageName || name;
   return nameToSlugify
     .toLowerCase()
@@ -217,7 +217,7 @@ function generateIdolSlug(name: string, stageName?: string): string {
 // Pre-validate middleware to generate slug BEFORE validation runs
 IdolSchema.pre("validate", function (next) {
   if (this.name && (!this.slug || this.isModified("name") || this.isModified("stageName"))) {
-    this.slug = generateIdolSlug(this.name, this.stageName);
+    this.slug = generateIdolSlug(this.name, this.stageName as any);
   }
   next();
 });
@@ -225,13 +225,20 @@ IdolSchema.pre("validate", function (next) {
 // Pre-save middleware as backup
 IdolSchema.pre("save", function (next) {
   if (this.name && (!this.slug || this.isModified("name") || this.isModified("stageName"))) {
-    this.slug = generateIdolSlug(this.name, this.stageName);
+    this.slug = generateIdolSlug(this.name, this.stageName as any);
   }
   next();
 });
+
+
 
 // Ensure virtuals are included in JSON output
 IdolSchema.set("toJSON", { virtuals: true });
 IdolSchema.set("toObject", { virtuals: true });
 
-export default mongoose.models.Idol || mongoose.model("Idol", IdolSchema);
+// Delete the model from cache if it exists to ensure fresh schema
+if (mongoose.models.Idol) {
+  delete mongoose.models.Idol;
+}
+
+export default mongoose.model("Idol", IdolSchema);
