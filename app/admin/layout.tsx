@@ -8,7 +8,6 @@ import {
   UserCircleIcon,
   ArrowRightOnRectangleIcon,
   ShieldCheckIcon,
-  ClockIcon,
   ComputerDesktopIcon,
 } from "@heroicons/react/24/outline";
 
@@ -16,7 +15,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
-  const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [lastActivity, setLastActivity] = useState<Date>(new Date());
 
   const cmsNav = [
@@ -71,28 +69,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!session?.user?.loginTime) return;
 
-    const interval = setInterval(() => {
-      const sessionMaxAge = 30 * 60 * 1000; // 30 minutes
-      const loginTime = session.user.loginTime || Date.now();
-      const now = Date.now();
-      const elapsed = now - loginTime;
-      const remaining = sessionMaxAge - elapsed;
-
-      if (remaining <= 0) {
-        signOut({ callbackUrl: "/admin/login?error=SessionExpired" });
-        return;
-      }
-
-      const minutes = Math.floor(remaining / 60000);
-      const seconds = Math.floor((remaining % 60000) / 1000);
-      setTimeRemaining(`${minutes}:${seconds.toString().padStart(2, "0")}`);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [session]);
 
   const handleLogout = async () => {
     if (confirm("Are you sure you want to sign out?")) {
@@ -100,10 +77,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const extendSession = async () => {
-    // Force session refresh to extend session time
-    window.location.reload();
-  };
+
 
   // Allow login route to render without admin gating
   if (pathname?.startsWith("/admin/login")) {
@@ -154,18 +128,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center space-x-6">
-              {/* Session Timer */}
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <ClockIcon className="h-4 w-4" />
-                <span>Session: {timeRemaining}</span>
-                <button
-                  onClick={extendSession}
-                  className="text-indigo-600 hover:text-indigo-700 text-xs underline"
-                >
-                  Extend
-                </button>
-              </div>
-
               {/* User Info */}
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2 text-sm">
@@ -251,8 +213,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               <span>🚫 Rate Limited</span>
             </div>
             <div>
-              Session started:{" "}
-              {new Date(session.user.loginTime || 0).toLocaleString()}
+              {new Date().toLocaleString()}
             </div>
           </div>
         </div>

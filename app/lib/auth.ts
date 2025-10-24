@@ -50,7 +50,7 @@ const ALLOWED_IPS = (process.env.ALLOWED_ADMIN_IPS || "")
   .filter(Boolean);
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
-const SESSION_MAX_AGE = 30 * 60; // 30 minutes
+const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
 const loginAttempts = new Map<string, LoginAttempt>();
 
@@ -234,15 +234,6 @@ const config: NextAuthConfig = {
         token.role = adminUser.role;
         token.ip = adminUser.ip;
         token.loginTime = Date.now();
-      }
-
-      // Check if session should expire due to inactivity
-      const now = Date.now();
-      const loginTime = (token.loginTime as number) || now;
-
-      if (now - loginTime > SESSION_MAX_AGE * 1000) {
-        console.log(`[SECURITY] Session expired for ${token.email}`);
-        return null; // This will force a new login
       }
 
       return token;
