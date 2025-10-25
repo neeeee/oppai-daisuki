@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI;
+import logger from "./utils/logger";
 
 if (!MONGODB_URI) {
   throw new Error(
@@ -36,11 +37,11 @@ async function dbConnect() {
     cached.promise = mongoose
       .connect(MONGODB_URI, opts)
       .then((mongoose) => {
-        console.log("✅ Connected to MongoDB successfully");
+        logger.info("✅ Connected to MongoDB successfully");
         return mongoose;
       })
       .catch((error) => {
-        console.error("❌ MongoDB connection error:", error);
+        logger.error("❌ MongoDB connection error:", error);
         throw error;
       });
   }
@@ -83,7 +84,7 @@ export const dbUtils = {
       const conn = await dbConnect();
       return conn.connection.readyState === 1;
     } catch (error) {
-      console.error("Database health check failed:", error);
+      logger.error("Database health check failed:", error);
       return false;
     }
   },
@@ -104,7 +105,7 @@ export const dbUtils = {
         storageSize: stats.storageSize,
       };
     } catch (error) {
-      console.error("Failed to get database stats:", error);
+      logger.error("Failed to get database stats:", error);
       return null;
     }
   },
@@ -149,9 +150,9 @@ export const dbUtils = {
         }),
       ]);
 
-      console.log("✅ Database indexes created successfully");
+      logger.info("✅ Database indexes created successfully");
     } catch (error) {
-      console.error("❌ Failed to create database indexes:", error);
+      logger.error("❌ Failed to create database indexes:", error);
     }
   },
 
@@ -169,21 +170,21 @@ export const dbUtils = {
 
 // Handle connection events
 mongoose.connection.on("connected", () => {
-  console.log("🟢 Mongoose connected to MongoDB");
+  logger.info("🟢 Mongoose connected to MongoDB");
 });
 
 mongoose.connection.on("error", (err) => {
-  console.error("🔴 Mongoose connection error:", err);
+  logger.error("🔴 Mongoose connection error:", err);
 });
 
 mongoose.connection.on("disconnected", () => {
-  console.log("🟡 Mongoose disconnected from MongoDB");
+  logger.info("🟡 Mongoose disconnected from MongoDB");
 });
 
 // Handle process termination
 process.on("SIGINT", async () => {
   await mongoose.connection.close();
-  console.log("🔴 Mongoose connection closed through app termination");
+  logger.info("🔴 Mongoose connection closed through app termination");
   process.exit(0);
 });
 

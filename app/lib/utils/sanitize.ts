@@ -65,8 +65,7 @@ export type SanitizeOptions = {
 // Regexes for quick removal of dangerous patterns
 const SCRIPT_TAG_REGEX = /<\s*script\b[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi;
 const EVENT_HANDLER_ATTR_REGEX = /\son[a-z]+\s*=\s*(['"]).*?\1/gi; // onload=, onclick=, etc.
-const JS_URL_ATTR_REGEX =
-  /(href|src)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi; // javascript: URLs
+const JS_URL_ATTR_REGEX = /(href|src)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi; // javascript: URLs
 const STYLE_ATTR_REGEX = /\sstyle\s*=\s*(['"]).*?\1/gi; // strip inline styles
 const DANGEROUS_CONTAINER_TAGS =
   /<\s*(iframe|object|embed|link|meta|base)\b[^>]*>([\s\S]*?)<\s*\/\s*\1\s*>/gi;
@@ -186,7 +185,10 @@ function buildAllowedAttributes(
       const eqIdx = rawValue.indexOf("=");
       let v = rawValue.slice(eqIdx + 1).trim();
       // remove surrounding quotes if present
-      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+      if (
+        (v.startsWith('"') && v.endsWith('"')) ||
+        (v.startsWith("'") && v.endsWith("'"))
+      ) {
         v = v.slice(1, -1);
       }
 
@@ -213,7 +215,7 @@ function buildAllowedAttributes(
           const parts = new Set(
             v
               .split(/\s+/)
-              .map((x) => x.trim())
+              .map((x: string) => x.trim())
               .filter(Boolean),
           );
           parts.add("noopener");

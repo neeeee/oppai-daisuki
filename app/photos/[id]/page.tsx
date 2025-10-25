@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image"
 
 interface Photo {
   _id: string;
@@ -49,12 +50,14 @@ export default function PhotoDetailPage() {
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const fetchPhoto = useCallback(async () => {
     if (!photoId) return;
     try {
       setLoading(true);
       setError(null);
+      setImageLoaded(false);
 
       const response = await fetch(`/api/photos/${photoId}`);
       const data = await response.json();
@@ -266,7 +269,7 @@ export default function PhotoDetailPage() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </div>
                 )}
-                <img
+                <Image
                   src={photo.imageUrl}
                   alt={photo.altText || photo.title || "Photo"}
                   className={`w-full h-auto ${imageLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import ImageModal from "../../../components/common/ImageModal";
 
 interface Photo {
@@ -380,7 +381,7 @@ export default function GalleryDetailPage() {
                     className="group relative aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-transform hover:scale-105"
                     onClick={() => handleImageClick(index)}
                   >
-                    <img
+                    <Image
                       src={photo.thumbnailUrl || photo.imageUrl}
                       alt={photo.altText || photo.title || `Photo ${index + 1}`}
                       className="w-full h-full object-cover transition-opacity group-hover:opacity-90"

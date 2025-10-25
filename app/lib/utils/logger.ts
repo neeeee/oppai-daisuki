@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * Lightweight logger utility for Next.js apps.
  *

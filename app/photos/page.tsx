@@ -33,6 +33,7 @@ interface Photo {
   idol?: {
     _id: string;
     name: string;
+    slug: string;
     stageName?: string;
   };
   gallery?: {
@@ -93,10 +94,6 @@ export default function PhotosPage() {
         params.append("tag", filterTag);
       }
 
-      if (filterCategory) {
-        params.append("category", filterCategory);
-      }
-
       if (!showAdult) {
         params.append("isAdult", "false");
       }
@@ -121,7 +118,6 @@ export default function PhotosPage() {
     sortOrder,
     searchTerm,
     filterTag,
-    filterCategory,
     showAdult,
     photos,
   ]);

@@ -52,7 +52,9 @@ export default function GenreTile({ genre }: GenreTileProps) {
     } = genre.contentCounts;
     const counts = { photos, videos, galleries, idols, news };
     const maxType = Object.entries(counts).reduce((a, b) =>
-      counts[a[0]] > counts[b[0]] ? a : b,
+      counts[a[0] as keyof typeof counts] > counts[b[0] as keyof typeof counts]
+        ? a
+        : b,
     );
     return { type: maxType[0], count: maxType[1] };
   };

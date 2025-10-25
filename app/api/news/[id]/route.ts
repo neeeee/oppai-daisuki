@@ -43,7 +43,11 @@ export async function GET(
     }
 
     // Check if article is published and public
-    if (news.status !== "published" || !news.isPublic) {
+    if (
+      (news as unknown as { status: string; isPublic: boolean }).status !==
+        "published" ||
+      !(news as unknown as { status: string; isPublic: boolean }).isPublic
+    ) {
       return NextResponse.json(
         { success: false, message: "Article not available" },
         { status: 404 },
@@ -51,14 +55,20 @@ export async function GET(
     }
 
     // Check if article is scheduled for future publication
-    if (news.scheduledAt && new Date(news.scheduledAt) > new Date()) {
+    if (
+      (news as unknown as { scheduledAt?: string }).scheduledAt &&
+      new Date((news as unknown as { scheduledAt?: string }).scheduledAt!) >
+        new Date()
+    ) {
       return NextResponse.json(
         { success: false, message: "Article not yet available" },
         { status: 404 },
       );
     }
 
-    const sanitizedContent = String(news?.content || "")
+    const sanitizedContent = String(
+      (news as unknown as { content?: string })?.content || "",
+    )
       .replace(/<\s*script\b[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, "")
       .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
       .replace(/(href|src)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi, '$1="#"');

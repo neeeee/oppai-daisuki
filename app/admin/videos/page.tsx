@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { UploadDropzone } from "../../lib/uploadthing";
 import TagInput from "../../../components/admin/TagInput";
 import logger from "@/lib/utils/logger";
+import Image from "next/image";
 
 type IdolOption = {
   _id: string;
@@ -442,7 +443,7 @@ export default function AdminVideosPage() {
                   </label>
                   {form.thumbnailUrl ? (
                     <div className="mt-1">
-                      <img
+                      <Image
                         src={form.thumbnailUrl}
                         alt="Thumbnail preview"
                         className="w-full max-w-xs h-32 object-cover rounded border mb-2"
@@ -553,7 +554,7 @@ export default function AdminVideosPage() {
                   </label>
                   {form.channelAvatar ? (
                     <div className="mt-1">
-                      <img
+                      <Image
                         src={form.channelAvatar}
                         alt="Channel avatar preview"
                         className="w-16 h-16 object-cover rounded-full border mb-2"
@@ -996,7 +997,7 @@ export default function AdminVideosPage() {
                   <div className="flex items-start gap-4">
                     {/* Thumbnail */}
                     <div className="flex-shrink-0">
-                      <img
+                      <Image
                         src={v.thumbnailUrl}
                         alt={v.title}
                         className="w-32 h-20 object-cover rounded"

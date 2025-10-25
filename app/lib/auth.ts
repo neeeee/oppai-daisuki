@@ -5,6 +5,7 @@ import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import bcrypt from "bcryptjs";
 import { MongoClient } from "mongodb";
 import { AdminUser, LoginAttempt } from "./types";
+import logger from "./utils/logger";
 
 const client = new MongoClient(process.env.MONGODB_URI!);
 const clientPromise = Promise.resolve(client);
@@ -117,16 +118,16 @@ const config: NextAuthConfig = {
         }
 
         if (process.env.NODE_ENV !== "production")
-          console.log(`[SECURITY] Admin login attempt from IP: ${ip}`);
+          logger.warn(`[SECURITY] Admin login attempt from IP: ${ip}`);
         if (process.env.NODE_ENV !== "production")
-          console.log(
+          logger.warn(
             `[SECURITY][DEBUG] Allowlist enabled: ${ALLOWED_IPS.length > 0}, size=${ALLOWED_IPS.length}, candidateIP="${ip}"`,
           );
 
         // Check IP allowlist
         if (!isIPAllowed(ip)) {
           if (process.env.NODE_ENV !== "production")
-            console.log(
+            logger.error(
               `[SECURITY] Blocked login attempt from unauthorized IP: ${ip} (allowlist size=${ALLOWED_IPS.length})`,
             );
           throw new Error("Access denied from this IP address");
@@ -136,7 +137,7 @@ const config: NextAuthConfig = {
         const rateLimit = checkRateLimit(ip);
         if (!rateLimit.allowed) {
           if (process.env.NODE_ENV !== "production")
-            console.log(`[SECURITY] Rate limit exceeded for IP: ${ip}`);
+            logger.error(`[SECURITY] Rate limit exceeded for IP: ${ip}`);
           throw new Error("Too many login attempts. Please try again later.");
         }
 
@@ -161,7 +162,7 @@ const config: NextAuthConfig = {
               passwordInput,
               ADMIN_PASSWORD_HASH,
             );
-          } catch (error) {
+          } catch {
             isPasswordValid = false;
           }
         }
@@ -169,7 +170,7 @@ const config: NextAuthConfig = {
         if (!isEmailValid || !isPasswordValid) {
           recordLoginAttempt(ip, false);
           if (process.env.NODE_ENV !== "production")
-            console.log(
+            logger.error(
               `[SECURITY] Failed login attempt for ${emailInput} from IP: ${ip}`,
             );
           throw new Error("Invalid credentials");
@@ -177,7 +178,7 @@ const config: NextAuthConfig = {
 
         recordLoginAttempt(ip, true);
         if (process.env.NODE_ENV !== "production")
-          console.log(
+          logger.info(
             `[SECURITY] Successful admin login for ${credentials.email} from IP: ${ip}`,
           );
 
@@ -229,18 +230,18 @@ const config: NextAuthConfig = {
     async signIn({ user }) {
       const adminUser = user as AdminUser;
       if (process.env.NODE_ENV !== "production")
-        console.log(
+        logger.info(
           `[SECURITY] Admin signed in: ${user.email} from IP: ${adminUser.ip}`,
         );
     },
     async signOut(message) {
       if ("token" in message && message.token) {
         if (process.env.NODE_ENV !== "production")
-          console.log(`[SECURITY] Admin signed out: ${message.token.email}`);
+          logger.info(`[SECURITY] Admin signed out: ${message.token.email}`);
       } else if ("session" in message && message.session) {
         if (process.env.NODE_ENV !== "production")
-          console.log(
-            `[SECURITY] Admin signed out: ${message.session.user?.email}`,
+          logger.info(
+            `[SECURITY] Admin signed out: ${(message.session as { user?: { email?: string } }).user?.email}`,
           );
       }
     },

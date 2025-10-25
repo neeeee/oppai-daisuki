@@ -30,6 +30,7 @@ interface Gallery {
     _id: string;
     name: string;
     stageName?: string;
+    slug: string;
   };
   genre?: {
     _id: string;

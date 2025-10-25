@@ -39,12 +39,14 @@ export async function GET(
     }
 
     // Increment view count
-    await Idol.findByIdAndUpdate(idol._id, { $inc: { viewCount: 1 } });
+    await Idol.findByIdAndUpdate((idol as { _id: unknown })._id, {
+      $inc: { viewCount: 1 },
+    });
 
     // Fetch related content in parallel
     const [photos, galleries, videos] = await Promise.all([
       // Get recent photos
-      Photo.find({ idol: idol._id, isPublic: true })
+      Photo.find({ idol: (idol as { _id: unknown })._id, isPublic: true })
         .sort({ createdAt: -1 })
         .limit(12)
         .select(
@@ -53,7 +55,7 @@ export async function GET(
         .lean(),
 
       // Get recent galleries
-      Gallery.find({ idol: idol._id, isPublic: true })
+      Gallery.find({ idol: (idol as { _id: unknown })._id, isPublic: true })
         .sort({ createdAt: -1 })
         .limit(8)
         .select(
@@ -62,7 +64,7 @@ export async function GET(
         .lean(),
 
       // Get recent videos for this idol
-      Video.find({ idol: idol._id, isPublic: true })
+      Video.find({ idol: (idol as { _id: unknown })._id, isPublic: true })
         .sort({ createdAt: -1 })
         .limit(6)
         .select(
@@ -79,13 +81,18 @@ export async function GET(
       totalViews:
         photos.reduce((acc, photo) => acc + (photo.viewCount || 0), 0) +
         galleries.reduce((acc, gallery) => acc + (gallery.viewCount || 0), 0) +
-        (idol.viewCount || 0),
+        ((idol as { viewCount?: number }).viewCount || 0),
     };
 
     // Get related idols (same genres)
     const relatedIdols = await Idol.find({
-      _id: { $ne: idol._id },
-      genres: { $in: idol.genres?.map((g: GenreReference) => g._id) || [] },
+      _id: { $ne: (idol as { _id: unknown })._id },
+      genres: {
+        $in:
+          (idol as { genres?: GenreReference[] }).genres?.map(
+            (g: GenreReference) => g._id,
+          ) || [],
+      },
       isPublic: true,
     })
       .limit(4)
@@ -97,7 +104,11 @@ export async function GET(
       data: {
         idol: {
           ...idol,
-          age: idol.birthDate ? calculateAge(idol.birthDate) : null,
+          age: (idol as { birthDate?: string }).birthDate
+            ? calculateAge(
+                new Date((idol as { birthDate?: string }).birthDate!),
+              )
+            : null,
         },
         content: {
           photos,

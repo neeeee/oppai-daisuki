@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface NewsArticle {
   _id: string;
@@ -118,9 +119,8 @@ export default function NewsPage() {
     sortBy,
     sortOrder,
     searchTerm,
-    categoryFilter,
-    statusFilter,
-    showAdult,
+    filterCategory,
+    filterTag,
     articles,
   ]);
 
@@ -340,7 +340,7 @@ export default function NewsPage() {
               ⭐ Featured Articles
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {featuredArticles.slice(0, 2).map((article, index) => (
+              {featuredArticles.slice(0, 2).map((article) => (
                 <Link
                   key={article._id}
                   href={`/news/${article.slug}`}
@@ -349,7 +349,7 @@ export default function NewsPage() {
                   <article className="bg-white dark:bg-neutral-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
                     {article.featuredImage && (
                       <div className="aspect-video overflow-hidden">
-                        <img
+                        <Image
                           src={article.featuredImage}
                           alt={article.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -377,7 +377,7 @@ export default function NewsPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           {article.author.avatar && (
-                            <img
+                            <Image
                               src={article.author.avatar}
                               alt={article.author.name}
                               className="w-8 h-8 rounded-full"
@@ -420,7 +420,7 @@ export default function NewsPage() {
                   <article className="bg-white dark:bg-neutral-800 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                     {article.featuredImage && (
                       <div className="aspect-[16/10] overflow-hidden">
-                        <img
+                        <Image
                           src={article.featuredImage}
                           alt={article.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -481,7 +481,7 @@ export default function NewsPage() {
                       {article.featuredImage && (
                         <div className="md:w-48 flex-shrink-0">
                           <div className="aspect-video overflow-hidden rounded-lg">
-                            <img
+                            <Image
                               src={article.featuredImage}
                               alt={article.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -537,7 +537,7 @@ export default function NewsPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             {article.author.avatar && (
-                              <img
+                              <Image
                                 src={article.author.avatar}
                                 alt={article.author.name}
                                 className="w-6 h-6 rounded-full"

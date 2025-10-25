@@ -167,53 +167,20 @@ GenreSchema.pre("save", async function (next) {
   next();
 });
 
-// Pre-deleteOne middleware to clean up references
-GenreSchema.pre(
-  "deleteOne",
-  { document: true, query: false },
-  async function (next) {
-    try {
-      // Remove from parent's subGenres array
-      if (this.parentGenre) {
-        await mongoose.model("Genre").findByIdAndUpdate(this.parentGenre, {
-          $pull: { subGenres: this._id },
-        });
-      }
-
-      // Update child genres to remove parent reference
-      await mongoose
-        .model("Genre")
-        .updateMany({ parentGenre: this._id }, { $unset: { parentGenre: 1 } });
-    } catch (error) {
-      logger.error("Error during genre cleanup:", error);
-    }
-    next();
-  },
-);
-
-// Pre-findOneAndDelete middleware to clean up references
-GenreSchema.pre("findOneAndDelete", async function (next) {
+// Pre-remove middleware to clean up references
+GenreSchema.pre("remove", async function (next) {
   try {
-    const docToDelete = await this.model.findOne(this.getFilter());
-
-    if (docToDelete) {
-      // Remove from parent's subGenres array
-      if (docToDelete.parentGenre) {
-        await mongoose
-          .model("Genre")
-          .findByIdAndUpdate(docToDelete.parentGenre, {
-            $pull: { subGenres: docToDelete._id },
-          });
-      }
-
-      // Update child genres to remove parent reference
-      await mongoose
-        .model("Genre")
-        .updateMany(
-          { parentGenre: docToDelete._id },
-          { $unset: { parentGenre: 1 } },
-        );
+    // Remove from parent's subGenres array
+    if (this.parentGenre) {
+      await mongoose.model("Genre").findByIdAndUpdate(this.parentGenre, {
+        $pull: { subGenres: this._id },
+      });
     }
+
+    // Update child genres to remove parent reference
+    await mongoose
+      .model("Genre")
+      .updateMany({ parentGenre: this._id }, { $unset: { parentGenre: 1 } });
   } catch (error) {
     logger.error("Error during genre cleanup:", error);
   }

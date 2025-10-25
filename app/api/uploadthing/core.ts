@@ -17,7 +17,7 @@ export const ourFileRouter = {
       return {};
     })
     .onUploadComplete(async ({ file }) => {
-      logger.log("[UPLOAD] video uploaded:", file.url);
+      logger.info("[UPLOAD] video uploaded:", file.url);
       return { uploadedBy: "admin" };
     }),
 
@@ -32,7 +32,7 @@ export const ourFileRouter = {
       return {};
     })
     .onUploadComplete(async ({ file }) => {
-      logger.log("[UPLOAD] image uploaded:", file.url);
+      logger.info("[UPLOAD] image uploaded:", file.url);
       return { uploadedBy: "admin" };
     }),
 } satisfies FileRouter;

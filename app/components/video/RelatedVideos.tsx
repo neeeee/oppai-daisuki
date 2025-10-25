@@ -38,7 +38,7 @@ export default function RelatedVideos({
         // Filter out current video and use deterministic shuffling based on video IDs
         const filtered = data.data.videos
           .filter((video: Video) => video._id !== currentVideoId)
-          .sort((a, b) => {
+          .sort((a: Video, b: Video) => {
             // Use video ID hash for deterministic but pseudo-random ordering
             const hashA = a._id
               .split("")
@@ -56,7 +56,7 @@ export default function RelatedVideos({
     } finally {
       setLoading(false);
     }
-  }, [videoId]);
+  }, [currentVideoId, limit]);
 
   useEffect(() => {
     fetchRelatedVideos();
@@ -105,7 +105,7 @@ export default function RelatedVideos({
             className="flex space-x-3 group hover:bg-gray-50 p-2 rounded-lg transition-colors"
           >
             <div className="relative flex-shrink-0">
-              <img
+              <Image
                 src={video.thumbnailUrl}
                 alt={video.title}
                 className="w-40 h-24 object-cover rounded group-hover:scale-105 transition-transform"

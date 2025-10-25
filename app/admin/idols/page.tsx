@@ -325,7 +325,9 @@ export default function AdminIdolsPage() {
       bio: form.bio || "",
       profileImage: form.profileImage?.trim() || "",
       coverImage: form.coverImage?.trim() || "",
-      birthDate: form.birthDate ? new Date(form.birthDate) : undefined,
+      birthDate: form.birthDate
+        ? new Date(form.birthDate).toISOString()
+        : undefined,
       birthPlace: form.birthPlace?.trim() || "",
       height: form.height ? Number(form.height) : undefined,
       measurements: {
@@ -346,7 +348,9 @@ export default function AdminIdolsPage() {
       specialSkills: (form.specialSkills || [])
         .map((s) => s.trim())
         .filter(Boolean),
-      careerStart: form.careerStart ? new Date(form.careerStart) : undefined,
+      careerStart: form.careerStart
+        ? new Date(form.careerStart).toISOString()
+        : undefined,
       status: form.status,
       agency: form.agency?.trim() || "",
       socialMedia: {
@@ -718,7 +722,10 @@ export default function AdminIdolsPage() {
               <select
                 value={form.status || "active"}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, status: e.target.value }))
+                  setForm((p) => ({
+                    ...p,
+                    status: e.target.value as "active" | "retired" | "hiatus",
+                  }))
                 }
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               >

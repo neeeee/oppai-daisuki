@@ -1033,7 +1033,7 @@ export default function AdminPhotosPage() {
                 checked={selectedIds.has(p._id)}
                 onChange={() => toggleSelect(p._id)}
               />
-              <img
+              <Image
                 src={p.thumbnailUrl}
                 alt={p.altText || p.title}
                 className="w-28 h-18 object-cover rounded border"

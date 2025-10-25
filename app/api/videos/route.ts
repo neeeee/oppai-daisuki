@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
     logger.error("Error fetching videos:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch videos" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -105,22 +105,44 @@ export async function POST(request: NextRequest) {
 
     const session = await auth();
     if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
     }
     const origin = request.headers.get("origin");
     const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
     if (origin && !origin.startsWith(baseUrl)) {
-      return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
     }
 
     const body = await request.json();
 
     // Validate required fields
-    const { title, idol, thumbnailUrl, videoSourceUrl, channelAvatar, channelName, duration } = body;
-    if (!title || !idol || !thumbnailUrl || !videoSourceUrl || !channelAvatar || !channelName || !duration) {
+    const {
+      title,
+      idol,
+      thumbnailUrl,
+      videoSourceUrl,
+      channelAvatar,
+      channelName,
+      duration,
+    } = body;
+    if (
+      !title ||
+      !idol ||
+      !thumbnailUrl ||
+      !videoSourceUrl ||
+      !channelAvatar ||
+      !channelName ||
+      !duration
+    ) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -138,7 +160,7 @@ export async function POST(request: NextRequest) {
     if (video.genres && video.genres.length > 0) {
       await Genre.updateMany(
         { _id: { $in: video.genres } },
-        { $inc: { "contentCounts.videos": 1 } }
+        { $inc: { "contentCounts.videos": 1 } },
       );
     }
 
@@ -152,7 +174,7 @@ export async function POST(request: NextRequest) {
         success: true,
         data: populatedVideo,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error: unknown) {
     logger.error("Error creating video:", error);
@@ -161,20 +183,20 @@ export async function POST(request: NextRequest) {
     if (err.name === "ValidationError") {
       return NextResponse.json(
         { success: false, error: "Validation failed", details: err.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (error.code === 11000) {
+    if ((error as { code?: number }).code === 11000) {
       return NextResponse.json(
         { success: false, error: "A video with this slug already exists" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     return NextResponse.json(
       { success: false, error: "Failed to create video" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -185,12 +207,18 @@ export async function PUT(request: NextRequest) {
 
     const session = await auth();
     if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
     }
     const origin = request.headers.get("origin");
     const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
     if (origin && !origin.startsWith(baseUrl)) {
-      return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -199,7 +227,7 @@ export async function PUT(request: NextRequest) {
     if (!id) {
       return NextResponse.json(
         { success: false, error: "Video ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -210,7 +238,7 @@ export async function PUT(request: NextRequest) {
     if (!currentVideo) {
       return NextResponse.json(
         { success: false, error: "Video not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -225,7 +253,7 @@ export async function PUT(request: NextRequest) {
     if (!updatedVideo) {
       return NextResponse.json(
         { success: false, error: "Video not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -244,25 +272,34 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update genre counts if genres changed
-    const oldGenres = currentVideo.genres?.map((g: mongoose.Types.ObjectId | { _id: mongoose.Types.ObjectId }) =>
-      typeof g === 'object' && '_id' in g ? g._id.toString() : g.toString()
-    ) || [];
+    const oldGenres =
+      currentVideo.genres?.map((g: unknown) => {
+        if (typeof g === "object" && g !== null && "_id" in g) {
+          return (g as { _id: mongoose.Types.ObjectId })._id.toString();
+        }
+        return (g as mongoose.Types.ObjectId).toString();
+      }) || [];
     const newGenres =
-      updatedVideo.genres?.map((g: mongoose.Types.ObjectId | { _id: mongoose.Types.ObjectId }) =>
-        typeof g === 'object' && '_id' in g ? g._id.toString() : g.toString()
-      ) || [];
+      updatedVideo.genres?.map((g: unknown) => {
+        if (typeof g === "object" && g !== null && "_id" in g) {
+          return (g as { _id: mongoose.Types.ObjectId })._id.toString();
+        }
+        return (g as mongoose.Types.ObjectId).toString();
+      }) || [];
 
     const addedGenres = newGenres.filter((g: string) => !oldGenres.includes(g));
-    const removedGenres = oldGenres.filter((g: string) => !newGenres.includes(g));
+    const removedGenres = oldGenres.filter(
+      (g: string) => !newGenres.includes(g),
+    );
 
     await Promise.all([
       Genre.updateMany(
         { _id: { $in: addedGenres } },
-        { $inc: { "contentCounts.videos": 1 } }
+        { $inc: { "contentCounts.videos": 1 } },
       ),
       Genre.updateMany(
         { _id: { $in: removedGenres } },
-        { $inc: { "contentCounts.videos": -1 } }
+        { $inc: { "contentCounts.videos": -1 } },
       ),
     ]);
 
@@ -277,7 +314,7 @@ export async function PUT(request: NextRequest) {
     if (err.name === "ValidationError") {
       return NextResponse.json(
         { success: false, error: "Validation failed", details: err.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -285,13 +322,13 @@ export async function PUT(request: NextRequest) {
     if (errWithCode.code === 11000) {
       return NextResponse.json(
         { success: false, error: "A video with this slug already exists" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     return NextResponse.json(
       { success: false, error: "Failed to update video" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -302,12 +339,18 @@ export async function DELETE(request: NextRequest) {
 
     const session = await auth();
     if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
     }
     const origin = request.headers.get("origin");
     const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
     if (origin && !origin.startsWith(baseUrl)) {
-      return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -316,7 +359,7 @@ export async function DELETE(request: NextRequest) {
     if (!ids) {
       return NextResponse.json(
         { success: false, error: "Video IDs are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -349,10 +392,12 @@ export async function DELETE(request: NextRequest) {
     // Update counters
     await Promise.all([
       ...Array.from(idolUpdates.entries()).map(([idolId, count]) =>
-        Idol.findByIdAndUpdate(idolId, { $inc: { videoCount: -count } })
+        Idol.findByIdAndUpdate(idolId, { $inc: { videoCount: -count } }),
       ),
       ...Array.from(genreUpdates.entries()).map(([genreId, count]) =>
-        Genre.findByIdAndUpdate(genreId, { $inc: { "contentCounts.videos": -count } })
+        Genre.findByIdAndUpdate(genreId, {
+          $inc: { "contentCounts.videos": -count },
+        }),
       ),
     ]);
 
@@ -365,7 +410,7 @@ export async function DELETE(request: NextRequest) {
     logger.error("Error deleting videos:", error);
     return NextResponse.json(
       { success: false, error: "Failed to delete videos" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

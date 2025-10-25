@@ -291,9 +291,13 @@ NewsSchema.pre("save", function (next) {
   // Increment revision count
   if (this.isModified() && !this.isNew) {
     if (!this.metadata) {
-      this.metadata = {};
+      this.metadata = {
+        revisionCount: 0,
+        isExclusive: false,
+      };
+    } else {
+      this.metadata.revisionCount = (this.metadata.revisionCount || 0) + 1;
     }
-    this.metadata.revisionCount = (this.metadata.revisionCount || 0) + 1;
   }
 
   next();

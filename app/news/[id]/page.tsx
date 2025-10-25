@@ -5,6 +5,7 @@ import logger from "@/lib/utils/logger";
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Calendar, User, Eye, Heart, Share2, Clock, Tag } from "lucide-react";
 
 interface NewsArticle {
@@ -74,7 +75,6 @@ export default function NewsDetailPage() {
 
       if (data.success) {
         setArticle(data.data);
-        // Increment view count
         incrementViewCount();
       } else {
         setError(data.message || "Article not found");
@@ -99,7 +99,7 @@ export default function NewsDetailPage() {
         },
         body: JSON.stringify({ action: "view" }),
       });
-    } catch (error) {
+    } catch {
       // Silently fail - view count increment is not critical
     }
   }, [newsId]);
@@ -356,7 +356,7 @@ export default function NewsDetailPage() {
           {/* Featured Image */}
           {article.featuredImage && (
             <div className="px-6">
-              <img
+              <Image
                 src={article.featuredImage}
                 alt={article.title}
                 className="w-full h-64 md:h-80 object-cover rounded-lg"
@@ -384,7 +384,7 @@ export default function NewsDetailPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {article.images.map((image, index) => (
                     <div key={index} className="space-y-2">
-                      <img
+                      <Image
                         src={image.url}
                         alt={image.altText || `Image ${index + 1}`}
                         className="w-full h-48 object-cover rounded-lg"
@@ -414,7 +414,7 @@ export default function NewsDetailPage() {
                       className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-3 py-2 rounded-lg transition-colors"
                     >
                       {idol.avatar && (
-                        <img
+                        <Image
                           src={idol.avatar}
                           alt={idol.name}
                           className="w-6 h-6 rounded-full object-cover"
@@ -476,7 +476,7 @@ export default function NewsDetailPage() {
               </h3>
               <div className="flex items-center gap-4">
                 {article.author.avatar && (
-                  <img
+                  <Image
                     src={article.author.avatar}
                     alt={article.author.name}
                     className="w-12 h-12 rounded-full object-cover"

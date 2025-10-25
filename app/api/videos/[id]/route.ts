@@ -52,7 +52,7 @@ export async function PUT(
     if (!video) {
       return NextResponse.json({ success: false }, { status: 404 });
     }
-    return NextResponse.json({ success: true, data: updated });
+    return NextResponse.json({ success: true, data: video });
   } catch {
     return NextResponse.json({ success: false }, { status: 400 });
   }

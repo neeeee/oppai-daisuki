@@ -36,7 +36,7 @@ export async function GET(
     }
 
     // Check if photo is public (unless admin access)
-    if (!photo.isPublic) {
+    if (!(photo as unknown as { isPublic: boolean }).isPublic) {
       return NextResponse.json(
         { success: false, error: "Photo not available" },
         { status: 403 },

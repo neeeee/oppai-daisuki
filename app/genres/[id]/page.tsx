@@ -53,6 +53,7 @@ type Video = {
   duration: string;
   viewCount: number;
   thumbnailUrl: string;
+  videoSourceUrl: string;
   createdAt: string;
 };
 
@@ -64,8 +65,16 @@ type Photo = {
   slug: string;
   viewCount: number;
   likeCount: number;
-  createdAt: string;
+  downloadCount: number;
+  uploadDate: string;
+  isPublic: boolean;
   isAdult: boolean;
+  metadata: {
+    featured: boolean;
+    trending: boolean;
+    qualityScore: number;
+  };
+  createdAt: string;
   idol?: {
     _id: string;
     name: string;
@@ -79,10 +88,23 @@ type Gallery = {
   title: string;
   coverPhoto?: string;
   slug: string;
+  photos: string[];
   photoCount: number;
   viewCount: number;
   likeCount: number;
+  downloadCount: number;
   createdAt: string;
+  updatedAt: string;
+  isPublic: boolean;
+  isAdult: boolean;
+  tags?: string[];
+  photographer?: string;
+  location?: string;
+  metadata: {
+    featured: boolean;
+    trending: boolean;
+    qualityScore: number;
+  };
   description?: string;
   idol?: {
     _id: string;
@@ -103,9 +125,18 @@ type Idol = {
   photoCount: number;
   videoCount: number;
   galleryCount: number;
+  contentCounts: {
+    photos: number;
+    videos: number;
+    galleries: number;
+  };
+  isActive: boolean;
+  isRetired: boolean;
   metadata: {
     featured: boolean;
     verified: boolean;
+    trending: boolean;
+    popularityScore: number;
   };
 };
 

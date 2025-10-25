@@ -13,11 +13,12 @@
  *     if (originCheck) return originCheck; // Bad origin
  *
  *     // ... perform write action
- *     return jsonOk({ ... }, 201);
+ *     return jsonOk({ message: "success" });
  *   }
  */
 
 import { NextResponse } from "next/server";
+import { Session } from "next-auth";
 import { auth } from "./auth";
 
 export const isProd = process.env.NODE_ENV === "production";
@@ -27,10 +28,13 @@ export const isProd = process.env.NODE_ENV === "production";
  * - Returns a NextResponse(401) when unauthorized.
  * - Returns the session object when authorized.
  */
-export async function requireAdmin(): Promise<Response | Awaited<ReturnType<typeof auth>>> {
+export async function requireAdmin(): Promise<Response | Session> {
   const session = await auth().catch(() => null);
   if (!session || session.user?.role !== "admin") {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { success: false, error: "Unauthorized" },
+      { status: 401 },
+    );
   }
   return session;
 }
@@ -78,7 +82,10 @@ export function assertSameOrigin(
   }
 
   if (!candidateOrigin || !allowed.has(candidateOrigin)) {
-    return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
+    return NextResponse.json(
+      { success: false, error: "Bad origin" },
+      { status: 403 },
+    );
   }
 
   return null;
@@ -248,7 +255,10 @@ export function escapeHtml(input: string): string {
 /**
  * JSON response helpers.
  */
-export function jsonOk(data: unknown, init?: number | ResponseInit): NextResponse {
+export function jsonOk(
+  data: unknown,
+  init?: number | ResponseInit,
+): NextResponse {
   return NextResponse.json(
     { success: true, data },
     typeof init === "number" ? { status: init } : init,
@@ -264,9 +274,13 @@ export function jsonError(
       ? init
       : (init as ResponseInit | undefined)?.status || 400;
   const body =
-    typeof error === "string" ? { success: false, error } : { success: false, ...error };
+    typeof error === "string"
+      ? { success: false, error }
+      : { success: false, ...error };
   return NextResponse.json(
     body,
-    typeof init === "number" ? { status } : { ...(init as ResponseInit), status },
+    typeof init === "number"
+      ? { status }
+      : { ...(init as ResponseInit), status },
   );
 }

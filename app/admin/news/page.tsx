@@ -354,8 +354,12 @@ export default function AdminNewsPage() {
       isBreaking: !!form.isBreaking,
       priority: Number(form.priority || 0),
       // Keep scheduled/published only if set
-      publishedAt: form.publishedAt ? new Date(form.publishedAt) : undefined,
-      scheduledAt: form.scheduledAt ? new Date(form.scheduledAt) : undefined,
+      publishedAt: form.publishedAt
+        ? new Date(form.publishedAt).toISOString()
+        : undefined,
+      scheduledAt: form.scheduledAt
+        ? new Date(form.scheduledAt).toISOString()
+        : undefined,
     };
 
     const saved = await upsertArticle(payload);
@@ -674,7 +678,20 @@ Write your article in Markdown..."
               <select
                 value={form.category}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, category: String(e.target.value) }))
+                  setForm((p) => ({
+                    ...p,
+                    category: e.target.value as
+                      | "general"
+                      | "releases"
+                      | "events"
+                      | "interviews"
+                      | "announcements"
+                      | "reviews"
+                      | "industry"
+                      | "behind-the-scenes"
+                      | "personal"
+                      | "collaborations",
+                  }))
                 }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
               >
@@ -694,7 +711,14 @@ Write your article in Markdown..."
               <select
                 value={form.status}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, status: String(e.target.value) }))
+                  setForm((p) => ({
+                    ...p,
+                    status: e.target.value as
+                      | "draft"
+                      | "published"
+                      | "archived"
+                      | "scheduled",
+                  }))
                 }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
               >
@@ -1091,7 +1115,7 @@ Write your article in Markdown..."
             return (
               <div key={a._id} className="px-4 py-3 flex items-start gap-4">
                 {a.featuredImage ? (
-                  <img
+                  <Image
                     src={a.featuredImage}
                     alt={a.title}
                     className="w-24 h-16 object-cover rounded border"

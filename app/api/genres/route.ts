@@ -3,6 +3,7 @@ import dbConnect from "@/lib/mongodb";
 import Genre from "@/models/Genre";
 import { auth } from "@/lib/auth";
 import logger from "@/lib/utils/logger";
+import mongoose from "mongoose";
 
 interface AuthenticatedUser {
   role?: string;
@@ -110,12 +111,18 @@ export async function POST(request: NextRequest) {
 
     const session = await auth();
     if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
     }
     const origin = request.headers.get("origin");
     const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
     if (origin && !origin.startsWith(baseUrl)) {
-      return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
     }
 
     const body = await request.json();
@@ -178,12 +185,18 @@ export async function PUT(request: NextRequest) {
 
     const session = await auth();
     if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
     }
     const origin = request.headers.get("origin");
     const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
     if (origin && !origin.startsWith(baseUrl)) {
-      return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -251,12 +264,18 @@ export async function DELETE(request: NextRequest) {
 
     const session = await auth();
     if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
     }
     const origin = request.headers.get("origin");
     const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
     if (origin && !origin.startsWith(baseUrl)) {
-      return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
     }
 
     const { searchParams } = new URL(request.url);

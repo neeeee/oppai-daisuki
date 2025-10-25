@@ -28,20 +28,10 @@ interface Photo {
   thumbnailUrl?: string;
   altText?: string;
   photographer?: string;
-  location?: string;
-  tags?: string[];
-  dimensions?: {
-    width: number;
-    height: number;
-  };
-  fileSize?: number;
-  captureDate?: string;
-  uploadDate: string;
   viewCount: number;
   likeCount: number;
   downloadCount: number;
   isPublic: boolean;
-  isAdult: boolean;
   metadata: {
     featured: boolean;
     trending: boolean;
@@ -51,12 +41,12 @@ interface Photo {
     _id: string;
     name: string;
     stageName?: string;
-    slug: string;
   };
   gallery?: {
     _id: string;
     title: string;
   };
+  createdAt: string;
 }
 
 interface Gallery {
@@ -65,34 +55,23 @@ interface Gallery {
   description?: string;
   slug: string;
   coverPhoto?: string;
-  photos: string[];
   photoCount: number;
   viewCount: number;
   likeCount: number;
-  downloadCount: number;
-  createdAt: string;
-  updatedAt: string;
-  isPublic: boolean;
-  isAdult: boolean;
-  tags?: string[];
-  photographer?: string;
-  location?: string;
   metadata: {
     featured: boolean;
     trending: boolean;
-    qualityScore: number;
   };
   idol?: {
     _id: string;
     name: string;
     stageName?: string;
-    slug: string;
   };
   genre?: {
     _id: string;
     name: string;
-    color: string;
   };
+  createdAt: string;
 }
 
 interface NewsArticle {

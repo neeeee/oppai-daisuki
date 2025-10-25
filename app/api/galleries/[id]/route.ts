@@ -45,7 +45,7 @@ export async function GET(
 
     // Get all photos in this gallery using the gallery's ObjectId
     const photos = await Photo.find({
-      gallery: gallery._id,
+      gallery: (gallery as { _id: unknown })._id,
       isPublic: true,
     })
       .select("_id title imageUrl thumbnailUrl altText dimensions fileSize")
@@ -53,11 +53,11 @@ export async function GET(
       .lean();
 
     // Update photo count if it doesn't match
-    if (gallery.photoCount !== photos.length) {
-      await Gallery.findByIdAndUpdate(gallery._id, {
+    if ((gallery as { photoCount?: number }).photoCount !== photos.length) {
+      await Gallery.findByIdAndUpdate((gallery as { _id: unknown })._id, {
         photoCount: photos.length,
       });
-      gallery.photoCount = photos.length;
+      // Note: photoCount will be updated in the database, local object not modified
     }
 
     return NextResponse.json({

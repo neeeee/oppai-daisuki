@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { X, ChevronLeft, ChevronRight, Download, Heart, Share2 } from "lucide-react";
+import Image from "next/image";
 
 interface Image {
   _id: string;
@@ -130,7 +131,7 @@ export default function ImageModal({
 
       {/* Image Container */}
       <div className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center">
-        <img
+        <Image
           ref={imageRef}
           src={currentImage.imageUrl}
           alt={currentImage.altText || currentImage.title || "Gallery image"}
@@ -229,7 +230,7 @@ export default function ImageModal({
                     : "opacity-60 hover:opacity-100"
                 }`}
               >
-                <img
+                <Image
                   src={image.thumbnailUrl || image.imageUrl}
                   alt={image.altText || `Thumbnail ${index + 1}`}
                   className="w-full h-full object-cover"

@@ -47,7 +47,7 @@ export async function GET(
 
     // Get all photos in this gallery
     const photos = await Photo.find({
-      gallery: gallery._id,
+      gallery: (gallery as { _id: unknown })._id,
       isPublic: true,
     })
       .select("_id title imageUrl thumbnailUrl altText")
@@ -64,7 +64,10 @@ export async function GET(
 
     // Create ZIP file
     const zip = new JSZip();
-    const galleryFolder = zip.folder(gallery.title || `gallery-${gallery._id}`);
+    const galleryFolder = zip.folder(
+      (gallery as { title?: string; _id: unknown }).title ||
+        `gallery-${(gallery as { _id: unknown })._id}`,
+    );
 
     // Track successful and failed downloads
     const downloadPromises = photos.map(async (photo, index) => {
@@ -100,11 +103,11 @@ export async function GET(
     }
 
     // Add a text file with gallery info
-    const infoContent = `Gallery: ${gallery.title || "Untitled Gallery"}
-Description: ${gallery.description || "No description"}
+    const infoContent = `Gallery: ${(gallery as { title?: string }).title || "Untitled Gallery"}
+Description: ${(gallery as { description?: string }).description || "No description"}
 Total Photos: ${photos.length}
 Successfully Downloaded: ${successfulDownloads.length}
-Created: ${gallery.createdAt ? new Date(gallery.createdAt).toLocaleDateString() : "Unknown"}
+Created: ${(gallery as { createdAt?: string }).createdAt ? new Date((gallery as { createdAt?: string }).createdAt!).toLocaleDateString() : "Unknown"}
 
 Photos in this gallery:
 ${photos.map((photo, index) => `${index + 1}. ${photo.title || "Untitled"}`).join("\n")}
@@ -128,12 +131,13 @@ ${photos.map((photo, index) => `${index + 1}. ${photo.title || "Untitled"}`).joi
     }
 
     // Return ZIP file
-    const fileName = `${gallery.title || `gallery-${gallery._id}`}.zip`.replace(
-      /[^\w\-_.]/g,
-      "_",
-    );
+    const fileName =
+      `${(gallery as { title?: string; _id: unknown }).title || `gallery-${(gallery as { _id: unknown })._id}`}.zip`.replace(
+        /[^\w\-_.]/g,
+        "_",
+      );
 
-    return new NextResponse(zipBuffer, {
+    return new NextResponse(Buffer.from(zipBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/zip",

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import VideoUploader from "./VideoUploader";
+import Image from "next/image";
 
 interface VideoFormData {
   title: string;
@@ -177,7 +178,7 @@ export default function VideoForm({
           </div>
           {formData.thumbnailUrl && (
             <div className="mt-2">
-              <img
+              <Image
                 src={formData.thumbnailUrl}
                 alt="Thumbnail preview"
                 className="w-32 h-20 object-cover rounded border"
@@ -216,7 +217,7 @@ export default function VideoForm({
             />
             {formData.channelAvatar && (
               <div className="mt-2">
-                <img
+                <Image
                   src={formData.channelAvatar}
                   alt="Avatar preview"
                   className="w-8 h-8 rounded-full border"

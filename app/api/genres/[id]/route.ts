@@ -46,12 +46,16 @@ export async function GET(
       photos?: Array<Record<string, unknown>>;
       galleries?: Array<Record<string, unknown>>;
       idols?: Array<Record<string, unknown>>;
+      videos?: Array<Record<string, unknown>>;
     } = {};
     let totalCount = 0;
 
     if (contentType === "all" || contentType === "photos") {
       const [photos, photosCount] = await Promise.all([
-        Photo.find({ category: genre.name, isPublic: true })
+        Photo.find({
+          category: (genre as unknown as { name: string }).name,
+          isPublic: true,
+        })
           .sort({ createdAt: -1 })
           .skip(contentType === "photos" ? skip : 0)
           .limit(contentType === "photos" ? limit : 12)
@@ -60,7 +64,10 @@ export async function GET(
           )
           .populate("idol", "name stageName slug")
           .lean(),
-        Photo.countDocuments({ category: genre.name, isPublic: true }),
+        Photo.countDocuments({
+          category: (genre as unknown as { name: string }).name,
+          isPublic: true,
+        }),
       ]);
       content.photos = photos;
       if (contentType === "photos") totalCount = photosCount;
@@ -68,7 +75,10 @@ export async function GET(
 
     if (contentType === "all" || contentType === "galleries") {
       const [galleries, galleriesCount] = await Promise.all([
-        Gallery.find({ genre: genre._id, isPublic: true })
+        Gallery.find({
+          genre: (genre as unknown as { _id: unknown })._id,
+          isPublic: true,
+        })
           .sort({ createdAt: -1 })
           .skip(contentType === "galleries" ? skip : 0)
           .limit(contentType === "galleries" ? limit : 12)
@@ -77,7 +87,10 @@ export async function GET(
           )
           .populate("idol", "name stageName slug")
           .lean(),
-        Gallery.countDocuments({ genre: genre._id, isPublic: true }),
+        Gallery.countDocuments({
+          genre: (genre as unknown as { _id: unknown })._id,
+          isPublic: true,
+        }),
       ]);
       content.galleries = galleries;
       if (contentType === "galleries") totalCount = galleriesCount;
@@ -85,7 +98,10 @@ export async function GET(
 
     if (contentType === "all" || contentType === "idols") {
       const [idols, idolsCount] = await Promise.all([
-        Idol.find({ genres: genre._id, isPublic: true })
+        Idol.find({
+          genres: (genre as unknown as { _id: unknown })._id,
+          isPublic: true,
+        })
           .sort({ viewCount: -1 })
           .skip(contentType === "idols" ? skip : 0)
           .limit(contentType === "idols" ? limit : 20)
@@ -93,7 +109,10 @@ export async function GET(
             "name stageName slug profileImage coverImage viewCount photoCount videoCount galleryCount metadata",
           )
           .lean(),
-        Idol.countDocuments({ genres: genre._id, isPublic: true }),
+        Idol.countDocuments({
+          genres: (genre as unknown as { _id: unknown })._id,
+          isPublic: true,
+        }),
       ]);
       content.idols = idols;
       if (contentType === "idols") totalCount = idolsCount;
