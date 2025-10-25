@@ -155,9 +155,4 @@ VideoSchema.pre("save", function (next) {
   next();
 });
 
-// Delete the model from cache if it exists to ensure fresh schema
-if (mongoose.models.Video) {
-  delete mongoose.models.Video;
-}
-
-export default mongoose.model("Video", VideoSchema);
+export default mongoose.models.Video || mongoose.model("Video", VideoSchema);

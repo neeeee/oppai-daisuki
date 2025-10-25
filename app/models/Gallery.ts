@@ -115,9 +115,22 @@ GallerySchema.index({ "metadata.qualityScore": -1 });
 GallerySchema.index({ idol: 1 });
 GallerySchema.index({ genre: 1 });
 
-// Pre-save middleware to generate slug from title
+// Pre-validate middleware to generate slug BEFORE validation runs
+GallerySchema.pre("validate", function (next) {
+  if (this.title && (!this.slug || this.isModified("title"))) {
+    this.slug = this.title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+  next();
+});
+
+// Pre-save middleware as backup
 GallerySchema.pre("save", function (next) {
-  if (this.isModified("title") || this.isNew) {
+  if (this.title && (!this.slug || this.isModified("title"))) {
     this.slug = this.title
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, "")

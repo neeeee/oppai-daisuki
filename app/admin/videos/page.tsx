@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { UploadDropzone } from "../../lib/uploadthing";
 import TagInput from "../../../components/admin/TagInput";
-
-type ObjectId = string;
+import logger from "@/lib/utils/logger";
 
 type IdolOption = {
   _id: string;
@@ -70,7 +70,7 @@ type VideoForm = {
   isAdult: boolean;
   isFeatured: boolean;
   resolution: string;
-  fileSize: number | undefined;
+  fileSize: undefined | number;
 };
 
 const CATEGORIES = [
@@ -89,7 +89,7 @@ const CATEGORIES = [
 const RESOLUTIONS = ["480p", "720p", "1080p", "1440p", "4K", "8K"];
 
 export default function AdminVideosPage() {
-  const { data: session, status } = useSession();
+  useSession();
 
   const [videos, setVideos] = useState<Video[]>([]);
   const [idols, setIdols] = useState<IdolOption[]>([]);
@@ -134,22 +134,7 @@ export default function AdminVideosPage() {
 
   const [form, setForm] = useState<VideoForm>(emptyForm);
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      window.location.href = "/admin/login";
-    }
-  }, [status]);
-
-  useEffect(() => {
-    fetchIdols();
-    fetchGenres();
-  }, []);
-
-  useEffect(() => {
-    fetchVideos();
-  }, [page, limit, search, idolFilter, genreFilter, categoryFilter, sortBy, sortOrder]);
-
-  const fetchIdols = async () => {
+  const fetchIdols = useCallback(async () => {
     try {
       setLoadingIdols(true);
       const res = await fetch("/api/idols?limit=1000");
@@ -158,13 +143,13 @@ export default function AdminVideosPage() {
         setIdols(data.data || []);
       }
     } catch (error) {
-      console.error("Error fetching idols:", error);
+      logger.error("Error fetching idols:", error);
     } finally {
       setLoadingIdols(false);
     }
-  };
+  }, []);
 
-  const fetchGenres = async () => {
+  const fetchGenres = useCallback(async () => {
     try {
       setLoadingGenres(true);
       const res = await fetch("/api/genres?limit=1000");
@@ -173,13 +158,13 @@ export default function AdminVideosPage() {
         setGenres(data.data || []);
       }
     } catch (error) {
-      console.error("Error fetching genres:", error);
+      logger.error("Error fetching genres:", error);
     } finally {
       setLoadingGenres(false);
     }
-  };
+  }, []);
 
-  const fetchVideos = async () => {
+  const fetchVideos = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -202,11 +187,20 @@ export default function AdminVideosPage() {
         setTotalItems(data.pagination?.totalItems || 0);
       }
     } catch (error) {
-      console.error("Error fetching videos:", error);
+      logger.error("Error fetching videos:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit, search, idolFilter, genreFilter, categoryFilter, sortBy, sortOrder]);
+
+  useEffect(() => {
+    fetchIdols();
+    fetchGenres();
+  }, [fetchIdols, fetchGenres]);
+
+  useEffect(() => {
+    fetchVideos();
+  }, [fetchVideos]);
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(totalItems / limit)),
@@ -232,7 +226,8 @@ export default function AdminVideosPage() {
       duration: video.duration || "",
       thumbnailUrl: video.thumbnailUrl || "",
       videoSourceUrl: video.videoSourceUrl || "",
-      idol: typeof video.idol === "string" ? video.idol : video.idol?._id || null,
+      idol:
+        typeof video.idol === "string" ? video.idol : video.idol?._id || null,
       genres: (video.genres || []).map((g) =>
         typeof g === "string" ? g : g._id,
       ),
@@ -263,7 +258,7 @@ export default function AdminVideosPage() {
       fetchVideos();
     } catch (error) {
       alert("Error deleting video");
-      console.error(error);
+      logger.error("Error deleting video", error);
     }
   };
 
@@ -276,26 +271,32 @@ export default function AdminVideosPage() {
 
     setIsSubmitting(true);
     try {
+      // Get the selected idol for auto-populated fields
+      const selectedIdol = idols.find((idol) => idol._id === form.idol);
+
       const payload = {
         title: form.title.trim(),
         description: form.description?.trim() || "",
-        channelAvatar: form.channelAvatar.trim(),
-        channelName: form.channelName.trim(),
-        duration: form.duration.trim(),
+        channelAvatar:
+          form.channelAvatar ||
+          selectedIdol?.profileImage ||
+          "https://via.placeholder.com/64x64?text=Avatar",
+        channelName:
+          form.channelName ||
+          (selectedIdol ? selectedIdol.stageName || selectedIdol.name : ""),
+        duration: form.duration.trim() || "0:00", // Default if not provided
         thumbnailUrl: form.thumbnailUrl.trim(),
         videoSourceUrl: form.videoSourceUrl.trim(),
         idol: form.idol,
         genres: form.genres,
         tags: form.tags,
-        category: form.category?.trim() || "",
-        releaseDate: form.releaseDate ? new Date(form.releaseDate) : undefined,
+        category: form.category || "",
+        releaseDate: form.releaseDate ? new Date(form.releaseDate) : new Date(),
         isPublic: form.isPublic,
         isAdult: form.isAdult,
         isFeatured: form.isFeatured,
-        metadata: {
-          resolution: form.resolution?.trim() || "",
-          fileSize: form.fileSize || undefined,
-        },
+        resolution: form.resolution || "",
+        fileSize: form.fileSize,
       };
 
       const url = editingId
@@ -318,7 +319,7 @@ export default function AdminVideosPage() {
       fetchVideos();
     } catch (error) {
       alert("Error saving video");
-      console.error(error);
+      logger.error("Error saving video", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -372,25 +373,29 @@ export default function AdminVideosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Videos CMS</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Videos CMS
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
             Manage idol videos with genre and idol associations
           </p>
         </div>
 
         {/* Form Panel */}
         {showForm && (
-          <div className="bg-white rounded-lg shadow-md mb-8">
-            <div className="px-4 py-3 border-b flex items-center justify-between">
-              <div className="font-semibold">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-8">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="font-semibold text-gray-900 dark:text-white">
                 {editingId ? "Edit Video" : "Create Video"}
               </div>
               {editingId && (
-                <div className="text-xs text-gray-500">ID: {editingId}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  ID: {editingId}
+                </div>
               )}
             </div>
 
@@ -398,7 +403,7 @@ export default function AdminVideosPage() {
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Title *
                   </label>
                   <input
@@ -408,13 +413,13 @@ export default function AdminVideosPage() {
                       setForm((p) => ({ ...p, title: e.target.value }))
                     }
                     required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     placeholder="Video title"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Description
                   </label>
                   <textarea
@@ -423,68 +428,105 @@ export default function AdminVideosPage() {
                       setForm((p) => ({ ...p, description: e.target.value }))
                     }
                     rows={3}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     placeholder="Video description"
                   />
                 </div>
               </div>
 
-              {/* URLs */}
+              {/* File Uploads */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Thumbnail URL *
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Thumbnail Image *
                   </label>
-                  <input
-                    type="url"
-                    value={form.thumbnailUrl}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, thumbnailUrl: e.target.value }))
-                    }
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                    placeholder="https://..."
-                  />
+                  {form.thumbnailUrl ? (
+                    <div className="mt-1">
+                      <img
+                        src={form.thumbnailUrl}
+                        alt="Thumbnail preview"
+                        className="w-full max-w-xs h-32 object-cover rounded border mb-2"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm((p) => ({ ...p, thumbnailUrl: "" }))
+                        }
+                        className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                      >
+                        Remove thumbnail
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-1">
+                      <UploadDropzone
+                        endpoint="imageUploader"
+                        onClientUploadComplete={(res) => {
+                          if (res?.[0]) {
+                            setForm((p) => ({
+                              ...p,
+                              thumbnailUrl: res[0].url,
+                            }));
+                          }
+                        }}
+                        onUploadError={(error: Error) => {
+                          alert(`Thumbnail upload failed: ${error.message}`);
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Video Source URL *
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Video File *
                   </label>
-                  <input
-                    type="url"
-                    value={form.videoSourceUrl}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, videoSourceUrl: e.target.value }))
-                    }
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                    placeholder="https://..."
-                  />
+                  {form.videoSourceUrl ? (
+                    <div className="mt-1">
+                      <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
+                        <p className="text-sm text-green-800 dark:text-green-300">
+                          Video uploaded successfully!
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 break-all">
+                          {form.videoSourceUrl}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm((p) => ({ ...p, videoSourceUrl: "" }))
+                          }
+                          className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 mt-2"
+                        >
+                          Remove video
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-1">
+                      <UploadDropzone
+                        endpoint="videoUploader"
+                        onClientUploadComplete={(res) => {
+                          if (res?.[0]) {
+                            setForm((p) => ({
+                              ...p,
+                              videoSourceUrl: res[0].url,
+                            }));
+                          }
+                        }}
+                        onUploadError={(error: Error) => {
+                          alert(`Video upload failed: ${error.message}`);
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Channel Info */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Channel Info (Auto-populated from Idol) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Channel Avatar URL *
-                  </label>
-                  <input
-                    type="url"
-                    value={form.channelAvatar}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, channelAvatar: e.target.value }))
-                    }
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                    placeholder="https://..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Channel Name *
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Channel Name (Auto-filled from Idol)
                   </label>
                   <input
                     type="text"
@@ -493,40 +535,94 @@ export default function AdminVideosPage() {
                       setForm((p) => ({ ...p, channelName: e.target.value }))
                     }
                     required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                    placeholder="Channel name"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    placeholder="Select an idol to auto-fill"
+                    readOnly={!form.idol}
                   />
+                  {form.idol && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Auto-filled from selected idol. You can still edit if
+                      needed.
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Duration *
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Channel Avatar (Auto-filled from Idol)
                   </label>
-                  <input
-                    type="text"
-                    value={form.duration}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, duration: e.target.value }))
-                    }
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                    placeholder="e.g., 5:32"
-                  />
+                  {form.channelAvatar ? (
+                    <div className="mt-1">
+                      <img
+                        src={form.channelAvatar}
+                        alt="Channel avatar preview"
+                        className="w-16 h-16 object-cover rounded-full border mb-2"
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Using idol profile image
+                      </p>
+                    </div>
+                  ) : form.idol ? (
+                    <div className="mt-1 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-dashed border-yellow-300 dark:border-yellow-800 rounded-lg text-center">
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                        Selected idol has no profile image
+                      </p>
+                      <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                        A default avatar will be used
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-1 p-4 bg-gray-50 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-center">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Select an idol to auto-fill avatar
+                      </p>
+                    </div>
+                  )}
                 </div>
+              </div>
+
+              {/* Duration - Optional */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Duration (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={form.duration}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, duration: e.target.value }))
+                  }
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  placeholder="e.g., 5:32 (will be auto-detected if not provided)"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Leave empty to auto-detect duration from video file
+                </p>
               </div>
 
               {/* Idol Selection (Required) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Idol *
                 </label>
                 <select
                   value={form.idol || ""}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, idol: e.target.value || null }))
-                  }
+                  onChange={(e) => {
+                    const idolId = e.target.value || null;
+                    const selectedIdol = idols.find(
+                      (idol) => idol._id === idolId,
+                    );
+                    setForm((p) => ({
+                      ...p,
+                      idol: idolId,
+                      channelName: selectedIdol
+                        ? selectedIdol.stageName || selectedIdol.name
+                        : "",
+                      channelAvatar: selectedIdol?.profileImage || "",
+                    }));
+                  }}
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                   <option value="">-- Select Idol --</option>
                   {loadingIdols ? (
@@ -543,12 +639,12 @@ export default function AdminVideosPage() {
 
               {/* Genres Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Genres
                 </label>
-                <div className="mt-2 max-h-48 overflow-auto border rounded p-2">
+                <div className="mt-2 max-h-48 overflow-auto border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded p-2">
                   {loadingGenres ? (
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       Loading genres...
                     </div>
                   ) : genres.length ? (
@@ -557,7 +653,7 @@ export default function AdminVideosPage() {
                       return (
                         <label
                           key={g._id}
-                          className="flex items-center gap-2 py-1 text-sm cursor-pointer"
+                          className="flex items-center gap-2 py-1 text-sm cursor-pointer text-gray-700 dark:text-gray-300"
                         >
                           <input
                             type="checkbox"
@@ -570,6 +666,7 @@ export default function AdminVideosPage() {
                                 return { ...p, genres: Array.from(set) };
                               });
                             }}
+                            className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-gray-700"
                           />
                           <span
                             className="w-3 h-3 rounded-full"
@@ -580,7 +677,9 @@ export default function AdminVideosPage() {
                       );
                     })
                   ) : (
-                    <div className="text-sm text-gray-500">No genres found</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      No genres found
+                    </div>
                   )}
                 </div>
               </div>
@@ -596,7 +695,7 @@ export default function AdminVideosPage() {
               {/* Category and Dates */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Category
                   </label>
                   <select
@@ -604,7 +703,7 @@ export default function AdminVideosPage() {
                     onChange={(e) =>
                       setForm((p) => ({ ...p, category: e.target.value }))
                     }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   >
                     <option value="">-- Select Category --</option>
                     {CATEGORIES.map((cat) => (
@@ -616,7 +715,7 @@ export default function AdminVideosPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Release Date
                   </label>
                   <input
@@ -625,12 +724,12 @@ export default function AdminVideosPage() {
                     onChange={(e) =>
                       setForm((p) => ({ ...p, releaseDate: e.target.value }))
                     }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Resolution
                   </label>
                   <select
@@ -638,7 +737,7 @@ export default function AdminVideosPage() {
                     onChange={(e) =>
                       setForm((p) => ({ ...p, resolution: e.target.value }))
                     }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   >
                     <option value="">-- Select Resolution --</option>
                     {RESOLUTIONS.map((res) => (
@@ -652,7 +751,7 @@ export default function AdminVideosPage() {
 
               {/* File Size */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   File Size (bytes)
                 </label>
                 <input
@@ -666,51 +765,54 @@ export default function AdminVideosPage() {
                         : undefined,
                     }))
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   placeholder="File size in bytes"
                 />
               </div>
 
               {/* Flags */}
               <div className="flex items-center gap-6">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className="flex items-center gap-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300">
                   <input
                     type="checkbox"
                     checked={form.isPublic}
                     onChange={(e) =>
                       setForm((p) => ({ ...p, isPublic: e.target.checked }))
                     }
+                    className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-gray-700"
                   />
                   <span>Public</span>
                 </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className="flex items-center gap-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300">
                   <input
                     type="checkbox"
                     checked={form.isAdult}
                     onChange={(e) =>
                       setForm((p) => ({ ...p, isAdult: e.target.checked }))
                     }
+                    className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-gray-700"
                   />
-                  <span>Adult Content (18+)</span>
+                  <span>Adult Content</span>
                 </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className="flex items-center gap-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300">
                   <input
                     type="checkbox"
                     checked={form.isFeatured}
                     onChange={(e) =>
                       setForm((p) => ({ ...p, isFeatured: e.target.checked }))
                     }
+                    className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-gray-700"
                   />
                   <span>Featured</span>
                 </label>
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-3 pt-4 border-t">
+              <div className="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   type="submit"
                   disabled={isSubmitting || !form.title.trim() || !form.idol}
-                  className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                  className="bg-indigo-600 dark:bg-indigo-500 text-white px-6 py-2 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 transition-colors"
                 >
                   {isSubmitting
                     ? "Saving..."
@@ -722,7 +824,7 @@ export default function AdminVideosPage() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300"
+                    className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
                   >
                     Cancel Edit
                   </button>
@@ -734,13 +836,13 @@ export default function AdminVideosPage() {
 
         {/* Create Button */}
         {!showForm && (
-          <div className="mb-6">
+          <div className="flex justify-center mb-8">
             <button
               onClick={() => {
                 resetForm();
                 setShowForm(true);
               }}
-              className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
+              className="bg-indigo-600 dark:bg-indigo-500 text-white px-6 py-2 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors"
             >
               + Create New Video
             </button>
@@ -748,19 +850,23 @@ export default function AdminVideosPage() {
         )}
 
         {/* List Panel */}
-        <div className="bg-white rounded-lg shadow-md">
-          <div className="px-4 py-3 border-b flex items-center justify-between">
-            <div className="font-semibold">Videos</div>
-            <div className="text-sm text-gray-500">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="font-semibold text-gray-900 dark:text-white">
+              Videos
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               {loading ? "Loading..." : `${totalItems} total`}
             </div>
           </div>
 
           {/* Filters */}
-          <div className="px-4 py-4 border-b bg-gray-50 space-y-4">
+          <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="text-sm text-gray-700">Search</label>
+                <label className="text-sm text-gray-700 dark:text-gray-300">
+                  Search
+                </label>
                 <input
                   type="text"
                   value={search}
@@ -769,19 +875,21 @@ export default function AdminVideosPage() {
                     setPage(1);
                   }}
                   placeholder="Search title, description..."
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="text-sm text-gray-700">Idol</label>
+                <label className="text-sm text-gray-700 dark:text-gray-300">
+                  Idol
+                </label>
                 <select
                   value={idolFilter}
                   onChange={(e) => {
                     setIdolFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                   <option value="all">All Idols</option>
                   {idols.map((i) => (
@@ -793,14 +901,16 @@ export default function AdminVideosPage() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-700">Genre</label>
+                <label className="text-sm text-gray-700 dark:text-gray-300">
+                  Genre
+                </label>
                 <select
                   value={genreFilter}
                   onChange={(e) => {
                     setGenreFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                   <option value="all">All Genres</option>
                   {genres.map((g) => (
@@ -812,14 +922,16 @@ export default function AdminVideosPage() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-700">Category</label>
+                <label className="text-sm text-gray-700 dark:text-gray-300">
+                  Category
+                </label>
                 <select
                   value={categoryFilter}
                   onChange={(e) => {
                     setCategoryFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                   <option value="all">All Categories</option>
                   {CATEGORIES.map((cat) => (
@@ -833,11 +945,13 @@ export default function AdminVideosPage() {
 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-700">Sort by:</label>
+                <label className="text-sm text-gray-700 dark:text-gray-300">
+                  Sort by:
+                </label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-md border-gray-300 shadow-sm text-sm"
+                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                   <option value="createdAt">Created Date</option>
                   <option value="title">Title</option>
@@ -847,11 +961,13 @@ export default function AdminVideosPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-700">Order:</label>
+                <label className="text-sm text-gray-700 dark:text-gray-300">
+                  Order:
+                </label>
                 <select
                   value={sortOrder}
                   onChange={(e) => setSortOrder(e.target.value)}
-                  className="rounded-md border-gray-300 shadow-sm text-sm"
+                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                   <option value="desc">Descending</option>
                   <option value="asc">Ascending</option>
@@ -861,9 +977,9 @@ export default function AdminVideosPage() {
           </div>
 
           {/* Video List */}
-          <div className="divide-y">
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {!loading && videos.length === 0 && (
-              <div className="px-4 py-8 text-center text-gray-500">
+              <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                 No videos found.
               </div>
             )}
@@ -873,7 +989,10 @@ export default function AdminVideosPage() {
               const idolDisplay = idolName(v.idol);
 
               return (
-                <div key={v._id} className="px-4 py-4 hover:bg-gray-50">
+                <div
+                  key={v._id}
+                  className="px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
                   <div className="flex items-start gap-4">
                     {/* Thumbnail */}
                     <div className="flex-shrink-0">
@@ -892,15 +1011,15 @@ export default function AdminVideosPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 mb-1">
+                          <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                             {v.title}
                           </h3>
                           {v.description && (
-                            <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">
                               {v.description}
                             </p>
                           )}
-                          <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1 text-xs text-gray-600">
+                          <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1 text-xs text-gray-600 dark:text-gray-300">
                             <div>Idol: {idolDisplay}</div>
                             <div>Genres: {genresDisplay}</div>
                             <div>Category: {v.category || "—"}</div>
@@ -908,7 +1027,9 @@ export default function AdminVideosPage() {
                             <div>
                               Resolution: {v.metadata?.resolution || "—"}
                             </div>
-                            <div>Size: {formatFileSize(v.metadata?.fileSize)}</div>
+                            <div>
+                              Size: {formatFileSize(v.metadata?.fileSize)}
+                            </div>
                             <div>Channel: {v.channelName}</div>
                             <div>
                               Views: {v.viewCount?.toLocaleString() || 0}
@@ -923,13 +1044,13 @@ export default function AdminVideosPage() {
                               {v.tags!.slice(0, 8).map((t) => (
                                 <span
                                   key={t}
-                                  className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700"
+                                  className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200"
                                 >
                                   #{t}
                                 </span>
                               ))}
                               {(v.tags!.length || 0) > 8 && (
-                                <span className="text-[10px] text-gray-500">
+                                <span className="text-[10px] text-gray-500 dark:text-gray-400">
                                   +{(v.tags!.length || 0) - 8}
                                 </span>
                               )}
@@ -938,17 +1059,17 @@ export default function AdminVideosPage() {
 
                           <div className="mt-2 flex items-center gap-2">
                             {v.isPublic && (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-green-100 text-green-700">
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
                                 Public
                               </span>
                             )}
                             {v.isAdult && (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-red-100 text-red-700">
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
                                 18+
                               </span>
                             )}
                             {v.isFeatured && (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-yellow-100 text-yellow-700">
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">
                                 Featured
                               </span>
                             )}
@@ -959,13 +1080,13 @@ export default function AdminVideosPage() {
                         <div className="flex flex-col gap-2">
                           <button
                             onClick={() => handleEdit(v)}
-                            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                            className="px-3 py-1 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDelete(v._id)}
-                            className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                            className="px-3 py-1 text-sm bg-red-600 dark:bg-red-500 text-white rounded hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
                           >
                             Delete
                           </button>
@@ -980,22 +1101,22 @@ export default function AdminVideosPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="px-4 py-4 border-t flex items-center justify-between">
-              <div className="text-sm text-gray-500">
+            <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 Page {page} of {totalPages} ({totalItems} total)
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1}
-                  className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage(Math.min(totalPages, page + 1))}
                   disabled={page === totalPages}
-                  className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Next
                 </button>

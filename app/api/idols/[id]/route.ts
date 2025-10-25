@@ -4,8 +4,14 @@ import Idol from "../../../models/Idol";
 import Photo from "../../../models/Photo";
 import Gallery from "../../../models/Gallery";
 import Video from "../../../models/Video";
-import Genre from "../../../models/Genre";
 import mongoose from "mongoose";
+import logger from "@/lib/utils/logger";
+
+interface GenreReference {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  slug: string;
+}
 
 export async function GET(
   request: NextRequest,
@@ -59,7 +65,9 @@ export async function GET(
       Video.find({ idol: idol._id, isPublic: true })
         .sort({ createdAt: -1 })
         .limit(6)
-        .select("title thumbnailUrl duration viewCount channelName channelAvatar createdAt")
+        .select(
+          "title thumbnailUrl duration viewCount channelName channelAvatar createdAt",
+        )
         .lean(),
     ]);
 
@@ -77,7 +85,7 @@ export async function GET(
     // Get related idols (same genres)
     const relatedIdols = await Idol.find({
       _id: { $ne: idol._id },
-      genres: { $in: idol.genres?.map((g: any) => g._id) || [] },
+      genres: { $in: idol.genres?.map((g: GenreReference) => g._id) || [] },
       isPublic: true,
     })
       .limit(4)
@@ -101,7 +109,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Error fetching idol:", error);
+    logger.error("Error fetching idol:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch idol" },
       { status: 500 },

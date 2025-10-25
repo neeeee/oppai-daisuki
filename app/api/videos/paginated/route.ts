@@ -1,6 +1,7 @@
 import dbConnect from "../../../lib/mongodb";
 import Video from "../../../models/Video";
 import { NextRequest, NextResponse } from "next/server";
+import logger from "@/lib/utils/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching paginated videos:", error);
+    logger.error("Error fetching paginated videos:", error);
     return NextResponse.json(
       {
         success: false,

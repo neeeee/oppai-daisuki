@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -118,7 +118,7 @@ type Pagination = {
   hasPrevPage: boolean;
 };
 
-export default function GenreDetailPage() {
+function GenreDetailPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -135,12 +135,8 @@ export default function GenreDetailPage() {
   const activeTab = (searchParams.get("tab") as ContentType) || "all";
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
 
-  useEffect(() => {
+  const fetchGenreData = useCallback(async () => {
     if (!params.id) return;
-    fetchGenreData();
-  }, [params.id, activeTab, currentPage]);
-
-  const fetchGenreData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -161,12 +157,20 @@ export default function GenreDetailPage() {
       setIdols(data.data.content.idols || []);
       setPagination(data.data.pagination);
     } catch (err) {
-      console.error("Error fetching genre:", err);
+      (() => {
+        import("@/lib/utils/logger").then((m) =>
+          m.default.error("Error fetching genre:", err),
+        );
+      })();
       setError("Failed to load genre");
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id, activeTab, currentPage]);
+
+  useEffect(() => {
+    fetchGenreData();
+  }, [fetchGenreData]);
 
   const handleTabChange = (tab: ContentType) => {
     const newSearchParams = new URLSearchParams(searchParams);
@@ -211,7 +215,7 @@ export default function GenreDetailPage() {
     const { currentPage, totalPages } = pagination;
 
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
     if (endPage - startPage < maxVisiblePages - 1) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
@@ -225,7 +229,7 @@ export default function GenreDetailPage() {
           className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
         >
           Previous
-        </button>
+        </button>,
       );
     }
 
@@ -241,7 +245,7 @@ export default function GenreDetailPage() {
           } transition-colors`}
         >
           {i}
-        </button>
+        </button>,
       );
     }
 
@@ -253,7 +257,7 @@ export default function GenreDetailPage() {
           className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
         >
           Next
-        </button>
+        </button>,
       );
     }
 
@@ -323,7 +327,8 @@ export default function GenreDetailPage() {
             No Content Yet
           </h2>
           <p className="text-gray-600 dark:text-gray-300">
-            This genre doesn't have any {activeTab === "all" ? "content" : activeTab} yet.
+            This genre doesn&apos;t have any{" "}
+            {activeTab === "all" ? "content" : activeTab} yet.
           </p>
         </div>
       );
@@ -372,7 +377,7 @@ export default function GenreDetailPage() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                   {photos.slice(0, 12).map((photo) => (
-                    <PhotoTile key={photo._id} photo={photo as any} />
+                    <PhotoTile key={photo._id} photo={photo} />
                   ))}
                 </div>
               </div>
@@ -394,7 +399,7 @@ export default function GenreDetailPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {galleries.slice(0, 8).map((gallery) => (
-                    <GalleryTile key={gallery._id} gallery={gallery as any} />
+                    <GalleryTile key={gallery._id} gallery={gallery} />
                   ))}
                 </div>
               </div>
@@ -416,7 +421,7 @@ export default function GenreDetailPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {idols.slice(0, 8).map((idol) => (
-                    <IdolTile key={idol._id} idol={idol as any} />
+                    <IdolTile key={idol._id} idol={idol} />
                   ))}
                 </div>
               </div>
@@ -441,7 +446,7 @@ export default function GenreDetailPage() {
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
               {photos.map((photo) => (
-                <PhotoTile key={photo._id} photo={photo as any} />
+                <PhotoTile key={photo._id} photo={photo} />
               ))}
             </div>
             {renderPagination()}
@@ -453,7 +458,7 @@ export default function GenreDetailPage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {galleries.map((gallery) => (
-                <GalleryTile key={gallery._id} gallery={gallery as any} />
+                <GalleryTile key={gallery._id} gallery={gallery} />
               ))}
             </div>
             {renderPagination()}
@@ -465,7 +470,7 @@ export default function GenreDetailPage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {idols.map((idol) => (
-                <IdolTile key={idol._id} idol={idol as any} />
+                <IdolTile key={idol._id} idol={idol} />
               ))}
             </div>
             {renderPagination()}
@@ -533,9 +538,7 @@ export default function GenreDetailPage() {
         <div className="absolute inset-0 flex items-center">
           <div className="container mx-auto px-4">
             <div className="flex items-center gap-4 text-white">
-              {genre?.icon && (
-                <div className="text-6xl">{genre.icon}</div>
-              )}
+              {genre?.icon && <div className="text-6xl">{genre.icon}</div>}
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-4xl font-bold">{genre?.name}</h1>
@@ -717,41 +720,43 @@ export default function GenreDetailPage() {
         {renderContent()}
 
         {/* Sub-genres Section */}
-        {genre?.subGenres && genre.subGenres.length > 0 && activeTab === "all" && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-              Sub-Genres
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {genre.subGenres.map((subGenre) => (
-                <Link
-                  key={subGenre._id}
-                  href={`/genres/${subGenre.slug}`}
-                  className="group bg-white dark:bg-neutral-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold"
-                      style={{ backgroundColor: subGenre.color || "#6366f1" }}
-                    >
-                      {subGenre.name.charAt(0)}
+        {genre?.subGenres &&
+          genre.subGenres.length > 0 &&
+          activeTab === "all" && (
+            <div className="mt-12">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                Sub-Genres
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {genre.subGenres.map((subGenre) => (
+                  <Link
+                    key={subGenre._id}
+                    href={`/genres/${subGenre.slug}`}
+                    className="group bg-white dark:bg-neutral-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold"
+                        style={{ backgroundColor: subGenre.color || "#6366f1" }}
+                      >
+                        {subGenre.name.charAt(0)}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                          {subGenre.name}
+                        </h3>
+                        {subGenre.description && (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                            {subGenre.description}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        {subGenre.name}
-                      </h3>
-                      {subGenre.description && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
-                          {subGenre.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Tags Section */}
         {genre?.tags && genre.tags.length > 0 && activeTab === "all" && (
@@ -781,5 +786,26 @@ export default function GenreDetailPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function GenreDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 dark:bg-neutral-900">
+          <div className="container mx-auto px-4 py-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600 dark:text-gray-300">
+                Loading genre content...
+              </p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <GenreDetailPageContent />
+    </Suspense>
   );
 }

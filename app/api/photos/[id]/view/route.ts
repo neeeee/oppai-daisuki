@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "../../../../lib/mongodb";
 import Photo from "../../../../models/Photo";
+import logger from "@/lib/utils/logger";
 import mongoose from "mongoose";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await dbConnect();
@@ -20,13 +21,13 @@ export async function POST(
     const photo = await Photo.findOneAndUpdate(
       query,
       { $inc: { viewCount: 1 } },
-      { new: true }
+      { new: true },
     );
 
     if (!photo) {
       return NextResponse.json(
         { success: false, error: "Photo not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -35,10 +36,10 @@ export async function POST(
       viewCount: photo.viewCount,
     });
   } catch (error: unknown) {
-    console.error("Error incrementing view count:", error as Error);
+    logger.error("Error incrementing view count:", error);
     return NextResponse.json(
       { success: false, error: "Failed to increment view count" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

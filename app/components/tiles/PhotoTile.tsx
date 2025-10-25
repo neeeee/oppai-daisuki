@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import IdolLink from "../../../components/common/IdolLink";
 
@@ -79,7 +80,6 @@ export default function PhotoTile({ photo, showStats = true }: PhotoTileProps) {
   };
 
   const displayUrl = photo.thumbnailUrl || photo.imageUrl;
-  const displayName = photo.idol?.stageName || photo.idol?.name;
 
   return (
     <Link href={`/photos/${photo._id}`} className="group block">
@@ -97,15 +97,19 @@ export default function PhotoTile({ photo, showStats = true }: PhotoTileProps) {
 
           {/* Photo Image */}
           {!imageError ? (
-            <img
-              src={displayUrl}
-              alt={photo.altText || photo.title || "Photo"}
-              className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${
-                imageLoaded ? "opacity-100" : "opacity-0"
-              }`}
-              onLoad={() => setImageLoaded(true)}
-              onError={() => setImageError(true)}
-            />
+            <div className="absolute inset-0">
+              <Image
+                src={displayUrl}
+                alt={photo.altText || photo.title || "Photo"}
+                fill
+                className={`object-cover group-hover:scale-110 transition-transform duration-500 ${
+                  imageLoaded ? "opacity-100" : "opacity-0"
+                }`}
+                sizes="(max-width: 768px) 100vw, 400px"
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageError(true)}
+              />
+            </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-600">
               <div className="text-4xl text-gray-400">📷</div>

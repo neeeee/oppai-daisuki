@@ -4,6 +4,8 @@ import Gallery from "../../models/Gallery";
 import Idol from "../../models/Idol";
 import Genre from "../../models/Genre";
 import Photo from "../../models/Photo";
+import { auth } from "../../lib/auth";
+import logger from "../../lib/utils/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +21,14 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
-    const includePrivate = searchParams.get("includePrivate") === "true";
+    const includePrivateQuery = searchParams.get("includePrivate") === "true";
+    let includePrivate = false;
+    try {
+      const session = await auth();
+      includePrivate = !!(includePrivateQuery && session?.user?.role === "admin");
+    } catch {
+      includePrivate = false;
+    }
     const includeStats = searchParams.get("includeStats") === "true";
 
     // Build query
@@ -86,7 +95,7 @@ export async function GET(request: NextRequest) {
       stats,
     });
   } catch (error) {
-    console.error("Error fetching galleries:", error);
+    logger.error("Error fetching galleries:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch galleries" },
       { status: 500 },
@@ -97,6 +106,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
+
+    const session = await auth();
+    if (!session || session.user?.role !== "admin") {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
+    }
 
     const body = await request.json();
 
@@ -141,7 +160,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: unknown) {
     const err = error as { name?: string; code?: number; errors?: unknown };
-    console.error("Error creating gallery:", err);
+    logger.error("Error creating gallery:", err);
 
     if (err?.name === "ValidationError") {
       return NextResponse.json(
@@ -166,6 +185,16 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     await dbConnect();
+
+    const session = await auth();
+    if (!session || session.user?.role !== "admin") {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -250,7 +279,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, data: updated });
   } catch (error: unknown) {
     const err = error as { name?: string; code?: number; errors?: unknown };
-    console.error("Error updating gallery:", err);
+    logger.error("Error updating gallery:", err);
 
     if (err?.name === "ValidationError") {
       return NextResponse.json(
@@ -275,6 +304,16 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await dbConnect();
+
+    const session = await auth();
+    if (!session || session.user?.role !== "admin") {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const idsParam = searchParams.get("ids");
@@ -361,7 +400,7 @@ export async function DELETE(request: NextRequest) {
       deletedCount: result.deletedCount,
     });
   } catch (error) {
-    console.error("Error deleting galleries:", error);
+    logger.error("Error deleting galleries:", error);
     return NextResponse.json(
       { success: false, error: "Failed to delete galleries" },
       { status: 500 },

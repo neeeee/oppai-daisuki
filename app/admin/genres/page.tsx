@@ -1,10 +1,11 @@
 "use client";
+import logger from "@/lib/utils/logger";
 
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
+import { UploadDropzone } from "../../lib/uploadthing";
 import TagInput from "../../../components/admin/TagInput";
-
-type ObjectId = string;
 
 type Genre = {
   _id: string;
@@ -61,7 +62,6 @@ export default function AdminGenresPage() {
 
   // Parent options for form and filtering
   const [parentOptions, setParentOptions] = useState<GenreOption[]>([]);
-  const [loadingParents, setLoadingParents] = useState(false);
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -140,7 +140,6 @@ export default function AdminGenresPage() {
   // Load parent options for select
   useEffect(() => {
     const loadParents = async () => {
-      setLoadingParents(true);
       try {
         const res = await fetch(
           `/api/genres?limit=1000&sortBy=name&sortOrder=asc`,
@@ -150,9 +149,7 @@ export default function AdminGenresPage() {
           setParentOptions(json.data || []);
         }
       } catch (e) {
-        console.error("Failed to load genre parents", e);
-      } finally {
-        setLoadingParents(false);
+        logger.error("Failed to load genre parents", e);
       }
     };
     loadParents();
@@ -191,8 +188,8 @@ export default function AdminGenresPage() {
           setStats(null);
         }
       } catch (e) {
-        if ((e as any).name !== "AbortError") {
-          console.error("Failed to load genres", e);
+        if ((e as { name?: string })?.name !== "AbortError") {
+          logger.error("Failed to load genres", e);
         }
       } finally {
         setLoading(false);
@@ -248,7 +245,7 @@ export default function AdminGenresPage() {
         return n;
       });
     } catch (e) {
-      console.error("Delete failed", e);
+      logger.error("Delete failed", e);
       alert("Delete failed");
     }
   };
@@ -269,7 +266,7 @@ export default function AdminGenresPage() {
       await refreshList();
       setSelectedIds(new Set());
     } catch (e) {
-      console.error("Bulk delete failed", e);
+      logger.error("Bulk delete failed", e);
       alert("Bulk delete failed");
     }
   };
@@ -295,7 +292,7 @@ export default function AdminGenresPage() {
         setPage(1);
       }
     } catch (e) {
-      console.error("Failed to refresh genres", e);
+      logger.error("Failed to refresh genres", e);
     }
   };
 
@@ -323,7 +320,7 @@ export default function AdminGenresPage() {
       }
       return json.data as Genre;
     } catch (e) {
-      console.error("Save failed", e);
+      logger.error("Save failed", e);
       alert("Save failed");
       return null;
     } finally {
@@ -439,9 +436,9 @@ export default function AdminGenresPage() {
       </div>
 
       {/* Editor */}
-      <div className="bg-white rounded-lg shadow border">
-        <div className="px-4 py-3 border-b flex items-center justify-between">
-          <div className="font-semibold">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="font-semibold text-gray-900 dark:text-white">
             {editingId ? "Edit Genre" : "Create Genre"}
           </div>
           {editingId && (
@@ -458,8 +455,8 @@ export default function AdminGenresPage() {
           {/* Basic fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Name
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Name *
               </label>
               <input
                 type="text"
@@ -468,11 +465,11 @@ export default function AdminGenresPage() {
                   setForm((p) => ({ ...p, name: e.target.value }))
                 }
                 required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 placeholder="Genre name"
               />
               {!!form.name.trim() && (
-                <div className="mt-1 text-xs text-gray-500">
+                <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Slug preview:{" "}
                   {form.name
                     .toLowerCase()
@@ -484,7 +481,7 @@ export default function AdminGenresPage() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Parent Genre
               </label>
               <select
@@ -511,7 +508,7 @@ export default function AdminGenresPage() {
 
           {/* Descriptions and visuals */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Description
             </label>
             <textarea
@@ -520,15 +517,15 @@ export default function AdminGenresPage() {
                 setForm((p) => ({ ...p, description: e.target.value }))
               }
               rows={3}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-              placeholder="Short description"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              placeholder="Optional description"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Color (hex)
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Color
               </label>
               <input
                 type="text"
@@ -536,7 +533,7 @@ export default function AdminGenresPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, color: e.target.value }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 placeholder="#6366f1"
               />
               <div className="mt-2 flex items-center gap-2">
@@ -551,76 +548,120 @@ export default function AdminGenresPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Icon URL
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Icon Image
               </label>
-              <input
-                type="url"
-                value={form.icon || ""}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, icon: e.target.value }))
-                }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                placeholder="https://..."
-              />
               {form.icon ? (
-                <img
-                  src={form.icon}
-                  alt="Icon"
-                  className="mt-2 w-10 h-10 object-cover rounded border"
-                />
-              ) : null}
+                <div className="mt-1">
+                  <div className="relative w-10 h-10 rounded border mb-2 overflow-hidden">
+                    <Image
+                      src={form.icon}
+                      alt="Icon preview"
+                      fill
+                      className="object-cover"
+                      sizes="40px"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, icon: "" }))}
+                    className="text-sm text-red-600 hover:text-red-800"
+                  >
+                    Remove icon
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-1">
+                  <UploadDropzone
+                    endpoint="imageUploader"
+                    onClientUploadComplete={(res) => {
+                      if (res?.[0]) {
+                        setForm((p) => ({
+                          ...p,
+                          icon: res[0].url,
+                        }));
+                      }
+                    }}
+                    onUploadError={(error: Error) => {
+                      alert(`Icon upload failed: ${error.message}`);
+                    }}
+                  />
+                </div>
+              )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Cover Image URL
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Cover Image
               </label>
-              <input
-                type="url"
-                value={form.coverImage || ""}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, coverImage: e.target.value }))
-                }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                placeholder="https://..."
-              />
               {form.coverImage ? (
-                <img
-                  src={form.coverImage}
-                  alt="Cover"
-                  className="mt-2 w-32 h-16 object-cover rounded border"
-                />
-              ) : null}
+                <div className="mt-1">
+                  <div className="relative w-32 h-16 rounded border mb-2 overflow-hidden">
+                    <Image
+                      src={form.coverImage}
+                      alt="Cover image preview"
+                      fill
+                      className="object-cover"
+                      sizes="128px"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, coverImage: "" }))}
+                    className="text-sm text-red-600 hover:text-red-800"
+                  >
+                    Remove cover image
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-1">
+                  <UploadDropzone
+                    endpoint="imageUploader"
+                    onClientUploadComplete={(res) => {
+                      if (res?.[0]) {
+                        setForm((p) => ({
+                          ...p,
+                          coverImage: res[0].url,
+                        }));
+                      }
+                    }}
+                    onUploadError={(error: Error) => {
+                      alert(`Cover image upload failed: ${error.message}`);
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
           {/* Flags and sorting */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-6">
-              <label className="inline-flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300">
                 <input
                   type="checkbox"
                   checked={form.isPublic}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, isPublic: e.target.checked }))
                   }
+                  className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-gray-700"
                 />
                 <span>Public</span>
               </label>
-              <label className="inline-flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300">
                 <input
                   type="checkbox"
                   checked={form.isAdult}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, isAdult: e.target.checked }))
                   }
+                  className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-gray-700"
                 />
-                <span>Adult</span>
+                <span>Adult Content (18+)</span>
               </label>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Sort Order
               </label>
               <input
@@ -629,10 +670,11 @@ export default function AdminGenresPage() {
                 onChange={(e) =>
                   setForm((p) => ({
                     ...p,
-                    sortOrder: Number(e.target.value || 0),
+                    sortOrder: Number(e.target.value) || 0,
                   }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                placeholder="0"
               />
             </div>
 
@@ -669,7 +711,7 @@ export default function AdminGenresPage() {
           {/* Featured until + popularity */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Featured Until
               </label>
               <input
@@ -690,7 +732,7 @@ export default function AdminGenresPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Popularity Score
               </label>
               <input
@@ -719,11 +761,11 @@ export default function AdminGenresPage() {
           />
 
           {/* Actions */}
-          <div className="flex items-center gap-3 pt-4 border-t">
+          <div className="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="submit"
               disabled={isSubmitting || !form.name.trim()}
-              className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+              className="bg-indigo-600 dark:bg-indigo-500 text-white px-6 py-2 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 transition-colors"
             >
               {isSubmitting
                 ? "Saving..."
@@ -735,7 +777,7 @@ export default function AdminGenresPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="bg-gray-200 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-300"
+                className="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-6 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
               >
                 Cancel
               </button>
@@ -745,10 +787,12 @@ export default function AdminGenresPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 border">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <div className="md:col-span-2">
-            <label className="text-sm text-gray-700">Search</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">
+              Search
+            </label>
             <input
               type="text"
               value={search}
@@ -756,40 +800,44 @@ export default function AdminGenresPage() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder="Search name or description..."
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              placeholder="Name, description..."
             />
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Parent</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">
+              Parent Genre
+            </label>
             <select
               value={parentFilter}
               onChange={(e) => {
                 setParentFilter(e.target.value);
                 setPage(1);
               }}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
-              <option value="all">All</option>
-              <option value="root">Root only</option>
-              {parentOptions.map((opt) => (
-                <option key={opt._id} value={opt._id}>
-                  {opt.name}
+              <option value="all">All Genres</option>
+              <option value="top">Top Level Only</option>
+              {parentOptions.map((g) => (
+                <option key={g._id} value={g._id}>
+                  {g.name}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Sort By</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">
+              Sort By
+            </label>
             <select
               value={sortBy}
               onChange={(e) => {
-                setSortBy(e.target.value as any);
+                setSortBy(e.target.value as "sortOrder" | "name" | "createdAt");
                 setPage(1);
               }}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="sortOrder">Sort Order</option>
               <option value="name">Name</option>
@@ -798,14 +846,16 @@ export default function AdminGenresPage() {
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Direction</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">
+              Order
+            </label>
             <select
               value={sortOrder}
               onChange={(e) => {
-                setSortOrder(e.target.value as any);
+                setSortOrder(e.target.value as "asc" | "desc");
                 setPage(1);
               }}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="asc">Asc</option>
               <option value="desc">Desc</option>
@@ -843,7 +893,7 @@ export default function AdminGenresPage() {
 
       {/* Stats */}
       {stats && (
-        <div className="bg-white rounded-lg shadow border p-4 text-sm text-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4 text-sm text-gray-700 dark:text-gray-300">
           <div className="flex gap-6">
             <div>Total: {stats.totalGenres}</div>
             <div>Featured: {stats.featuredCount}</div>
@@ -853,17 +903,19 @@ export default function AdminGenresPage() {
       )}
 
       {/* List */}
-      <div className="bg-white rounded-lg shadow border overflow-hidden">
-        <div className="px-4 py-3 border-b flex items-center justify-between">
-          <div className="font-semibold">Genres</div>
-          <div className="text-sm text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="font-semibold text-gray-900 dark:text-white">
+            Genres
+          </div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             {loading ? "Loading..." : `${totalItems} total`}
           </div>
         </div>
 
-        <div className="divide-y">
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {!loading && genres.length === 0 && (
-            <div className="px-4 py-8 text-center text-gray-500">
+            <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
               No genres found.
             </div>
           )}
@@ -871,7 +923,10 @@ export default function AdminGenresPage() {
           {genres.map((g) => {
             const counts = g.contentCounts || {};
             return (
-              <div key={g._id} className="px-4 py-3 flex items-start gap-4">
+              <div
+                key={g._id}
+                className="px-4 py-3 flex items-start gap-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
                 <input
                   type="checkbox"
                   checked={selectedIds.has(g._id)}
@@ -960,13 +1015,13 @@ export default function AdminGenresPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleEdit(g)}
-                    className="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700"
+                    className="px-3 py-1.5 rounded bg-blue-600 dark:bg-blue-500 text-white text-sm hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(g._id)}
-                    className="px-3 py-1.5 rounded bg-red-600 text-white text-sm hover:bg-red-700"
+                    className="px-3 py-1.5 rounded bg-red-600 dark:bg-red-500 text-white text-sm hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
                   >
                     Delete
                   </button>
@@ -978,22 +1033,22 @@ export default function AdminGenresPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-4 py-3 border-t flex items-center justify-between text-sm">
-            <div>
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-sm">
+            <div className="text-gray-500 dark:text-gray-400">
               Page {page} of {totalPages}
             </div>
             <div className="flex items-center gap-2">
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="px-3 py-1.5 rounded border hover:bg-gray-50 disabled:opacity-50"
+                className="px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
               >
                 Previous
               </button>
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="px-3 py-1.5 rounded border hover:bg-gray-50 disabled:opacity-50"
+                className="px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
               >
                 Next
               </button>

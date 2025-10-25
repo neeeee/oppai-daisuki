@@ -275,7 +275,8 @@ NewsSchema.pre("save", function (next) {
 
   // Auto-calculate reading time
   if (this.isModified("content")) {
-    this.readingTime = this.calculatedReadingTime;
+    const wordCount = this.content.split(/\s+/).length;
+    this.readingTime = Math.ceil(wordCount / 200);
   }
 
   // Auto-set publishedAt when status changes to published
@@ -289,33 +290,16 @@ NewsSchema.pre("save", function (next) {
 
   // Increment revision count
   if (this.isModified() && !this.isNew) {
+    if (!this.metadata) {
+      this.metadata = {};
+    }
     this.metadata.revisionCount = (this.metadata.revisionCount || 0) + 1;
   }
 
   next();
 });
 
-// Static method to find published articles
-NewsSchema.statics.findPublished = function () {
-  return this.find({
-    status: "published",
-    isPublic: true,
-    $or: [
-      { publishedAt: { $lte: new Date() } },
-      { publishedAt: { $exists: false } },
-    ],
-  }).sort({ publishedAt: -1 });
-};
-
-// Static method to find featured articles
-NewsSchema.statics.findFeatured = function () {
-  return this.findPublished().where({ isFeatured: true });
-};
-
-// Static method to find breaking news
-NewsSchema.statics.findBreaking = function () {
-  return this.findPublished().where({ isBreaking: true });
-};
+// Static methods removed - use direct queries instead
 
 // Ensure virtuals are included in JSON output
 NewsSchema.set("toJSON", { virtuals: true });

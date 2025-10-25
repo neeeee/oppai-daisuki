@@ -1,6 +1,8 @@
 "use client";
+import logger from "@/lib/utils/logger";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { formatCount } from "../../lib/utils/dateUtils";
 
@@ -27,11 +29,7 @@ export default function RelatedVideos({
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchRelatedVideos();
-  }, [currentVideoId]);
-
-  const fetchRelatedVideos = async () => {
+  const fetchRelatedVideos = useCallback(async () => {
     try {
       const response = await fetch(`/api/videos/paginated?limit=${limit}`);
       const data = await response.json();
@@ -54,11 +52,15 @@ export default function RelatedVideos({
         setVideos(filtered);
       }
     } catch (error) {
-      console.error("Error fetching related videos:", error);
+      logger.error("Error fetching related videos:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [videoId]);
+
+  useEffect(() => {
+    fetchRelatedVideos();
+  }, [fetchRelatedVideos]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -117,14 +119,20 @@ export default function RelatedVideos({
                 {video.title}
               </h4>
               <div className="flex items-center space-x-2 mb-1">
-                <img
-                  src={video.channelAvatar}
-                  alt={video.channelName}
-                  className="w-4 h-4 rounded-full"
-                />
-                <p className="text-xs text-gray-600 dark:text-white">
-                  {video.channelName}
-                </p>
+                <div className="flex items-start gap-2">
+                  <div className="relative w-8 h-8 flex-shrink-0">
+                    <Image
+                      src={video.channelAvatar}
+                      alt={video.channelName}
+                      fill
+                      className="rounded-full object-cover"
+                      sizes="32px"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-white">
+                    {video.channelName}
+                  </p>
+                </div>
               </div>
               <div className="flex items-center text-xs text-gray-500 dark:text-white space-x-1">
                 <span>{formatCount(video.viewCount)} views</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { formatCount } from "../../lib/utils/dateUtils";
 
 interface Video {
@@ -38,10 +39,12 @@ export default function VideoCard({ video }: VideoCardProps) {
       <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
         {/* Thumbnail */}
         <div className="relative aspect-video bg-gray-200">
-          <img
+          <Image
             src={video.thumbnailUrl}
             alt={video.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-200"
+            sizes="(max-width: 768px) 100vw, 400px"
           />
           {/* Duration Badge */}
           <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
@@ -53,11 +56,15 @@ export default function VideoCard({ video }: VideoCardProps) {
         <div className="p-4">
           <div className="flex items-start space-x-3">
             {/* Channel Avatar */}
-            <img
-              src={video.channelAvatar}
-              alt={video.channelName}
-              className="w-8 h-8 rounded-full flex-shrink-0"
-            />
+            <div className="relative w-8 h-8 rounded-full flex-shrink-0 overflow-hidden">
+              <Image
+                src={video.channelAvatar}
+                alt={video.channelName}
+                fill
+                className="object-cover"
+                sizes="32px"
+              />
+            </div>
 
             {/* Video Details */}
             <div className="flex-1 min-w-0">

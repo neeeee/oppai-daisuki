@@ -51,6 +51,73 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Production environment and secrets
+
+Before deploying, configure and secure these environment variables and settings:
+
+- NEXTAUTH_URL
+  - Set to your canonical HTTPS domain (for example, https://yourdomain.com). This must exactly match the production origin used by the app.
+- NEXTAUTH_SECRET
+  - A cryptographically strong, 64+ character secret. Rotate periodically and on suspicion of compromise. Never log or expose.
+- MONGODB_URI
+  - Use a dedicated database user with least privileges, SRV connection string, and TLS. Restrict inbound network access to your app only (VPC/VNet/allowlist).
+- ADMIN_EMAIL / ADMIN_PASSWORD_HASH
+  - Generate with the provided admin setup scripts. Do not use test credentials in production. Store only the bcrypt hash, never the plaintext password.
+- ALLOWED_ADMIN_IPS (optional) and STRICT_IP_CHECK (optional)
+  - If you enable IP allowlisting, ensure your hosting platform provides trusted client IP headers (x-forwarded-for/x-real-ip). If this assumption is not guaranteed, avoid IP allowlisting and rely on authentication plus rate limiting.
+- RATE_LIMIT_ENABLED
+  - Leave enabled. In multi-instance/serverless environments, use a shared store (e.g., Upstash Redis) for effective rate limiting across instances.
+- Uploads
+  - Configure your UploadThing credentials (UPLOADTHING_APP_ID and UPLOADTHING_SECRET). The upload routes are protected server-side; keep credentials secret.
+- Cookies and sessions
+  - NextAuth sets HttpOnly and SameSite cookies; ensure secure cookies in production by serving strictly over HTTPS.
+- Content Security Policy (CSP)
+  - The middleware sets a strict CSP in production without 'unsafe-inline'/'unsafe-eval'. If you must use inline scripts, adopt nonces or hashed CSP.
+- Logging
+  - Avoid logging secrets or sensitive PII. Use INFO level in production and sanitize logs. Store logs securely with restricted access.
+- Secrets management
+  - Do not commit .env files with secrets. Prefer your platform’s environment configuration or a secrets manager. Rotate keys regularly and after personnel changes.
+
+## Recommended .env keys (production)
+
+```
+# App
+NODE_ENV=production
+NEXTAUTH_URL=https://yourdomain.com
+NEXTAUTH_SECRET=your-64+char-random-secret
+
+# Database
+MONGODB_URI=mongodb+srv://<user>:<pass>@cluster.example.mongodb.net/oppai-daisuki?retryWrites=true&w=majority
+
+# Admin credentials (hash only)
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD_HASH=$2a$12$...
+
+# Optional network hardening
+ALLOWED_ADMIN_IPS=203.0.113.10,203.0.113.11
+STRICT_IP_CHECK=true
+
+# Rate limiting
+RATE_LIMIT_ENABLED=true
+
+# Uploads (if applicable)
+UPLOADTHING_APP_ID=...
+UPLOADTHING_SECRET=...
+```
+
+## Deployment hardening checklist
+
+- [ ] HTTPS enforced end-to-end; HSTS enabled (already set by middleware)
+- [ ] NEXTAUTH_URL and NEXTAUTH_SECRET configured and validated
+- [ ] MONGODB_URI uses TLS, least-privileged user, and restricted network access
+- [ ] Admin routes and all mutating API routes require admin session (server-side)
+- [ ] Upload endpoints restricted to admin
+- [ ] Production CSP active (no 'unsafe-inline'/'unsafe-eval')
+- [ ] In-memory rate limiting replaced or backed by shared store for multi-instance setups
+- [ ] Logs sanitized (no secrets/PII) and access-controlled
+- [ ] Secrets stored outside VCS and rotated regularly
+- [ ] robots.txt disallows /admin and /api crawling
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

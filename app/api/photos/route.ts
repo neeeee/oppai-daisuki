@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "../../lib/mongodb";
-import Photo from "../../models/Photo";
-import Gallery from "../../models/Gallery";
-import Idol from "../../models/Idol";
+import dbConnect from "@/lib/mongodb";
+import Photo from "@/models/Photo";
+import Gallery from "@/models/Gallery";
+import Idol from "@/models/Idol";
+import { auth } from "@/lib/auth";
+import { AdminUser } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
   try {
@@ -107,7 +109,7 @@ export async function GET(request: NextRequest) {
       stats,
     });
   } catch (error: unknown) {
-    console.error("Error fetching photos:", error as Error);
+    void error;
     return NextResponse.json(
       { success: false, error: "Failed to fetch photos" },
       { status: 500 },
@@ -118,6 +120,22 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
+
+    const session = await auth();
+    if (!session || (session.user as AdminUser)?.role !== "admin") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
+    }
 
     const body = await request.json();
 
@@ -161,14 +179,15 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
   } catch (error: unknown) {
-    console.error("Error creating photo:", error as Error);
+    void error;
 
-    if ((error as any)?.name === "ValidationError") {
+    const err = error as { name?: string; errors?: unknown };
+    if (err?.name === "ValidationError") {
       return NextResponse.json(
         {
           success: false,
           error: "Validation failed",
-          details: (error as any).errors,
+          details: err.errors,
         },
         { status: 400 },
       );
@@ -184,6 +203,22 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await dbConnect();
+
+    const session = await auth();
+    if (!session || (session.user as AdminUser)?.role !== "admin") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
+    }
 
     const { searchParams } = new URL(request.url);
     const ids = searchParams.get("ids");
@@ -238,7 +273,7 @@ export async function DELETE(request: NextRequest) {
       deletedCount: result.deletedCount,
     });
   } catch (error: unknown) {
-    console.error("Error deleting photos:", error as Error);
+    void error;
     return NextResponse.json(
       { success: false, error: "Failed to delete photos" },
       { status: 500 },

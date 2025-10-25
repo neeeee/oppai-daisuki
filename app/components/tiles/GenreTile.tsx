@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 
 interface Genre {
@@ -68,12 +69,16 @@ export default function GenreTile({ genre }: GenreTileProps) {
         {/* Cover Image or Color Background */}
         <div className="relative aspect-[4/3] overflow-hidden">
           {genre.coverImage && !imageError ? (
-            <img
-              src={genre.coverImage}
-              alt={genre.name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              onError={() => setImageError(true)}
-            />
+            <div className="absolute inset-0">
+              <Image
+                src={genre.coverImage}
+                alt={genre.name}
+                fill
+                className="object-cover group-hover:scale-110 transition-transform duration-500"
+                sizes="(max-width: 768px) 100vw, 400px"
+                onError={() => setImageError(true)}
+              />
+            </div>
           ) : (
             <div
               className="w-full h-full flex items-center justify-center relative"

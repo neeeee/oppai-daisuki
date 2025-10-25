@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "../../lib/mongodb";
-import Genre from "../../models/Genre";
-import mongoose from "mongoose";
+import dbConnect from "@/lib/mongodb";
+import Genre from "@/models/Genre";
+import { auth } from "@/lib/auth";
+import logger from "@/lib/utils/logger";
+
+interface AuthenticatedUser {
+  role?: string;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -91,7 +96,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: unknown) {
     const err = error as Error;
-    console.error("Error fetching genres:", err);
+    logger.error("Error fetching genres:", err);
     return NextResponse.json(
       { success: false, error: "Failed to fetch genres" },
       { status: 500 },
@@ -102,6 +107,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
+
+    const session = await auth();
+    if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
+    }
 
     const body = await request.json();
 
@@ -130,8 +145,8 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
   } catch (error: unknown) {
-    const err = error as any;
-    console.error("Error creating genre:", err);
+    const err = error as { name?: string; code?: number; errors?: unknown };
+    logger.error("Error creating genre:", err);
 
     if (err?.name === "ValidationError") {
       return NextResponse.json(
@@ -160,6 +175,16 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     await dbConnect();
+
+    const session = await auth();
+    if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -193,8 +218,8 @@ export async function PUT(request: NextRequest) {
       data: updatedGenre,
     });
   } catch (error: unknown) {
-    const err = error as any;
-    console.error("Error updating genre:", err);
+    const err = error as { name?: string; code?: number; errors?: unknown };
+    logger.error("Error updating genre:", err);
 
     if (err?.name === "ValidationError") {
       return NextResponse.json(
@@ -223,6 +248,16 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await dbConnect();
+
+    const session = await auth();
+    if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const ids = searchParams.get("ids");
@@ -338,7 +373,7 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error: unknown) {
     const err = error as Error;
-    console.error("Error deleting genres:", err);
+    logger.error("Error creating genre:", err);
     return NextResponse.json(
       { success: false, error: "Failed to delete genres" },
       { status: 500 },

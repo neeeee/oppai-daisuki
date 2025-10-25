@@ -14,8 +14,11 @@ const securityHeaders = {
     "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none';",
 };
 
-// Rate limiting storage (in production, use Redis or database)
+// Rate limiting storage (in production, replace with a shared store like Redis/Upstash)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_ENABLED = process.env.RATE_LIMIT_ENABLED !== "false";
+// Placeholder for shared rate limiting store:
+// Integrate a Redis-backed token bucket here for multi-instance deployments.
 
 function getRateLimitKey(ip: string, path: string): string {
   return `${ip}:${path}`;
@@ -60,10 +63,16 @@ export default function middleware(request: NextRequest) {
   Object.entries(securityHeaders).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
+  // Dynamic CSP: stricter in production, dev-friendly otherwise
+  const csp =
+    process.env.NODE_ENV === "production"
+      ? "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+      : "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
+  response.headers.set("Content-Security-Policy", csp);
 
   // Rate limiting for admin routes (but allow login page)
   if (pathname.startsWith("/admin")) {
-    if (isRateLimited(ip, "/admin", 20, 60000)) {
+    if (RATE_LIMIT_ENABLED && isRateLimited(ip, "/admin", 20, 60000)) {
       console.log(
         `[SECURITY] Rate limit exceeded for admin route from IP: ${ip}`,
       );
@@ -93,15 +102,18 @@ export default function middleware(request: NextRequest) {
 
   // General rate limiting for API routes
   if (pathname.startsWith("/api/")) {
-    if (isRateLimited(ip, "/api", 100, 60000)) {
+    if (RATE_LIMIT_ENABLED && isRateLimited(ip, "/api", 100, 60000)) {
       console.log(`[SECURITY] Rate limit exceeded for API from IP: ${ip}`);
-      return new NextResponse("Too Many Requests", {
-        status: 429,
-        headers: {
-          "Retry-After": "60",
-          ...securityHeaders,
+      return NextResponse.json(
+        { success: false, error: "Too Many Requests", retryAfter: 60 },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+            ...securityHeaders,
+          },
         },
-      });
+      );
     }
   }
 

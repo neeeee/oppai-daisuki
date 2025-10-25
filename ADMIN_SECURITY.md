@@ -30,6 +30,7 @@ The admin authentication system implements multiple layers of security to protec
 - **IP Allowlisting**: Optional restriction to specific IP addresses
 - **CSRF Protection**: Built-in CSRF token validation
 - **Security Headers**: Comprehensive security headers (HSTS, CSP, X-Frame-Options, etc.)
+- **Shared Store Rate Limiting**: Use a centralized store (e.g., Redis/Upstash) in production to enforce consistent limits across instances
 - **SSL/TLS Enforcement**: HTTPS required in production
 
 ### Monitoring & Logging
@@ -87,6 +88,7 @@ NODE_ENV=production
 NEXTAUTH_URL=https://yourdomain.com
 ALLOWED_ADMIN_IPS="your.office.ip,your.home.ip"
 STRICT_IP_CHECK=true
+RATE_LIMIT_ENABLED=true  # Enable server-side rate limiting (use a shared store in production, e.g., Redis/Upstash)
 ```
 
 ## 🔒 Security Mechanisms

@@ -1,7 +1,11 @@
 "use client";
+import { sanitizeHtmlSimple } from "@/lib/utils/sanitize";
+import logger from "@/lib/utils/logger";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import { UploadDropzone } from "@/lib/uploadthing";
 import TagInput from "../../../components/admin/TagInput";
 
 type ObjectId = string;
@@ -157,7 +161,7 @@ export default function AdminNewsPage() {
         if (idolsJson?.success) setIdols(idolsJson.data || []);
         if (genresJson?.success) setGenres(genresJson.data || []);
       } catch (e) {
-        console.error("Failed to load taxonomies", e);
+        logger.error("Failed to load taxonomies", e);
       } finally {
         setLoadingTaxonomies(false);
       }
@@ -190,8 +194,8 @@ export default function AdminNewsPage() {
           setTotalItems(json.pagination?.totalItems || 0);
         }
       } catch (e) {
-        if ((e as any).name !== "AbortError") {
-          console.error("Failed to load news", e);
+        if ((e as { name?: string })?.name !== "AbortError") {
+          // non-abort error; optionally surface UI state
         }
       } finally {
         setLoading(false);
@@ -265,12 +269,17 @@ export default function AdminNewsPage() {
       setArticles((prev) => prev.filter((a) => a._id !== id));
       setTotalItems((prev) => Math.max(0, prev - 1));
     } catch (e) {
-      console.error("Delete failed", e);
+      logger.error("Fetch failed", e);
       alert("Delete failed");
     }
   };
 
-  const upsertArticle = async (payload: any) => {
+  const upsertArticle = async (
+    payload: Omit<
+      NewsArticle,
+      "_id" | "slug" | "createdAt" | "updatedAt" | "readingTime"
+    >,
+  ) => {
     setIsSubmitting(true);
     try {
       let res: Response;
@@ -294,7 +303,7 @@ export default function AdminNewsPage() {
       }
       return json.data as NewsArticle;
     } catch (e) {
-      console.error("Save failed", e);
+      logger.error("Delete failed", e);
       alert("Save failed");
       return null;
     } finally {
@@ -378,7 +387,7 @@ export default function AdminNewsPage() {
         setPage(1);
       }
     } catch (e) {
-      console.error("Failed to refresh list", e);
+      logger.error("Failed to refresh list", e);
     }
   };
 
@@ -472,7 +481,15 @@ export default function AdminNewsPage() {
       })
       .join("");
 
-    return { __html: html };
+    // Defense-in-depth: production-only sanitization of generated HTML
+    if (process.env.NODE_ENV === "production") {
+      html = html
+        .replace(/<\s*script\b[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, "")
+        .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
+        .replace(/(href|src)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi, '$1="#"');
+    }
+
+    return { __html: sanitizeHtmlSimple(html) };
   };
 
   return (
@@ -480,8 +497,10 @@ export default function AdminNewsPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">News CMS</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            News CMS
+          </h1>
+          <p className="mt-2 text-gray-700 dark:text-gray-300">
             Create, edit, and manage news articles (Markdown-supported)
           </p>
         </div>
@@ -498,8 +517,8 @@ export default function AdminNewsPage() {
       </div>
 
       {/* Editor */}
-      <div className="bg-white rounded-lg shadow border">
-        <div className="flex items-center justify-between px-4 py-3 border-b">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <span className="font-semibold">
               {editingId ? "Edit Article" : "Create Article"}
@@ -529,7 +548,7 @@ export default function AdminNewsPage() {
         <form onSubmit={handleSubmit} className="px-4 py-4 space-y-6">
           {/* Title + Slug preview */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Title
             </label>
             <input
@@ -543,7 +562,7 @@ export default function AdminNewsPage() {
               placeholder="Enter article title"
             />
             {!!form.title.trim() && (
-              <div className="mt-1 text-xs text-gray-500">
+              <div className="mt-1 text-xs text-gray-500 dark:text-gray-300">
                 Slug preview:{" "}
                 {form.title
                   .toLowerCase()
@@ -557,7 +576,7 @@ export default function AdminNewsPage() {
 
           {/* Excerpt */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Excerpt (optional)
             </label>
             <textarea
@@ -573,34 +592,51 @@ export default function AdminNewsPage() {
 
           {/* Featured Image */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Featured Image URL (optional)
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Featured Image (optional)
             </label>
-            <input
-              type="url"
-              value={form.featuredImage || ""}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, featuredImage: e.target.value }))
-              }
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-              placeholder="https://..."
-            />
             {form.featuredImage ? (
-              <img
-                src={form.featuredImage}
-                alt="Featured"
-                className="mt-2 w-64 h-36 object-cover rounded border"
-              />
-            ) : null}
+              <div className="mt-1">
+                <Image
+                  src={form.featuredImage}
+                  alt="Featured image preview"
+                  className="w-64 h-36 object-cover rounded border border-gray-300 dark:border-gray-600 mb-2"
+                />
+                <button
+                  type="button"
+                  onClick={() => setForm((p) => ({ ...p, featuredImage: "" }))}
+                  className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                >
+                  Remove featured image
+                </button>
+              </div>
+            ) : (
+              <div className="mt-1">
+                <UploadDropzone
+                  endpoint="imageUploader"
+                  onClientUploadComplete={(res) => {
+                    if (res?.[0]) {
+                      setForm((p) => ({
+                        ...p,
+                        featuredImage: res[0].url,
+                      }));
+                    }
+                  }}
+                  onUploadError={(error: Error) => {
+                    alert(`Featured image upload failed: ${error.message}`);
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Markdown editor / preview */}
           <div>
             <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Content (Markdown)
               </label>
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
                 Supports headings, bold/italic, links, lists, code blocks
               </div>
             </div>
@@ -632,13 +668,13 @@ Write your article in Markdown..."
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Category */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Category
               </label>
               <select
                 value={form.category}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, category: e.target.value as any }))
+                  setForm((p) => ({ ...p, category: String(e.target.value) }))
                 }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
               >
@@ -652,13 +688,13 @@ Write your article in Markdown..."
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Status
               </label>
               <select
                 value={form.status}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, status: e.target.value as any }))
+                  setForm((p) => ({ ...p, status: String(e.target.value) }))
                 }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
               >
@@ -672,7 +708,7 @@ Write your article in Markdown..."
 
             {/* PublishedAt */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Publish Date/Time
               </label>
               <input
@@ -692,7 +728,7 @@ Write your article in Markdown..."
 
             {/* ScheduledAt */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Schedule Date/Time
               </label>
               <input
@@ -865,8 +901,8 @@ Write your article in Markdown..."
           {/* Author */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Author Name
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Author Name *
               </label>
               <input
                 type="text"
@@ -877,12 +913,14 @@ Write your article in Markdown..."
                     author: { ...p.author, name: e.target.value },
                   }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                placeholder="Author's full name"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Author Email
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Author Email *
               </label>
               <input
                 type="email"
@@ -893,11 +931,13 @@ Write your article in Markdown..."
                     author: { ...p.author, email: e.target.value },
                   }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                placeholder="author@example.com"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Author Avatar URL
               </label>
               <input
@@ -909,13 +949,14 @@ Write your article in Markdown..."
                     author: { ...p.author, avatar: e.target.value },
                   }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                placeholder="https://..."
               />
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-3 pt-4 border-t">
+          <div className="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="submit"
               disabled={
@@ -924,7 +965,7 @@ Write your article in Markdown..."
                 !form.content.trim() ||
                 !form.author?.name?.trim()
               }
-              className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+              className="bg-indigo-600 dark:bg-indigo-500 text-white px-6 py-2 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 transition-colors"
             >
               {isSubmitting
                 ? "Saving..."
@@ -936,7 +977,7 @@ Write your article in Markdown..."
               <button
                 type="button"
                 onClick={resetForm}
-                className="bg-gray-200 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-300"
+                className="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-6 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
               >
                 Cancel
               </button>
@@ -946,10 +987,12 @@ Write your article in Markdown..."
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 border">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
-            <label className="text-sm text-gray-700">Search</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">
+              Search
+            </label>
             <input
               type="text"
               value={search}
@@ -1014,10 +1057,12 @@ Write your article in Markdown..."
       </div>
 
       {/* List */}
-      <div className="bg-white rounded-lg shadow border overflow-hidden">
-        <div className="px-4 py-3 border-b flex items-center justify-between">
-          <div className="font-semibold">Articles</div>
-          <div className="text-sm text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="font-semibold text-gray-900 dark:text-white">
+            Articles
+          </div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             {loading ? "Loading..." : `${totalItems} total`}
           </div>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import VideoPlayer from "../../components/video/VideoPlayer";
 import VideoInfo from "../../components/video/VideoInfo";
@@ -28,13 +28,8 @@ export default function WatchPage() {
   const router = useRouter();
   const videoId = params.id as string;
 
-  useEffect(() => {
-    if (videoId) {
-      fetchVideo();
-    }
-  }, [videoId]);
-
-  const fetchVideo = async () => {
+  const fetchVideo = useCallback(async () => {
+    if (!videoId) return;
     try {
       const response = await fetch(`/api/videos/${videoId}`);
       const data = await response.json();
@@ -46,11 +41,19 @@ export default function WatchPage() {
       }
     } catch (error) {
       setError("Error loading video");
-      console.error("Error fetching video:", error);
+      (() => {
+        import("@/lib/utils/logger").then((m) =>
+          m.default.error("Error fetching video:", error),
+        );
+      })();
     } finally {
       setLoading(false);
     }
-  };
+  }, [videoId]);
+
+  useEffect(() => {
+    fetchVideo();
+  }, [fetchVideo]);
 
   const handleViewIncrement = async () => {
     if (!video) return;
@@ -72,7 +75,11 @@ export default function WatchPage() {
         prev ? { ...prev, viewCount: prev.viewCount + 1 } : null,
       );
     } catch (error) {
-      console.error("Error incrementing view count:", error);
+      (() => {
+        import("@/lib/utils/logger").then((m) =>
+          m.default.error("Error incrementing view count:", error),
+        );
+      })();
     }
   };
 

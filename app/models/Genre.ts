@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import logger from "@/lib/utils/logger";
 
 const GenreSchema = new mongoose.Schema(
   {
@@ -156,13 +157,11 @@ GenreSchema.pre("save", function (next) {
 GenreSchema.pre("save", async function (next) {
   if (this.isModified("parentGenre") && this.parentGenre) {
     try {
-      await mongoose
-        .model("Genre")
-        .findByIdAndUpdate(this.parentGenre, {
-          $addToSet: { subGenres: this._id },
-        });
+      await mongoose.model("Genre").findByIdAndUpdate(this.parentGenre, {
+        $addToSet: { subGenres: this._id },
+      });
     } catch (error) {
-      console.error("Error updating parent genre:", error);
+      logger.error("Error updating parent genre:", error);
     }
   }
   next();
@@ -173,11 +172,9 @@ GenreSchema.pre("remove", async function (next) {
   try {
     // Remove from parent's subGenres array
     if (this.parentGenre) {
-      await mongoose
-        .model("Genre")
-        .findByIdAndUpdate(this.parentGenre, {
-          $pull: { subGenres: this._id },
-        });
+      await mongoose.model("Genre").findByIdAndUpdate(this.parentGenre, {
+        $pull: { subGenres: this._id },
+      });
     }
 
     // Update child genres to remove parent reference
@@ -185,7 +182,7 @@ GenreSchema.pre("remove", async function (next) {
       .model("Genre")
       .updateMany({ parentGenre: this._id }, { $unset: { parentGenre: 1 } });
   } catch (error) {
-    console.error("Error during genre cleanup:", error);
+    logger.error("Error during genre cleanup:", error);
   }
   next();
 });

@@ -84,11 +84,6 @@ export default function VideoForm({
     setFormData((prev) => ({ ...prev, channelAvatar: url }));
   };
 
-  const extractVideoIdFromFileName = (fileName: string) => {
-    const match = fileName.match(/(\d+)/);
-    return match ? match[1] : Math.floor(Math.random() * 1000).toString();
-  };
-
   const generateDuration = () => {
     // Generate random duration between 1:00 and 20:00
     const minutes = Math.floor(Math.random() * 19) + 1;

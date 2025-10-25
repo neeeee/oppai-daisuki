@@ -204,7 +204,10 @@ IdolSchema.virtual("age").get(function () {
 });
 
 // Generate slug function
-function generateIdolSlug(name: string, stageName?: string | null | undefined): string {
+function generateIdolSlug(
+  name: string,
+  stageName?: string | null | undefined,
+): string {
   const nameToSlugify = stageName || name;
   return nameToSlugify
     .toLowerCase()
@@ -216,29 +219,29 @@ function generateIdolSlug(name: string, stageName?: string | null | undefined): 
 
 // Pre-validate middleware to generate slug BEFORE validation runs
 IdolSchema.pre("validate", function (next) {
-  if (this.name && (!this.slug || this.isModified("name") || this.isModified("stageName"))) {
-    this.slug = generateIdolSlug(this.name, this.stageName as any);
+  if (
+    this.name &&
+    (!this.slug || this.isModified("name") || this.isModified("stageName"))
+  ) {
+    this.slug = generateIdolSlug(this.name, typeof this.stageName === "string" ? this.stageName : undefined);
   }
   next();
 });
 
 // Pre-save middleware as backup
 IdolSchema.pre("save", function (next) {
-  if (this.name && (!this.slug || this.isModified("name") || this.isModified("stageName"))) {
-    this.slug = generateIdolSlug(this.name, this.stageName as any);
+  if (
+    this.name &&
+    (!this.slug || this.isModified("name") || this.isModified("stageName"))
+  ) {
+    this.slug = generateIdolSlug(this.name, typeof this.stageName === "string" ? this.stageName : undefined);
   }
   next();
 });
-
-
 
 // Ensure virtuals are included in JSON output
 IdolSchema.set("toJSON", { virtuals: true });
 IdolSchema.set("toObject", { virtuals: true });
 
 // Delete the model from cache if it exists to ensure fresh schema
-if (mongoose.models.Idol) {
-  delete mongoose.models.Idol;
-}
-
-export default mongoose.model("Idol", IdolSchema);
+export default mongoose.models.Idol || mongoose.model("Idol", IdolSchema);

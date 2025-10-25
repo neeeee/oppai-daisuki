@@ -12,7 +12,6 @@ interface VideoPlayerProps {
 export default function VideoPlayer({
   src,
   poster,
-  title,
   onViewIncrement,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);

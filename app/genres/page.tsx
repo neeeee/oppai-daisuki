@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import GenreTile from "../components/tiles/GenreTile";
 
 interface Genre {
@@ -57,7 +57,7 @@ export default function GenresPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<GenresResponse["stats"] | null>(null);
 
-  const fetchGenres = async () => {
+  const fetchGenres = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -88,16 +88,16 @@ export default function GenresPage() {
       } else {
         setError("Failed to load genres");
       }
-    } catch (err) {
+    } catch {
       setError("Network error occurred");
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, sortBy, sortOrder, searchTerm, showAdult]);
 
   useEffect(() => {
     fetchGenres();
-  }, [currentPage, sortBy, sortOrder, searchTerm, showAdult]);
+  }, [fetchGenres]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

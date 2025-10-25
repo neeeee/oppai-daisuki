@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import PhotoTile from "../components/tiles/PhotoTile";
 
 interface Photo {
@@ -72,14 +72,14 @@ export default function PhotosPage() {
   const [stats, setStats] = useState<PhotosResponse["stats"] | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "masonry">("masonry");
 
-  const fetchPhotos = async () => {
+  const fetchPhotos = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: "30",
+        limit: "24",
         sortBy,
         sortOrder,
         includeStats: "true",
@@ -91,6 +91,10 @@ export default function PhotosPage() {
 
       if (filterTag) {
         params.append("tag", filterTag);
+      }
+
+      if (filterCategory) {
+        params.append("category", filterCategory);
       }
 
       if (!showAdult) {
@@ -106,12 +110,21 @@ export default function PhotosPage() {
       } else {
         setError("Failed to load photos");
       }
-    } catch (err) {
+    } catch {
       setError("Network error occurred");
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    currentPage,
+    sortBy,
+    sortOrder,
+    searchTerm,
+    filterTag,
+    filterCategory,
+    showAdult,
+    photos,
+  ]);
 
   useEffect(() => {
     setPhotos([]);
@@ -120,7 +133,7 @@ export default function PhotosPage() {
 
   useEffect(() => {
     fetchPhotos();
-  }, [currentPage, sortBy, sortOrder, searchTerm, filterTag, showAdult]);
+  }, [fetchPhotos]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

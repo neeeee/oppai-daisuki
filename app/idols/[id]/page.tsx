@@ -1,6 +1,7 @@
 "use client";
+import logger from "@/lib/utils/logger";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -117,13 +118,9 @@ export default function IdolProfilePage() {
     "videos",
   );
 
-  useEffect(() => {
+  const fetchIdolData = useCallback(async () => {
     if (!params.id) return;
 
-    fetchIdolData();
-  }, [params.id]);
-
-  const fetchIdolData = async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/idols/${params.id}`);
@@ -141,12 +138,16 @@ export default function IdolProfilePage() {
       setRelatedIdols(data.data.relatedIdols);
       setContentStats(data.data.content.stats);
     } catch (err) {
-      console.error("Error fetching idol:", err);
-      setError("Failed to load idol");
+      logger.error("Error fetching idol:", err);
+      setError("Failed to load idol data");
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchIdolData();
+  }, [fetchIdolData]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -319,8 +320,12 @@ export default function IdolProfilePage() {
                           {/* Play button overlay */}
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
                             <div className="bg-white/90 rounded-full p-3">
-                              <svg className="w-6 h-6 text-gray-800 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M8 5v10l8-5z"/>
+                              <svg
+                                className="w-6 h-6 text-gray-800 ml-1"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M8 5v10l8-5z" />
                               </svg>
                             </div>
                           </div>

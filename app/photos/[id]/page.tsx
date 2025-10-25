@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, notFound } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 
 interface Photo {
@@ -49,15 +49,9 @@ export default function PhotoDetailPage() {
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
-  useEffect(() => {
-    if (photoId) {
-      fetchPhoto();
-    }
-  }, [photoId]);
-
-  const fetchPhoto = async () => {
+  const fetchPhoto = useCallback(async () => {
+    if (!photoId) return;
     try {
       setLoading(true);
       setError(null);
@@ -72,20 +66,116 @@ export default function PhotoDetailPage() {
       } else {
         setError("Photo not found");
       }
-    } catch (err) {
+    } catch {
       setError("Failed to load photo");
     } finally {
       setLoading(false);
     }
-  };
+  }, [photoId]);
+
+  useEffect(() => {
+    fetchPhoto();
+  }, [fetchPhoto]);
 
   const incrementViewCount = async () => {
     try {
       await fetch(`/api/photos/${photoId}/view`, {
         method: "POST",
       });
-    } catch (error) {
+    } catch {
       // Silently fail - view count increment is not critical
+    }
+  };
+
+  const handleLike = async () => {
+    try {
+      await fetch(`/api/photos/${photoId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "like" }),
+      });
+
+      if (photo) {
+        setPhoto({
+          ...photo,
+          likeCount: photo.likeCount + 1,
+        });
+      }
+    } catch (error) {
+      (() => {
+        import("@/lib/utils/logger").then((m) =>
+          m.default.error("Failed to like photo:", error),
+        );
+      })();
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      await fetch(`/api/photos/${photoId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "download" }),
+      });
+
+      if (photo) {
+        setPhoto({
+          ...photo,
+          downloadCount: photo.downloadCount + 1,
+        });
+      }
+
+      // Trigger actual download
+      if (photo?.imageUrl) {
+        const link = document.createElement("a");
+        link.href = photo.imageUrl;
+        link.download = photo.title || "photo";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      (() => {
+        import("@/lib/utils/logger").then((m) =>
+          m.default.error("Failed to download photo:", error),
+        );
+      })();
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      // Share using Web Share API if available
+      if (navigator.share && photo) {
+        await navigator.share({
+          title: photo.title || "Photo",
+          text: photo.description || photo.title || "Check out this photo",
+          url: window.location.href,
+        });
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(window.location.href);
+        // You could show a toast notification here
+      }
+
+      // Track share action
+      await fetch(`/api/photos/${photoId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "share" }),
+      });
+    } catch (error) {
+      (() => {
+        import("@/lib/utils/logger").then((m) =>
+          m.default.error("Failed to share photo:", error),
+        );
+      })();
     }
   };
 
@@ -348,13 +438,22 @@ export default function PhotoDetailPage() {
                 Actions
               </h3>
               <div className="space-y-3">
-                <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                <button
+                  onClick={handleLike}
+                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
                   ❤️ Like Photo
                 </button>
-                <button className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                <button
+                  onClick={handleDownload}
+                  className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                >
                   ⬇️ Download
                 </button>
-                <button className="w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                <button
+                  onClick={handleShare}
+                  className="w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
                   📤 Share
                 </button>
               </div>

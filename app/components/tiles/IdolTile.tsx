@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import Image from "next/image";
 
 interface Idol {
   _id: string;
@@ -82,10 +83,12 @@ export default function IdolTile({ idol }: IdolTileProps) {
         {/* Cover/Background Image */}
         <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/20 dark:to-purple-900/20">
           {idol.coverImage && !imageError ? (
-            <img
+            <Image
               src={idol.coverImage}
               alt={displayName}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-500"
+              sizes="(max-width: 768px) 100vw, 400px"
               onError={() => setImageError(true)}
             />
           ) : (
@@ -99,12 +102,16 @@ export default function IdolTile({ idol }: IdolTileProps) {
           {/* Profile Image Overlay */}
           {idol.profileImage && !profileImageError && (
             <div className="absolute bottom-4 left-4">
-              <img
-                src={idol.profileImage}
-                alt={displayName}
-                className="w-16 h-16 rounded-full border-3 border-white shadow-lg object-cover"
-                onError={() => setProfileImageError(true)}
-              />
+              <div className="relative w-16 h-16 rounded-full border-3 border-white shadow-lg overflow-hidden">
+                <Image
+                  src={idol.profileImage}
+                  alt={displayName}
+                  fill
+                  className="object-cover"
+                  sizes="64px"
+                  onError={() => setProfileImageError(true)}
+                />
+              </div>
             </div>
           )}
 

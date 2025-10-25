@@ -10,7 +10,7 @@ export default function NavItem({ title, href, additionalStyle }: INavItem) {
   return (
     <Link
       href={href}
-      className={`text-white text-shadow-2xs hover:text-blue-600 font-medium transition-colors ${additionalStyle || ""}`}
+      className={`text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors ${additionalStyle || ""}`}
     >
       {title}
     </Link>

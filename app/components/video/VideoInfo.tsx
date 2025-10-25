@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { formatCount } from "../../lib/utils/dateUtils";
 
 interface Video {
@@ -56,11 +57,15 @@ Views: ${formatCount(video.viewCount)}
       </div>
 
       <div className="flex items-start space-x-3">
-        <img
-          src={video.channelAvatar}
-          alt={video.channelName}
-          className="w-12 h-12 rounded-full"
-        />
+        <div className="relative w-12 h-12 rounded-full overflow-hidden">
+          <Image
+            src={video.channelAvatar}
+            alt={video.channelName}
+            fill
+            className="object-cover"
+            sizes="48px"
+          />
+        </div>
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <div>

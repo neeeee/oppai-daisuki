@@ -37,9 +37,9 @@ export default function AdminLogin() {
       } else if (result?.ok) {
         router.push("/admin");
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.");
-      console.error("Login error:", err);
+      // Intentionally not logging errors here to avoid leaking details
     } finally {
       setIsLoading(false);
     }
@@ -183,8 +183,8 @@ export default function AdminLogin() {
                   Use the admin credentials configured in your .env.local file
                 </p>
                 <p>
-                  Run 'npm run setup-admin' if you haven't set up admin
-                  credentials yet
+                  Run &#39;npm run setup-admin&#39; if you haven&#39;t set up
+                  admin credentials yet
                 </p>
               </div>
             </div>

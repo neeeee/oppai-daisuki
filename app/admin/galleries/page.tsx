@@ -1,9 +1,10 @@
 "use client";
+import Image from "next/image";
+import logger from "@/lib/utils/logger";
 
 import { useEffect, useMemo, useState } from "react";
+import { UploadDropzone } from "../../lib/uploadthing";
 import TagInput from "../../../components/admin/TagInput";
-
-type ObjectId = string;
 
 type IdolOption = {
   _id: string;
@@ -145,7 +146,7 @@ export default function AdminGalleriesPage() {
         if (idolsJson?.success) setIdols(idolsJson.data || []);
         if (genresJson?.success) setGenres(genresJson.data || []);
       } catch (e) {
-        console.error("Failed to load taxonomies", e);
+        logger.error("Failed to load taxonomies", e);
       } finally {
         setLoadingTaxonomies(false);
       }
@@ -185,8 +186,8 @@ export default function AdminGalleriesPage() {
           setStats(null);
         }
       } catch (e) {
-        if ((e as any).name !== "AbortError") {
-          console.error("Failed to load galleries", e);
+        if ((e as { name?: string })?.name !== "AbortError") {
+          logger.error("Failed to load galleries", e);
         }
       } finally {
         setLoading(false);
@@ -265,7 +266,7 @@ export default function AdminGalleriesPage() {
         return n;
       });
     } catch (e) {
-      console.error("Delete failed", e);
+      logger.error("Delete failed", e);
       alert("Delete failed");
     }
   };
@@ -305,7 +306,7 @@ export default function AdminGalleriesPage() {
       await refreshList();
       setSelectedIds(new Set());
     } catch (e) {
-      console.error("Bulk delete failed", e);
+      logger.error("Bulk delete failed", e);
       alert("Bulk delete failed");
     }
   };
@@ -333,7 +334,7 @@ export default function AdminGalleriesPage() {
         setPage(1);
       }
     } catch (e) {
-      console.error("Failed to refresh galleries", e);
+      logger.error("Failed to refresh galleries", e);
     }
   };
 
@@ -364,7 +365,7 @@ export default function AdminGalleriesPage() {
       }
       return json.data as Gallery;
     } catch (e) {
-      console.error("Save failed", e);
+      logger.error("Save failed", e);
       alert("Save failed");
       return null;
     } finally {
@@ -380,10 +381,12 @@ export default function AdminGalleriesPage() {
       return;
     }
 
+    const coverPhoto = form.coverPhoto?.trim();
+
     const payload = {
       title: form.title.trim(),
       description: form.description?.trim() || "",
-      coverPhoto: form.coverPhoto?.trim() || "",
+      ...(coverPhoto && { coverPhoto }),
       isPublic: !!form.isPublic,
       tags: (form.tags || []).map((t) => t.trim()).filter(Boolean),
       category: form.category?.trim() || "",
@@ -510,43 +513,46 @@ export default function AdminGalleriesPage() {
           {/* Title and cover */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Title
-              </label>
-              <input
-                type="text"
-                value={form.title}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, title: e.target.value }))
-                }
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                placeholder="Gallery title"
-              />
-              {!!form.title.trim() && (
-                <div className="mt-1 text-xs text-gray-500">
-                  Slug preview:{" "}
-                  {form.title
-                    .toLowerCase()
-                    .replace(/[^a-z0-9\s-]/g, "")
-                    .replace(/\s+/g, "-")
-                    .replace(/-+/g, "-")
-                    .replace(/^-|-$/g, "")}
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Title *
+                </label>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, title: e.target.value }))
+                  }
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  placeholder="Gallery title"
+                />
+                {!!form.title.trim() && (
+                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Slug preview:{" "}
+                    {form.title
+                      .toLowerCase()
+                      .replace(/[^a-z0-9\s-]/g, "")
+                      .replace(/\s+/g, "-")
+                      .replace(/-+/g, "-")
+                      .replace(/^-|-$/g, "")}
+                  </div>
+                )}
+              </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Public
               </label>
               <div className="mt-2">
-                <label className="inline-flex items-center gap-2 text-sm">
+                <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <input
                     type="checkbox"
                     checked={form.isPublic}
                     onChange={(e) =>
                       setForm((p) => ({ ...p, isPublic: e.target.checked }))
                     }
+                    className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-gray-700"
                   />
                   <span>Visible to users</span>
                 </label>
@@ -556,30 +562,68 @@ export default function AdminGalleriesPage() {
 
           {/* Cover photo URL */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Cover Photo URL
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Cover Photo
             </label>
-            <input
-              type="url"
-              value={form.coverPhoto || ""}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, coverPhoto: e.target.value }))
-              }
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-              placeholder="https://..."
-            />
             {form.coverPhoto ? (
-              <img
-                src={form.coverPhoto}
-                alt="Cover"
-                className="mt-2 w-64 h-36 object-cover rounded border"
-              />
-            ) : null}
+              <div className="mt-1">
+                <div className="relative w-64 h-36 rounded border border-gray-300 dark:border-gray-600 mb-2 overflow-hidden">
+                  <Image
+                    src={form.coverPhoto}
+                    alt="Cover photo preview"
+                    fill
+                    className="object-cover"
+                    sizes="256px"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setForm((p) => ({ ...p, coverPhoto: "" }))}
+                  className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                >
+                  Remove cover photo
+                </button>
+              </div>
+            ) : (
+              <div className="mt-1">
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                  <div className="text-center mb-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      📸 Upload Cover Photo
+                    </span>
+                  </div>
+                  <UploadDropzone
+                    endpoint="imageUploader"
+                    onClientUploadComplete={(res) => {
+                      if (res?.[0]) {
+                        setForm((p) => ({
+                          ...p,
+                          coverPhoto: res[0].url,
+                        }));
+                        alert("✅ Cover photo uploaded successfully!");
+                      }
+                    }}
+                    onUploadError={(error: Error) => {
+                      alert(`❌ Cover photo upload failed: ${error.message}`);
+                    }}
+                    appearance={{
+                      button:
+                        "ut-ready:bg-blue-500 ut-uploading:cursor-not-allowed bg-blue-500 bg-none after:bg-blue-400",
+                      allowedContent: "text-gray-600 dark:text-gray-400",
+                    }}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                    This image will be displayed as the gallery cover on listing
+                    pages
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Description
             </label>
             <textarea
@@ -588,15 +632,15 @@ export default function AdminGalleriesPage() {
                 setForm((p) => ({ ...p, description: e.target.value }))
               }
               rows={3}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-              placeholder="Short description"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              placeholder="Optional description"
             />
           </div>
 
           {/* Meta grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Category
               </label>
               <input
@@ -605,12 +649,12 @@ export default function AdminGalleriesPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, category: e.target.value }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                placeholder="e.g. Gravure"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                placeholder="e.g., Portrait, Landscape"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Photographer
               </label>
               <input
@@ -619,12 +663,12 @@ export default function AdminGalleriesPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, photographer: e.target.value }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                placeholder="Name"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                placeholder="Photographer name"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Location
               </label>
               <input
@@ -633,8 +677,8 @@ export default function AdminGalleriesPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, location: e.target.value }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                placeholder="City, Country"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                placeholder="Photo location"
               />
             </div>
           </div>
@@ -642,7 +686,7 @@ export default function AdminGalleriesPage() {
           {/* Date + Relations */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Date Taken
               </label>
               <input
@@ -651,19 +695,19 @@ export default function AdminGalleriesPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, dateTaken: e.target.value }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Idol
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Idol (Optional)
               </label>
               <select
                 value={form.idol || ""}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, idol: e.target.value || null }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               >
                 <option value="">Unassigned</option>
                 {loadingTaxonomies ? (
@@ -711,11 +755,11 @@ export default function AdminGalleriesPage() {
           />
 
           {/* Actions */}
-          <div className="flex items-center gap-3 pt-4 border-t">
+          <div className="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="submit"
               disabled={isSubmitting || !form.title.trim()}
-              className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+              className="bg-indigo-600 dark:bg-indigo-500 text-white px-6 py-2 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 transition-colors"
             >
               {isSubmitting
                 ? "Saving..."
@@ -727,7 +771,7 @@ export default function AdminGalleriesPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="bg-gray-200 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-300"
+                className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
               >
                 Cancel
               </button>
@@ -815,7 +859,13 @@ export default function AdminGalleriesPage() {
             <select
               value={sortBy}
               onChange={(e) => {
-                setSortBy(e.target.value as any);
+                setSortBy(
+                  e.target.value as
+                    | "createdAt"
+                    | "updatedAt"
+                    | "title"
+                    | "photoCount",
+                );
                 setPage(1);
               }}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
@@ -832,7 +882,7 @@ export default function AdminGalleriesPage() {
             <select
               value={sortOrder}
               onChange={(e) => {
-                setSortOrder(e.target.value as any);
+                setSortOrder(e.target.value as "asc" | "desc");
                 setPage(1);
               }}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
@@ -909,11 +959,15 @@ export default function AdminGalleriesPage() {
                 onChange={() => toggleSelect(g._id)}
               />
               {g.coverPhoto ? (
-                <img
-                  src={g.coverPhoto}
-                  alt={g.title}
-                  className="w-28 h-18 object-cover rounded border"
-                />
+                <div className="relative w-28 h-18 rounded border overflow-hidden">
+                  <Image
+                    src={g.coverPhoto}
+                    alt={g.title}
+                    fill
+                    className="object-cover"
+                    sizes="112px"
+                  />
+                </div>
               ) : (
                 <div className="w-28 h-18 rounded border bg-gray-50 grid place-items-center text-gray-400 text-xs">
                   No cover
@@ -934,8 +988,8 @@ export default function AdminGalleriesPage() {
                 </div>
 
                 <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1 text-xs text-gray-600">
-                  <div>Idol: {idolName(g.idol as any)}</div>
-                  <div>Genre: {genreName(g.genre as any)}</div>
+                  <div>Idol: {idolName(String(g.idol))}</div>
+                  <div>Genre: {genreName(String(g.genre))}</div>
                   <div>Category: {g.category || "—"}</div>
                   <div>Photographer: {g.photographer || "—"}</div>
                   <div>Location: {g.location || "—"}</div>

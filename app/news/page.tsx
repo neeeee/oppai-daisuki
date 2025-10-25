@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 
 interface NewsArticle {
@@ -71,7 +71,7 @@ export default function NewsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<NewsResponse["stats"] | null>(null);
 
-  const fetchNews = async () => {
+  const fetchNews = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -108,12 +108,21 @@ export default function NewsPage() {
       } else {
         setError("Failed to load news articles");
       }
-    } catch (err) {
+    } catch {
       setError("Network error occurred");
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    currentPage,
+    sortBy,
+    sortOrder,
+    searchTerm,
+    categoryFilter,
+    statusFilter,
+    showAdult,
+    articles,
+  ]);
 
   useEffect(() => {
     setArticles([]);
@@ -122,7 +131,7 @@ export default function NewsPage() {
 
   useEffect(() => {
     fetchNews();
-  }, [currentPage, sortBy, sortOrder, searchTerm, filterCategory, filterTag]);
+  }, [fetchNews]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,7 +161,8 @@ export default function NewsPage() {
     });
   };
 
-  const formatCount = (count: number) => {
+  const formatCount = (count: number | undefined) => {
+    if (!count || count === 0) return "0";
     if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
     return count.toString();
   };

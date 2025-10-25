@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import IdolTile from "../components/tiles/IdolTile";
 
 interface Idol {
@@ -74,7 +74,7 @@ export default function IdolsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<IdolsResponse["stats"] | null>(null);
 
-  const fetchIdols = async () => {
+  const fetchIdols = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -109,16 +109,16 @@ export default function IdolsPage() {
       } else {
         setError("Failed to load idols");
       }
-    } catch (err) {
+    } catch {
       setError("Network error occurred");
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, sortBy, sortOrder, searchTerm, filterStatus]);
 
   useEffect(() => {
     fetchIdols();
-  }, [currentPage, sortBy, sortOrder, searchTerm, filterStatus]);
+  }, [fetchIdols]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

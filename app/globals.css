@@ -1,8 +1,9 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
     --background: #ffffff;
-    --foreground: #171717;
+    --foreground: #111827;
 }
 
 @theme inline {
@@ -12,117 +13,37 @@
     --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --background: #0a0a0a;
-        --foreground: #ededed;
-    }
-
-    /* Ensure admin area stays light */
-    body:has([data-admin-area]) {
-        --background: #ffffff;
-        --foreground: #171717;
-    }
+html {
+    background-color: var(--background);
+    transition: background-color 200ms ease-in-out;
 }
 
 body {
-    background: var(--background);
+    background-color: var(--background);
     color: var(--foreground);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Roboto",
+        "Oxygen",
+        "Ubuntu",
+        "Cantarell",
+        sans-serif;
+    transition: background-color 200ms ease-in-out, color 200ms ease-in-out;
 }
 
-/* Force light mode for admin areas - override system dark mode */
-.admin-area {
-    background-color: #f9fafb !important;
-    color: #111827 !important;
+*,
+*::before,
+*::after {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
 }
 
-.admin-area *,
-[data-admin-area] * {
-    color: inherit;
-}
-
-/* Ensure all text elements are dark in admin */
-.admin-area h1,
-.admin-area h2,
-.admin-area h3,
-.admin-area h4,
-.admin-area h5,
-.admin-area h6,
-.admin-area p,
-.admin-area span,
-.admin-area div,
-.admin-area label,
-.admin-area a,
-[data-admin-area] h1,
-[data-admin-area] h2,
-[data-admin-area] h3,
-[data-admin-area] h4,
-[data-admin-area] h5,
-[data-admin-area] h6,
-[data-admin-area] p,
-[data-admin-area] span,
-[data-admin-area] div,
-[data-admin-area] label,
-[data-admin-area] a {
-    color: #111827 !important;
-}
-
-/* Form elements styling for admin */
-.admin-area input,
-.admin-area textarea,
-.admin-area select,
-[data-admin-area] input,
-[data-admin-area] textarea,
-[data-admin-area] select {
-    background-color: white !important;
-    color: #374151 !important;
-    border-color: #d1d5db !important;
-}
-
-.admin-area input:focus,
-.admin-area textarea:focus,
-.admin-area select:focus,
-[data-admin-area] input:focus,
-[data-admin-area] textarea:focus,
-[data-admin-area] select:focus {
-    border-color: #6366f1 !important;
-    --tw-ring-color: #6366f1 !important;
-}
-
-/* White backgrounds for admin cards and panels */
-.admin-area .bg-white,
-[data-admin-area] .bg-white {
-    background-color: white !important;
-}
-
-/* Ensure gray text stays properly colored */
-.admin-area .text-gray-600,
-.admin-area .text-gray-700,
-.admin-area .text-gray-500,
-[data-admin-area] .text-gray-600,
-[data-admin-area] .text-gray-700,
-[data-admin-area] .text-gray-500 {
-    color: #6b7280 !important;
-}
-
-.admin-area .text-gray-900,
-[data-admin-area] .text-gray-900 {
-    color: #111827 !important;
-}
-
-/* Button text colors */
-.admin-area button,
-[data-admin-area] button {
-    color: inherit;
-}
-
-/* Placeholder text for inputs */
-.admin-area input::placeholder,
-.admin-area textarea::placeholder,
-[data-admin-area] input::placeholder,
-[data-admin-area] textarea::placeholder {
-    color: #9ca3af !important;
+input, textarea, select, button {
+    @apply transition-colors duration-200;
 }
 
 @layer utilities {

@@ -1,10 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { UploadDropzone } from "../../lib/uploadthing";
 import TagInput from "../../../components/admin/TagInput";
-
-type ObjectId = string;
+import logger from "@/lib/utils/logger";
 
 type IdolOption = {
   _id: string;
@@ -135,7 +135,7 @@ export default function AdminPhotosPage() {
         if (idolsJson?.success) setIdols(idolsJson.data || []);
         if (galleriesJson?.success) setGalleries(galleriesJson.data || []);
       } catch (e) {
-        console.error("Failed to load taxonomies", e);
+        logger.error("Failed to load taxonomies", e);
       } finally {
         setLoadingTaxonomies(false);
       }
@@ -171,8 +171,8 @@ export default function AdminPhotosPage() {
           setTotalItems(0);
         }
       } catch (e) {
-        if ((e as any).name !== "AbortError") {
-          console.error("Failed to load photos", e);
+        if ((e as Error).name !== "AbortError") {
+          logger.error("Failed to load photos", e);
         }
       } finally {
         setLoading(false);
@@ -215,7 +215,7 @@ export default function AdminPhotosPage() {
         setPage(1);
       }
     } catch (e) {
-      console.error("Failed to refresh photos", e);
+      logger.error("Failed to refresh photos", e);
     }
   };
 
@@ -237,7 +237,7 @@ export default function AdminPhotosPage() {
         return n;
       });
     } catch (e) {
-      console.error("Delete failed", e);
+      logger.error("Delete failed", e);
       alert("Delete failed");
     }
   };
@@ -258,7 +258,7 @@ export default function AdminPhotosPage() {
       await refreshList();
       setSelectedIds(new Set());
     } catch (e) {
-      console.error("Bulk delete failed", e);
+      logger.error("Bulk delete failed", e);
       alert("Bulk delete failed");
     }
   };
@@ -296,7 +296,7 @@ export default function AdminPhotosPage() {
       }
       return json.data as Photo;
     } catch (e) {
-      console.error("Save failed", e);
+      logger.error("Save failed", e);
       alert("Save failed");
       return null;
     } finally {
@@ -486,11 +486,15 @@ export default function AdminPhotosPage() {
                   }}
                 />
                 {form.imageUrl && (
-                  <img
-                    src={form.imageUrl}
-                    alt="Uploaded image"
-                    className="mt-3 w-64 h-40 object-cover rounded border"
-                  />
+                  <div className="relative mt-3 w-64 h-40 rounded border overflow-hidden">
+                    <Image
+                      src={form.imageUrl}
+                      alt="Uploaded image"
+                      fill
+                      className="object-cover"
+                      sizes="256px"
+                    />
+                  </div>
                 )}
               </div>
 
@@ -522,11 +526,15 @@ export default function AdminPhotosPage() {
                   }}
                 />
                 {form.thumbnailUrl && (
-                  <img
-                    src={form.thumbnailUrl}
-                    alt="Uploaded thumbnail"
-                    className="mt-3 w-40 h-28 object-cover rounded border"
-                  />
+                  <div className="relative mt-3 w-40 h-28 rounded border overflow-hidden">
+                    <Image
+                      src={form.thumbnailUrl}
+                      alt="Uploaded thumbnail"
+                      fill
+                      className="object-cover"
+                      sizes="160px"
+                    />
+                  </div>
                 )}
               </div>
             </div>
@@ -549,11 +557,15 @@ export default function AdminPhotosPage() {
                 placeholder="https://..."
               />
               {form.imageUrl && (
-                <img
-                  src={form.imageUrl}
-                  alt="Preview"
-                  className="mt-2 w-48 h-32 object-cover rounded border"
-                />
+                <div className="relative mt-2 w-48 h-32 rounded border overflow-hidden">
+                  <Image
+                    src={form.imageUrl}
+                    alt="Preview"
+                    fill
+                    className="object-cover"
+                    sizes="192px"
+                  />
+                </div>
               )}
             </div>
             <div>
@@ -571,19 +583,23 @@ export default function AdminPhotosPage() {
                 placeholder="https://..."
               />
               {form.thumbnailUrl && (
-                <img
-                  src={form.thumbnailUrl}
-                  alt="Thumb"
-                  className="mt-2 w-32 h-20 object-cover rounded border"
-                />
+                <div className="relative mt-2 w-32 h-20 rounded border overflow-hidden">
+                  <Image
+                    src={form.thumbnailUrl}
+                    alt="Thumb"
+                    fill
+                    className="object-cover"
+                    sizes="128px"
+                  />
+                </div>
               )}
             </div>
           </div>
 
           {/* Title and description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Title
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Title *
             </label>
             <input
               type="text"
@@ -592,7 +608,7 @@ export default function AdminPhotosPage() {
                 setForm((p) => ({ ...p, title: e.target.value }))
               }
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="Photo title"
             />
           </div>
@@ -702,7 +718,7 @@ export default function AdminPhotosPage() {
           {/* Relations */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Idol
               </label>
               <select
@@ -710,7 +726,7 @@ export default function AdminPhotosPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, idol: e.target.value || null }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               >
                 <option value="">Unassigned</option>
                 {loadingTaxonomies ? (
@@ -725,7 +741,7 @@ export default function AdminPhotosPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Gallery
               </label>
               <select
@@ -733,7 +749,7 @@ export default function AdminPhotosPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, gallery: e.target.value || null }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               >
                 <option value="">Unassigned</option>
                 {loadingTaxonomies ? (
@@ -849,10 +865,12 @@ export default function AdminPhotosPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 border">
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
-          <div className="md:col-span-2">
-            <label className="text-sm text-gray-700">Search</label>
+      <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="text-sm text-gray-700 dark:text-gray-300">
+              Search
+            </label>
             <input
               type="text"
               value={search}
@@ -860,20 +878,22 @@ export default function AdminPhotosPage() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder="Search title/description/tags..."
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              placeholder="Search title, description..."
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Idol</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">
+              Idol
+            </label>
             <select
               value={idolFilter}
               onChange={(e) => {
                 setIdolFilter(e.target.value);
                 setPage(1);
               }}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="all">All</option>
               {idols.map((i) => (
@@ -885,14 +905,16 @@ export default function AdminPhotosPage() {
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Gallery</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">
+              Gallery
+            </label>
             <select
               value={galleryFilter}
               onChange={(e) => {
                 setGalleryFilter(e.target.value);
                 setPage(1);
               }}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="all">All</option>
               {galleries.map((g) => (
@@ -927,7 +949,9 @@ export default function AdminPhotosPage() {
             <select
               value={sortBy}
               onChange={(e) => {
-                setSortBy(e.target.value as any);
+                setSortBy(
+                  e.target.value as "createdAt" | "viewCount" | "likeCount",
+                );
                 setPage(1);
               }}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
@@ -943,7 +967,7 @@ export default function AdminPhotosPage() {
             <select
               value={sortOrder}
               onChange={(e) => {
-                setSortOrder(e.target.value as any);
+                setSortOrder(e.target.value as "asc" | "desc");
                 setPage(1);
               }}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
@@ -993,9 +1017,10 @@ export default function AdminPhotosPage() {
           </div>
         </div>
 
-        <div className="divide-y">
+        {/* Photo List */}
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {!loading && photos.length === 0 && (
-            <div className="px-4 py-8 text-center text-gray-500">
+            <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
               No photos found.
             </div>
           )}
@@ -1026,8 +1051,13 @@ export default function AdminPhotosPage() {
                 </div>
 
                 <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1 text-xs text-gray-600">
-                  <div>Idol: {idolName(p.idol as any)}</div>
-                  <div>Gallery: {galleryTitle(p.gallery as any)}</div>
+                  <div>
+                    Idol: {idolName(p.idol as string | null | undefined)}
+                  </div>
+                  <div>
+                    Gallery:{" "}
+                    {galleryTitle(p.gallery as string | null | undefined)}
+                  </div>
                   <div>Category: {p.category || "—"}</div>
                   <div>Photographer: {p.photographer || "—"}</div>
                   <div>Location: {p.location || "—"}</div>
@@ -1044,13 +1074,13 @@ export default function AdminPhotosPage() {
                     {p.tags!.slice(0, 8).map((t) => (
                       <span
                         key={t}
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700"
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200"
                       >
                         #{t}
                       </span>
                     ))}
                     {(p.tags!.length || 0) > 8 && (
-                      <span className="text-[10px] text-gray-500">
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400">
                         +{(p.tags!.length || 0) - 8}
                       </span>
                     )}

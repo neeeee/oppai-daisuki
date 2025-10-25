@@ -4,6 +4,9 @@ import News from "../../models/News";
 
 import Genre from "../../models/Genre";
 import mongoose from "mongoose";
+import { auth } from "../../lib/auth";
+import { AdminUser } from "@/lib/types";
+import logger from "@/lib/utils/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,8 +26,17 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
     const sortBy = searchParams.get("sortBy") || "publishedAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
-    const includeUnpublished =
+    const includeUnpublishedQuery =
       searchParams.get("includeUnpublished") === "true";
+    let includeUnpublished = false;
+    try {
+      const session = await auth();
+      includeUnpublished = !!(
+        includeUnpublishedQuery && session?.user?.role === "admin"
+      );
+    } catch {
+      includeUnpublished = false;
+    }
 
     // Build query
     const query: Record<string, unknown> = {};
@@ -82,15 +94,9 @@ export async function GET(request: NextRequest) {
     const sort: Record<string, 1 | -1> = {};
     sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
-    // Execute query with population
+    // Execute query without population for now
     const [articles, total] = await Promise.all([
-      News.find(query)
-        .populate("relatedIdols", "name stageName slug profileImage")
-        .populate("relatedGenres", "name slug color")
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      News.find(query).sort(sort).skip(skip).limit(limit).lean(),
       News.countDocuments(query),
     ]);
 
@@ -98,7 +104,20 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: articles,
+      data: articles.map(
+        (a: Record<string, unknown> & { content?: string }) => {
+          const content = String(a?.content ?? "");
+          // Strip obvious dangerous patterns (script tags, event handlers, javascript: URLs)
+          const sanitized = content
+            .replace(/<\s*script\b[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, "")
+            .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
+            .replace(
+              /(href|src)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi,
+              '$1="#"',
+            );
+          return { ...a, content: sanitized };
+        },
+      ),
       pagination: {
         currentPage: page,
         totalPages,
@@ -110,7 +129,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: unknown) {
     const err = error as Error;
-    console.error("Error fetching news:", err);
+    logger.error("Error fetching news:", err);
     return NextResponse.json(
       { success: false, error: "Failed to fetch news" },
       { status: 500 },
@@ -121,6 +140,22 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
+
+    const session = await auth();
+    if (!session || (session.user as AdminUser)?.role !== "admin") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
+    }
 
     const body = await request.json();
 
@@ -147,10 +182,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Populate the created article
-    const populatedArticle = await News.findById(article._id)
-      .populate("relatedIdols", "name stageName slug profileImage")
-      .populate("relatedGenres", "name slug color");
+    // Return the created article without population for now
+    const populatedArticle = await News.findById(article._id);
 
     return NextResponse.json(
       {
@@ -160,8 +193,7 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
   } catch (error: unknown) {
-    const err = error as any;
-    console.error("Error creating news:", err);
+    const err = error as { name?: string; code?: number; errors?: unknown };
 
     if (err?.name === "ValidationError") {
       return NextResponse.json(
@@ -191,6 +223,22 @@ export async function PUT(request: NextRequest) {
   try {
     await dbConnect();
 
+    const session = await auth();
+    if (!session || (session.user as AdminUser)?.role !== "admin") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -212,13 +260,11 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Update article
+    // Update article without population for now
     const updatedArticle = await News.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,
-    })
-      .populate("relatedIdols", "name stageName slug profileImage")
-      .populate("relatedGenres", "name slug color");
+    });
 
     if (!updatedArticle) {
       return NextResponse.json(
@@ -237,8 +283,10 @@ export async function PUT(request: NextRequest) {
         g._id.toString(),
       ) || [];
 
-    const addedGenres = newGenres.filter((g) => !oldGenres.includes(g));
-    const removedGenres = oldGenres.filter((g) => !newGenres.includes(g));
+    const addedGenres = newGenres.filter((g: string) => !oldGenres.includes(g));
+    const removedGenres = oldGenres.filter(
+      (g: string) => !newGenres.includes(g),
+    );
 
     await Promise.all([
       Genre.updateMany(
@@ -256,8 +304,8 @@ export async function PUT(request: NextRequest) {
       data: updatedArticle,
     });
   } catch (error: unknown) {
-    const err = error as any;
-    console.error("Error updating news:", err);
+    const err = error as { name?: string; code?: number; errors?: unknown };
+    logger.error("Error updating news:", err);
 
     if (err?.name === "ValidationError") {
       return NextResponse.json(
@@ -286,6 +334,22 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await dbConnect();
+
+    const session = await auth();
+    if (!session || (session.user as AdminUser)?.role !== "admin") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
+    }
 
     const { searchParams } = new URL(request.url);
     const ids = searchParams.get("ids");
@@ -334,7 +398,7 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error: unknown) {
     const err = error as Error;
-    console.error("Error deleting news:", err);
+    logger.error("Error deleting news:", err);
     return NextResponse.json(
       { success: false, error: "Failed to delete news articles" },
       { status: 500 },

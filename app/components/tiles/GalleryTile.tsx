@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import IdolLink from "../../../components/common/IdolLink";
 
@@ -51,7 +52,7 @@ export default function GalleryTile({
 }: GalleryTileProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [previewImages, setPreviewImages] = useState<string[]>([]);
+
 
   const formatCount = (count: number | undefined) => {
     if (!count || count === 0) return "0";
@@ -73,7 +74,7 @@ export default function GalleryTile({
     return `${Math.ceil(diffDays / 365)} years ago`;
   };
 
-  const displayName = gallery.idol?.stageName || gallery.idol?.name;
+
   const previewPhotos = showPreview ? gallery.photos.slice(0, 4) : [];
 
   return (
@@ -87,19 +88,24 @@ export default function GalleryTile({
             </div>
           )}
 
-          {gallery.coverPhoto && !imageError ? (
-            <img
-              src={gallery.coverPhoto}
-              alt={gallery.title}
-              className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${
-                imageLoaded ? "opacity-100" : "opacity-0"
-              }`}
-              onLoad={() => setImageLoaded(true)}
-              onError={() => setImageError(true)}
-            />
+          {(gallery.coverPhoto || previewPhotos[0]) && !imageError ? (
+            <div className="absolute inset-0">
+              <Image
+                src={gallery.coverPhoto || previewPhotos[0]}
+                alt={gallery.title}
+                fill
+                className={`object-cover group-hover:scale-110 transition-transform duration-500 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+                sizes="(max-width: 768px) 100vw, 400px"
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageError(true)}
+              />
+            </div>
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-600">
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 dark:bg-gray-600">
               <div className="text-4xl text-gray-400">🖼️</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {gallery.photoCount > 0 ? `${gallery.photoCount} photos` : "Empty gallery"}
+              </div>
             </div>
           )}
 
@@ -110,12 +116,14 @@ export default function GalleryTile({
                 {previewPhotos.slice(1, 4).map((photo, index) => (
                   <div
                     key={index}
-                    className="w-8 h-8 rounded-sm overflow-hidden border border-white/50"
+                    className="w-8 h-8 rounded-sm overflow-hidden border border-white/50 relative"
                   >
-                    <img
+                    <Image
                       src={photo}
                       alt=""
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="32px"
                     />
                   </div>
                 ))}

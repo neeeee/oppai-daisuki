@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "../../lib/mongodb";
 import Idol from "../../models/Idol";
 import Genre from "../../models/Genre";
+import { auth } from "../../lib/auth";
+import logger from "@/lib/utils/logger";
+
+interface AuthenticatedUser {
+  role?: string;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +26,7 @@ export async function GET(request: NextRequest) {
     const verified = searchParams.get("verified");
 
     // Build query
-    const query: any = { isPublic: true };
+    const query: Record<string, unknown> = { isPublic: true };
 
     if (status) {
       query.status = status;
@@ -31,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (tags) {
-      const tagArray = tags.split(",").map(tag => tag.trim());
+      const tagArray = tags.split(",").map((tag) => tag.trim());
       query.tags = { $in: tagArray };
     }
 
@@ -51,7 +57,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build sort object
-    const sort: any = {};
+    const sort: Record<string, 1 | -1> = {};
     sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
     // Execute query with population
@@ -80,10 +86,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching idols:", error);
+    logger.error("Error fetching idols:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch idols" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -92,6 +98,22 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
 
+    const session = await auth();
+    if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
+    }
+
     const body = await request.json();
 
     // Validate required fields
@@ -99,7 +121,7 @@ export async function POST(request: NextRequest) {
     if (!name) {
       return NextResponse.json(
         { success: false, error: "Missing required field: name" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -110,38 +132,44 @@ export async function POST(request: NextRequest) {
     if (idol.genres && idol.genres.length > 0) {
       await Genre.updateMany(
         { _id: { $in: idol.genres } },
-        { $inc: { "contentCounts.idols": 1 } }
+        { $inc: { "contentCounts.idols": 1 } },
       );
     }
 
     // Populate the created idol
-    const populatedIdol = await Idol.findById(idol._id)
-      .populate("genres", "name slug color");
+    const populatedIdol = await Idol.findById(idol._id).populate(
+      "genres",
+      "name slug color",
+    );
 
-    return NextResponse.json({
-      success: true,
-      data: populatedIdol,
-    }, { status: 201 });
-  } catch (error) {
-    console.error("Error creating idol:", error);
+    return NextResponse.json(
+      {
+        success: true,
+        data: populatedIdol,
+      },
+      { status: 201 },
+    );
+  } catch (error: unknown) {
+    const err = error as { name?: string; code?: number; errors?: unknown };
+    logger.error("Error creating idol:", err);
 
-    if (error.name === "ValidationError") {
+    if (err.name === "ValidationError") {
       return NextResponse.json(
-        { success: false, error: "Validation failed", details: error.errors },
-        { status: 400 }
+        { success: false, error: "Validation failed", details: err.errors },
+        { status: 400 },
       );
     }
 
-    if (error.code === 11000) {
+    if (err.code === 11000) {
       return NextResponse.json(
         { success: false, error: "An idol with this slug already exists" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     return NextResponse.json(
       { success: false, error: "Failed to create idol" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -150,13 +178,29 @@ export async function PUT(request: NextRequest) {
   try {
     await dbConnect();
 
+    const session = await auth();
+    if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
     if (!id) {
       return NextResponse.json(
         { success: false, error: "Idol ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -167,39 +211,45 @@ export async function PUT(request: NextRequest) {
     if (!currentIdol) {
       return NextResponse.json(
         { success: false, error: "Idol not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Update idol
-    const updatedIdol = await Idol.findByIdAndUpdate(
-      id,
-      body,
-      { new: true, runValidators: true }
-    ).populate("genres", "name slug color");
+    const updatedIdol = await Idol.findByIdAndUpdate(id, body, {
+      new: true,
+      runValidators: true,
+    }).populate("genres", "name slug color");
 
     if (!updatedIdol) {
       return NextResponse.json(
         { success: false, error: "Idol not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Update genre counts if genres changed
-    const oldGenres = currentIdol.genres?.map(g => g.toString()) || [];
-    const newGenres = updatedIdol.genres?.map(g => g._id.toString()) || [];
+    const oldGenres =
+      currentIdol.genres?.map((g: { toString(): string }) => g.toString()) ||
+      [];
+    const newGenres =
+      updatedIdol.genres?.map((g: { _id: { toString(): string } }) =>
+        g._id.toString(),
+      ) || [];
 
-    const addedGenres = newGenres.filter(g => !oldGenres.includes(g));
-    const removedGenres = oldGenres.filter(g => !newGenres.includes(g));
+    const addedGenres = newGenres.filter((g: string) => !oldGenres.includes(g));
+    const removedGenres = oldGenres.filter(
+      (g: string) => !newGenres.includes(g),
+    );
 
     await Promise.all([
       Genre.updateMany(
         { _id: { $in: addedGenres } },
-        { $inc: { "contentCounts.idols": 1 } }
+        { $inc: { "contentCounts.idols": 1 } },
       ),
       Genre.updateMany(
         { _id: { $in: removedGenres } },
-        { $inc: { "contentCounts.idols": -1 } }
+        { $inc: { "contentCounts.idols": -1 } },
       ),
     ]);
 
@@ -207,26 +257,27 @@ export async function PUT(request: NextRequest) {
       success: true,
       data: updatedIdol,
     });
-  } catch (error) {
-    console.error("Error updating idol:", error);
+  } catch (error: unknown) {
+    const err = error as { name?: string; code?: number; errors?: unknown };
+    logger.error("Error updating idol:", err);
 
-    if (error.name === "ValidationError") {
+    if (err.name === "ValidationError") {
       return NextResponse.json(
-        { success: false, error: "Validation failed", details: error.errors },
-        { status: 400 }
+        { success: false, error: "Validation failed", details: err.errors },
+        { status: 400 },
       );
     }
 
-    if (error.code === 11000) {
+    if (err.code === 11000) {
       return NextResponse.json(
         { success: false, error: "An idol with this slug already exists" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     return NextResponse.json(
       { success: false, error: "Failed to update idol" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -235,13 +286,29 @@ export async function DELETE(request: NextRequest) {
   try {
     await dbConnect();
 
+    const session = await auth();
+    if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+    const origin = request.headers.get("origin");
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
+    if (origin && !origin.startsWith(baseUrl)) {
+      return NextResponse.json(
+        { success: false, error: "Bad origin" },
+        { status: 403 },
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const ids = searchParams.get("ids");
 
     if (!ids) {
       return NextResponse.json(
         { success: false, error: "Idol IDs are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -256,13 +323,11 @@ export async function DELETE(request: NextRequest) {
     // Update genre counters
     const genreUpdates = new Map();
 
-    idols.forEach(idol => {
+    idols.forEach((idol: { genres?: Array<{ toString(): string }> }) => {
       if (idol.genres && idol.genres.length > 0) {
-        idol.genres.forEach(genreId => {
+        idol.genres.forEach((genreId: { toString(): string }) => {
           const genreIdStr = genreId.toString();
-          genreUpdates.set(genreIdStr,
-            (genreUpdates.get(genreIdStr) || 0) + 1
-          );
+          genreUpdates.set(genreIdStr, (genreUpdates.get(genreIdStr) || 0) + 1);
         });
       }
     });
@@ -270,8 +335,10 @@ export async function DELETE(request: NextRequest) {
     // Update genre counters
     await Promise.all(
       Array.from(genreUpdates.entries()).map(([genreId, count]) =>
-        Genre.findByIdAndUpdate(genreId, { $inc: { "contentCounts.idols": -count } })
-      )
+        Genre.findByIdAndUpdate(genreId, {
+          $inc: { "contentCounts.idols": -count },
+        }),
+      ),
     );
 
     return NextResponse.json({
@@ -280,10 +347,10 @@ export async function DELETE(request: NextRequest) {
       deletedCount: result.deletedCount,
     });
   } catch (error) {
-    console.error("Error deleting idols:", error);
+    logger.error("Error deleting idols:", error);
     return NextResponse.json(
       { success: false, error: "Failed to delete idols" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import GalleryTile from "../components/tiles/GalleryTile";
 
 interface Gallery {
@@ -69,7 +69,7 @@ export default function GalleriesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<GalleriesResponse["stats"] | null>(null);
 
-  const fetchGalleries = async () => {
+  const fetchGalleries = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -105,12 +105,20 @@ export default function GalleriesPage() {
       } else {
         setError("Failed to load galleries");
       }
-    } catch (err) {
+    } catch {
       setError("Network error occurred");
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    currentPage,
+    sortBy,
+    sortOrder,
+    searchTerm,
+    filterTag,
+    showAdult,
+    galleries,
+  ]);
 
   useEffect(() => {
     setGalleries([]);
@@ -119,7 +127,7 @@ export default function GalleriesPage() {
 
   useEffect(() => {
     fetchGalleries();
-  }, [currentPage, sortBy, sortOrder, searchTerm, filterTag, showAdult]);
+  }, [fetchGalleries]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

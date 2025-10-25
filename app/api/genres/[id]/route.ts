@@ -6,10 +6,11 @@ import Gallery from "../../../models/Gallery";
 import Video from "../../../models/Video";
 import Idol from "../../../models/Idol";
 import mongoose from "mongoose";
+import logger from "@/lib/utils/logger";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await dbConnect();
@@ -33,7 +34,7 @@ export async function GET(
     if (!genre) {
       return NextResponse.json(
         { success: false, error: "Genre not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -41,7 +42,11 @@ export async function GET(
     const skip = (page - 1) * limit;
 
     // Fetch content based on type
-    let content: any = {};
+    const content: {
+      photos?: Array<Record<string, unknown>>;
+      galleries?: Array<Record<string, unknown>>;
+      idols?: Array<Record<string, unknown>>;
+    } = {};
     let totalCount = 0;
 
     if (contentType === "all" || contentType === "photos") {
@@ -50,7 +55,9 @@ export async function GET(
           .sort({ createdAt: -1 })
           .skip(contentType === "photos" ? skip : 0)
           .limit(contentType === "photos" ? limit : 12)
-          .select("title imageUrl thumbnailUrl slug viewCount likeCount createdAt isAdult")
+          .select(
+            "title imageUrl thumbnailUrl slug viewCount likeCount createdAt isAdult",
+          )
           .populate("idol", "name stageName slug")
           .lean(),
         Photo.countDocuments({ category: genre.name, isPublic: true }),
@@ -65,7 +72,9 @@ export async function GET(
           .sort({ createdAt: -1 })
           .skip(contentType === "galleries" ? skip : 0)
           .limit(contentType === "galleries" ? limit : 12)
-          .select("title coverPhoto slug photoCount viewCount likeCount createdAt description")
+          .select(
+            "title coverPhoto slug photoCount viewCount likeCount createdAt description",
+          )
           .populate("idol", "name stageName slug")
           .lean(),
         Gallery.countDocuments({ genre: genre._id, isPublic: true }),
@@ -80,7 +89,9 @@ export async function GET(
           .sort({ viewCount: -1 })
           .skip(contentType === "idols" ? skip : 0)
           .limit(contentType === "idols" ? limit : 20)
-          .select("name stageName slug profileImage coverImage viewCount photoCount videoCount galleryCount metadata")
+          .select(
+            "name stageName slug profileImage coverImage viewCount photoCount videoCount galleryCount metadata",
+          )
           .lean(),
         Idol.countDocuments({ genres: genre._id, isPublic: true }),
       ]);
@@ -95,7 +106,9 @@ export async function GET(
           .sort({ createdAt: -1 })
           .skip(contentType === "videos" ? skip : 0)
           .limit(contentType === "videos" ? limit : 12)
-          .select("title thumbnailUrl duration viewCount channelName channelAvatar createdAt")
+          .select(
+            "title thumbnailUrl duration viewCount channelName channelAvatar createdAt",
+          )
           .lean(),
         Video.countDocuments({}),
       ]);
@@ -122,10 +135,10 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Error fetching genre:", error);
+    logger.error("Error fetching genre:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch genre" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

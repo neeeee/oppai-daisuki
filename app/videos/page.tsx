@@ -1,6 +1,7 @@
 "use client";
+import logger from "@/lib/utils/logger";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import VideoTile from "../components/tiles/VideoTile";
 import Link from "next/link";
@@ -26,7 +27,7 @@ interface PaginationData {
   limit: number;
 }
 
-export default function VideosPage() {
+function VideosPageContent() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +46,7 @@ export default function VideosPage() {
     setError(null);
     try {
       const response = await fetch(
-        `/api/videos/paginated?page=${page}&limit=24`
+        `/api/videos/paginated?page=${page}&limit=24`,
       );
       const data = await response.json();
 
@@ -56,7 +57,7 @@ export default function VideosPage() {
         setError("Failed to load videos");
       }
     } catch (error) {
-      console.error("Error fetching videos:", error);
+      logger.error("Error fetching videos:", error);
       setError("Failed to load videos");
     } finally {
       setLoading(false);
@@ -76,7 +77,7 @@ export default function VideosPage() {
     const { currentPage, totalPages } = pagination;
 
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
     if (endPage - startPage < maxVisiblePages - 1) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
@@ -88,10 +89,10 @@ export default function VideosPage() {
         <button
           key="prev"
           onClick={() => handlePageChange(currentPage - 1)}
-          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-50 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white transition-colors"
+          className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-l-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white transition-colors"
         >
           Previous
-        </button>
+        </button>,
       );
     }
 
@@ -103,12 +104,12 @@ export default function VideosPage() {
           onClick={() => handlePageChange(i)}
           className={`px-3 py-2 text-sm font-medium border-t border-b ${
             i === currentPage
-              ? "text-indigo-600 bg-indigo-50 border-indigo-300 dark:bg-indigo-900/50 dark:text-indigo-400 dark:border-indigo-600"
-              : "text-gray-500 bg-white border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+              ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/50 border-indigo-300 dark:border-indigo-600"
+              : "text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white"
           } transition-colors`}
         >
           {i}
-        </button>
+        </button>,
       );
     }
 
@@ -118,10 +119,10 @@ export default function VideosPage() {
         <button
           key="next"
           onClick={() => handlePageChange(currentPage + 1)}
-          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-50 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white transition-colors"
+          className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-r-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white transition-colors"
         >
           Next
-        </button>
+        </button>,
       );
     }
 
@@ -205,7 +206,9 @@ export default function VideosPage() {
             <div className="mt-6 flex items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Page {pagination.currentPage} of {pagination.totalPages}</span>
+                <span>
+                  Page {pagination.currentPage} of {pagination.totalPages}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -265,10 +268,28 @@ export default function VideosPage() {
         {/* Page Info */}
         {pagination && !loading && videos.length > 0 && (
           <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            Showing page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalVideos.toLocaleString()} total videos)
+            Showing page {pagination.currentPage} of {pagination.totalPages} (
+            {pagination.totalVideos.toLocaleString()} total videos)
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+export default function VideosPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 dark:bg-neutral-900">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">Loading videos...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <VideosPageContent />
+    </Suspense>
   );
 }

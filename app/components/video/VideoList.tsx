@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Image from "next/image";
 
 interface Video {
   _id: string;
@@ -21,7 +22,6 @@ type VideoListProps = {
 export default function VideoList({
   videos,
   onEdit,
-  onDelete,
   onRefresh,
 }: VideoListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export default function VideoList({
       } else {
         alert("Failed to delete video");
       }
-    } catch (error) {
+    } catch {
       alert("Error deleting video");
     } finally {
       setDeletingId(null);
@@ -73,7 +73,7 @@ export default function VideoList({
                 className="border border-gray-200 rounded-lg p-4"
               >
                 <div className="flex items-start gap-4">
-                  <img
+                  <Image
                     src={video.thumbnailUrl}
                     alt={video.title}
                     className="w-32 h-20 object-cover rounded"
@@ -82,10 +82,12 @@ export default function VideoList({
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900">{video.title}</h4>
                     <div className="flex items-center gap-2 mt-1">
-                      <img
+                      <Image
                         src={video.channelAvatar}
                         alt={video.channelName}
-                        className="w-6 h-6 rounded-full"
+                        width={32}
+                        height={32}
+                        className="rounded-full"
                       />
                       <span className="text-sm text-gray-600">
                         {video.channelName}
