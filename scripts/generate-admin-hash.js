@@ -1,16 +1,24 @@
 #!/usr/bin/env node
 
 import * as bcrypt from "bcryptjs";
-import { Readline } from "node:readline";
+import * as readline from "node:readline";
 
-const rl = Readline.createInterface({
+const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
+function question(prompt) {
+  return new Promise((resolve) => {
+    rl.question(prompt, (answer) => {
+      resolve(answer);
+    });
+  });
+}
+
 function generateSecurePassword(length = 16) {
   const charset =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
   let password = "";
 
   // Ensure at least one character from each category
@@ -18,7 +26,7 @@ function generateSecurePassword(length = 16) {
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
     "abcdefghijklmnopqrstuvwxyz",
     "0123456789",
-    "!@#$%^&*()_+-=[]{}|;:,.<>?",
+    "!@#$%^&*",
   ];
 
   categories.forEach((category) => {
@@ -69,7 +77,7 @@ function validatePassword(password) {
 }
 
 async function hashPassword(password) {
-  const saltRounds = 12; // High security salt rounds
+  const saltRounds = 12;
   return await bcrypt.hash(password, saltRounds);
 }
 
@@ -85,30 +93,23 @@ function generateSecretKey(length = 64) {
 
 async function main() {
   console.log("🔐 Admin Security Setup Utility\n");
-  console.log("This utility will help you set up secure admin credentials.\n");
 
-  // Ask for admin email
-  const adminEmail = await new Promise((resolve) => {
-    rl.question("Enter admin email address: ", (answer) => {
-      resolve(answer.trim().toLowerCase());
-    });
-  });
+  // Get admin email
+  const adminEmail = (await question("Enter admin email address: "))
+    .trim()
+    .toLowerCase();
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
     console.log("❌ Invalid email format");
     process.exit(1);
   }
 
-  // Ask for password choice
+  // Password choice
   console.log("\nPassword options:");
   console.log("1. Generate a secure password automatically");
   console.log("2. Enter your own password");
 
-  const choice = await new Promise((resolve) => {
-    rl.question("\nChoose an option (1 or 2): ", (answer) => {
-      resolve(answer.trim());
-    });
-  });
+  const choice = (await question("\nChoose an option (1 or 2): ")).trim();
 
   let password;
 
@@ -119,11 +120,11 @@ async function main() {
       "\n⚠️  IMPORTANT: Save this password securely! You won't be able to recover it.",
     );
 
-    const confirm = await new Promise((resolve) => {
-      rl.question("\nHave you saved the password? (y/N): ", (answer) => {
-        resolve(answer.trim().toLowerCase());
-      });
-    });
+    const confirm = (
+      await question("\nHave you saved the password? (y/N): ")
+    )
+      .trim()
+      .toLowerCase();
 
     if (confirm !== "y" && confirm !== "yes") {
       console.log(
@@ -132,17 +133,12 @@ async function main() {
       process.exit(1);
     }
   } else if (choice === "2") {
-    password = await new Promise((resolve) => {
-      rl.question(
-        "\nEnter your password (input will be hidden in most terminals): ",
-        (answer) => {
-          // Strip any carriage returns/newlines that some terminals may append
-          // Also trim whitespace to match web form behavior
-          const cleaned = answer.replace(/[\r\n]+/g, "").trim();
-          resolve(cleaned);
-        },
-      );
-    });
+    password = await question(
+      "\nEnter your password (min 12 chars, with uppercase, lowercase, numbers, special chars): ",
+    );
+
+    // Clean the password - remove any control characters but keep the actual password
+    password = password.trim();
 
     const validation = validatePassword(password);
     if (!validation.valid) {
@@ -156,51 +152,29 @@ async function main() {
     process.exit(1);
   }
 
-  // Final sanitize: strip any CR/LF and trim whitespace to match web form behavior
-  password = password.replace(/[\r\n]+/g, "").trim();
-
-  // Debug output to verify the password being hashed
-  console.log(`\n🔄 Generating secure hash...`);
+  console.log("\n🔄 Generating secure hash...");
   console.log(`Password length: ${password.length} characters`);
 
-  // Check for any non-printable characters
-  const hasNonPrintable = /[\x00-\x1f\x7f-\x9f]/.test(password);
-  if (hasNonPrintable) {
-    console.log("⚠️  Warning: Password contains non-printable characters");
-  }
-
   try {
+    // Generate hash
     const hash = await hashPassword(password);
 
-    // Self-verify to catch any hidden character issues
-    const verify = await bcrypt.compare(password, hash);
-    if (!verify) {
-      console.error(
-        "\n❌ Hash verification failed. Please retry without trailing newlines or hidden characters.",
-      );
-      console.error(
-        `Debug: Password bytes: [${Array.from(Buffer.from(password, "utf8")).join(", ")}]`,
-      );
-      process.exit(1);
-    }
-
-    // Additional verification with trimmed password (web form behavior)
-    const trimmedVerify = await bcrypt.compare(password.trim(), hash);
-    if (!trimmedVerify) {
-      console.error(
-        "\n❌ Hash verification failed with trimmed password. There may be character encoding issues.",
-      );
+    // Verify hash works correctly
+    const isValid = await bcrypt.compare(password, hash);
+    if (!isValid) {
+      console.error("\n❌ Hash verification failed!");
       process.exit(1);
     }
 
     console.log("✅ Hash verification successful");
+
+    // Generate secrets
     const nextAuthSecret = generateSecretKey();
     const jwtSecret = generateSecretKey(32);
 
     console.log("\n✅ Security setup complete!\n");
-
     console.log(
-      "Add the following environment variables to your .env.local file:\n",
+      "Add the following to your .env.local file (copy exactly as shown):\n",
     );
     console.log("# Admin Authentication");
     console.log(`ADMIN_EMAIL="${adminEmail}"`);
@@ -212,40 +186,27 @@ async function main() {
     );
     console.log("\n# JWT Configuration");
     console.log(`JWT_SECRET="${jwtSecret}"`);
-    console.log("\n# Optional Security Settings (uncomment to enable)");
-    console.log(
-      '# ALLOWED_ADMIN_IPS="127.0.0.1,::1"  # Comma-separated list of allowed IPs',
-    );
-    console.log(
-      '# STRICT_IP_CHECK="true"              # Enforce IP consistency for sessions',
-    );
-    console.log("\n# Database (make sure this is configured)");
-    console.log('# MONGODB_URI="mongodb://localhost:27017/your-database"');
 
-    console.log("\n📋 Security Features Enabled:");
-    console.log("   ✓ Strong password hashing (bcrypt with 12 salt rounds)");
-    console.log("   ✓ Session-based authentication with JWT");
-    console.log("   ✓ Rate limiting (5 failed attempts = 15min lockout)");
-    console.log("   ✓ CSRF protection");
-    console.log("   ✓ Secure HTTP headers");
-    console.log("   ✓ Session timeout (30 minutes)");
-    console.log("   ✓ IP-based access control (optional)");
-    console.log("   ✓ Activity monitoring and logging");
-    console.log("   ✓ Progressive lockout on failed attempts");
+    console.log("\n📋 Login Credentials:");
+    console.log(`   Email: ${adminEmail}`);
+    console.log(`   Password: ${password}`);
 
-    console.log("\n🧪 Hash Verification Test:");
-    console.log(`   Hash: ${hash.substring(0, 20)}...`);
-    console.log(`   Original password verification: ✅`);
-    console.log(`   Trimmed password verification: ✅`);
+    console.log("\n⚠️  Important Notes:");
+    console.log("   - Copy the password exactly as shown above");
+    console.log("   - Do not add extra spaces or newlines");
+    console.log("   - Store credentials in a secure password manager");
+    console.log("   - Restart your development server after updating .env.local");
 
-    console.log("\n⚠️  Security Reminders:");
-    console.log("   - Store your password in a secure password manager");
-    console.log("   - Enable HTTPS in production");
-    console.log("   - Regularly review access logs");
-    console.log("   - Consider enabling IP allowlisting for extra security");
-    console.log("   - Keep your dependencies updated");
+    console.log("\n🧪 Test your credentials:");
+    console.log("   1. Restart your Next.js server");
+    console.log("   2. Navigate to /admin/login");
+    console.log(`   3. Enter email: ${adminEmail}`);
+    console.log(`   4. Enter password: ${password}`);
   } catch (error) {
-    console.error("\n❌ Error generating hash:", error.message);
+    console.error(
+      "\n❌ Error generating hash:",
+      error instanceof Error ? error.message : error,
+    );
     process.exit(1);
   }
 
@@ -255,18 +216,22 @@ async function main() {
 // Handle process termination
 process.on("SIGINT", () => {
   console.log("\n\n👋 Setup cancelled by user");
+  rl.close();
   process.exit(0);
 });
 
 process.on("SIGTERM", () => {
   console.log("\n\n👋 Setup terminated");
+  rl.close();
   process.exit(0);
 });
 
 // Run the main function
-if (require.main === module) {
-  main().catch((error) => {
-    console.error("❌ Unexpected error:", error);
-    process.exit(1);
-  });
-}
+main().catch((error) => {
+  console.error(
+    "❌ Unexpected error:",
+    error instanceof Error ? error.message : error,
+  );
+  rl.close();
+  process.exit(1);
+});

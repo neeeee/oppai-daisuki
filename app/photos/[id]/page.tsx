@@ -64,7 +64,6 @@ export default function PhotoDetailPage() {
 
       if (data.success) {
         setPhoto(data.data);
-        // Increment view count
         incrementViewCount();
       } else {
         setError("Photo not found");
