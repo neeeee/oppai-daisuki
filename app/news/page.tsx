@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -72,8 +72,13 @@ export default function NewsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<NewsResponse["stats"] | null>(null);
 
+  const isLoadingRef = useRef(false);
+
   const fetchNews = useCallback(async () => {
+    if (isLoadingRef.current) return;
+
     try {
+      isLoadingRef.current = true;
       setLoading(true);
       setError(null);
 
@@ -102,8 +107,8 @@ export default function NewsPage() {
       const data: NewsResponse = await response.json();
 
       if (data.success) {
-        setArticles(
-          currentPage === 1 ? data.data : [...articles, ...data.data],
+        setArticles((prevArticles) =>
+          currentPage === 1 ? data.data : [...prevArticles, ...data.data]
         );
         setStats(data.stats);
       } else {
@@ -113,35 +118,30 @@ export default function NewsPage() {
       setError("Network error occurred");
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  }, [
-    currentPage,
-    sortBy,
-    sortOrder,
-    searchTerm,
-    filterCategory,
-    filterTag,
-    articles,
-  ]);
+  }, [currentPage, sortBy, sortOrder, searchTerm, filterCategory, filterTag]);
 
+  // Reset when filters change
   useEffect(() => {
     setArticles([]);
     setCurrentPage(1);
   }, [sortBy, sortOrder, searchTerm, filterCategory, filterTag]);
 
+  // Fetch articles when dependencies change
   useEffect(() => {
     fetchNews();
   }, [fetchNews]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    // These state changes will trigger the effect above
     setCurrentPage(1);
     setArticles([]);
-    fetchNews();
   };
 
   const loadMoreArticles = () => {
-    setCurrentPage(currentPage + 1);
+    setCurrentPage((prev) => prev + 1);
   };
 
   const formatDate = (dateString: string) => {
@@ -352,7 +352,9 @@ export default function NewsPage() {
                         <Image
                           src={article.featuredImage}
                           alt={article.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          width={800}
+                          height={450}
+                          className="w-full h-full group-hover:scale-105 md:h-80 object-cover rounded-lg transition-transform duration-300"
                         />
                       </div>
                     )}

@@ -20,30 +20,31 @@ export default function AdminLogin() {
     }
   }, [status, session, router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsLoading(true);
+  setError("");
 
-    try {
-      const result = await signIn("credentials", {
-        email: email.trim(),
-        password,
-        redirect: false,
-      });
+  try {
+    const result = await signIn("credentials", {
+      email: email.trim(),
+      password: password,
+      redirect: false,
+    });
 
-      if (result?.error) {
-        setError("Invalid credentials. Please try again.");
-      } else if (result?.ok) {
-        router.push("/admin");
-      }
-    } catch {
-      setError("An error occurred. Please try again.");
-      // Intentionally not logging errors here to avoid leaking details
-    } finally {
-      setIsLoading(false);
+    if (result?.error) {
+      console.error("Sign in error:", result.error); // Debug log
+      setError("Invalid credentials. Please try again.");
+    } else if (result?.ok) {
+      router.push("/admin");
     }
-  };
+  } catch (err) {
+    console.error("Sign in exception:", err); // Debug log
+    setError("An error occurred. Please try again.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Show loading state
   if (status === "loading") {

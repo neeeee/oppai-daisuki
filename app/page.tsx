@@ -266,7 +266,7 @@ export default function HomePage() {
             </h1>
           </div>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-            Your ultimate destination for Japanese idol content
+            Your ultimate destination for Japanese gravure idol content
           </p>
 
           {/* Stats Cards */}

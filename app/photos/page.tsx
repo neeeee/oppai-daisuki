@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import PhotoTile from "../components/tiles/PhotoTile";
 
 interface Photo {
@@ -72,9 +72,15 @@ export default function PhotosPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<PhotosResponse["stats"] | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "masonry">("masonry");
+  
+  // Prevent duplicate requests
+  const isLoadingRef = useRef(false);
 
   const fetchPhotos = useCallback(async () => {
+    if (isLoadingRef.current) return;
+    
     try {
+      isLoadingRef.current = true;
       setLoading(true);
       setError(null);
 
@@ -102,7 +108,9 @@ export default function PhotosPage() {
       const data: PhotosResponse = await response.json();
 
       if (data.success) {
-        setPhotos(currentPage === 1 ? data.data : [...photos, ...data.data]);
+        setPhotos((prevPhotos) => 
+          currentPage === 1 ? data.data : [...prevPhotos, ...data.data]
+        );
         setStats(data.stats);
       } else {
         setError("Failed to load photos");
@@ -111,35 +119,30 @@ export default function PhotosPage() {
       setError("Network error occurred");
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  }, [
-    currentPage,
-    sortBy,
-    sortOrder,
-    searchTerm,
-    filterTag,
-    showAdult,
-    photos,
-  ]);
+  }, [currentPage, sortBy, sortOrder, searchTerm, filterTag, showAdult]);
 
+  // Reset when filters change
   useEffect(() => {
     setPhotos([]);
     setCurrentPage(1);
   }, [sortBy, sortOrder, searchTerm, filterTag, showAdult]);
 
+  // Fetch photos when dependencies change
   useEffect(() => {
     fetchPhotos();
   }, [fetchPhotos]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    // These state changes will trigger the effect above
     setCurrentPage(1);
     setPhotos([]);
-    fetchPhotos();
   };
 
   const loadMorePhotos = () => {
-    setCurrentPage(currentPage + 1);
+    setCurrentPage((prev) => prev + 1);
   };
 
   const featuredPhotos = photos.filter((photo) => photo.metadata?.featured);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import IdolTile from "../components/tiles/IdolTile";
 
 interface Idol {
@@ -74,8 +74,11 @@ export default function IdolsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<IdolsResponse["stats"] | null>(null);
 
+  const isLoadingRef = useRef(false);
   const fetchIdols = useCallback(async () => {
+    if (isLoadingRef.current) return;
     try {
+      isLoadingRef.current = true;
       setLoading(true);
       setError(null);
 
@@ -123,7 +126,7 @@ export default function IdolsPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    fetchIdols();
+    setIdols([]);
   };
 
   const featuredIdols = idols.filter((idol) => idol.metadata?.featured);

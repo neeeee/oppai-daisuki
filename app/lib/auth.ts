@@ -11,8 +11,12 @@ const client = new MongoClient(process.env.MONGODB_URI!);
 const clientPromise = Promise.resolve(client);
 
 // Security configuration
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "";
-const ADMIN_PASSWORD_HASH = (process.env.ADMIN_PASSWORD_HASH || "").trim();
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH_BASE64
+  ? Buffer.from(process.env.ADMIN_PASSWORD_HASH_BASE64, "base64").toString(
+      "utf-8",
+    )
+  : (process.env.ADMIN_PASSWORD_HASH || "").trim();
 
 const ALLOWED_IPS = (process.env.ALLOWED_ADMIN_IPS || "")
   .split(",")
@@ -109,87 +113,90 @@ const config: NextAuthConfig = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials, request) {
-        const fwd = request.headers?.get("x-forwarded-for") || "";
-        const xri = request.headers?.get("x-real-ip") || "";
-        let ip = (fwd.split(",")[0] || "").trim() || xri.trim() || "unknown";
-        if (ip.startsWith("::ffff:")) {
-          ip = ip.substring(7);
-        }
+      // lib/auth.ts - Updated authorize function
+async authorize(credentials, request) {
+  const fwd = request.headers?.get("x-forwarded-for") || "";
+  const xri = request.headers?.get("x-real-ip") || "";
+  let ip = (fwd.split(",")[0] || "").trim() || xri.trim() || "unknown";
+  if (ip.startsWith("::ffff:")) {
+    ip = ip.substring(7);
+  }
 
-        if (process.env.NODE_ENV !== "production")
-          logger.warn(`[SECURITY] Admin login attempt from IP: ${ip}`);
-        if (process.env.NODE_ENV !== "production")
-          logger.warn(
-            `[SECURITY][DEBUG] Allowlist enabled: ${ALLOWED_IPS.length > 0}, size=${ALLOWED_IPS.length}, candidateIP="${ip}"`,
-          );
+  if (process.env.NODE_ENV !== "production")
+    logger.warn(`[SECURITY] Admin login attempt from IP: ${ip}`);
 
-        // Check IP allowlist
-        if (!isIPAllowed(ip)) {
-          if (process.env.NODE_ENV !== "production")
-            logger.error(
-              `[SECURITY] Blocked login attempt from unauthorized IP: ${ip} (allowlist size=${ALLOWED_IPS.length})`,
-            );
-          throw new Error("Access denied from this IP address");
-        }
+  // Check IP allowlist
+  if (!isIPAllowed(ip)) {
+    if (process.env.NODE_ENV !== "production")
+      logger.error(
+        `[SECURITY] Blocked login attempt from unauthorized IP: ${ip}`,
+      );
+    throw new Error("Access denied from this IP address");
+  }
 
-        // Check rate limiting
-        const rateLimit = checkRateLimit(ip);
-        if (!rateLimit.allowed) {
-          if (process.env.NODE_ENV !== "production")
-            logger.error(`[SECURITY] Rate limit exceeded for IP: ${ip}`);
-          throw new Error("Too many login attempts. Please try again later.");
-        }
+  // Check rate limiting
+  const rateLimit = checkRateLimit(ip);
+  if (!rateLimit.allowed) {
+    if (process.env.NODE_ENV !== "production")
+      logger.error(`[SECURITY] Rate limit exceeded for IP: ${ip}`);
+    throw new Error("Too many login attempts. Please try again later.");
+  }
 
-        if (!credentials?.email || !credentials?.password) {
-          recordLoginAttempt(ip, false);
-          throw new Error("Missing credentials");
-        }
+  if (!credentials?.email || !credentials?.password) {
+    recordLoginAttempt(ip, false);
+    throw new Error("Missing credentials");
+  }
 
-        // Verify credentials
-        const emailInput = String(credentials.email || "")
-          .trim()
-          .toLowerCase();
-        const adminEmail = ADMIN_EMAIL.trim().toLowerCase();
-        const isEmailValid = emailInput === adminEmail;
+  const emailInput = String(credentials.email).trim().toLowerCase();
+  const passwordInput = String(credentials.password); // Don't trim password!
+  
+  const adminEmail = ADMIN_EMAIL.trim().toLowerCase();
+  const isEmailValid = emailInput === adminEmail;
 
-        const passwordInput = String(credentials.password || "");
-        let isPasswordValid = false;
+  // Debug logging (remove after testing)
+  let isPasswordValid = false;
 
-        if (ADMIN_PASSWORD_HASH) {
-          try {
-            isPasswordValid = await bcrypt.compare(
-              passwordInput,
-              ADMIN_PASSWORD_HASH,
-            );
-          } catch {
-            isPasswordValid = false;
-          }
-        }
+  if (ADMIN_PASSWORD_HASH && isEmailValid) {
+    try {
+      isPasswordValid = await bcrypt.compare(
+        passwordInput,
+        ADMIN_PASSWORD_HASH,
+      );
+      
+      if (process.env.NODE_ENV !== "production") {
+        logger.warn(`[DEBUG] Password valid: ${isPasswordValid}`);
+      }
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        logger.error(`[DEBUG] bcrypt.compare error:`, err);
+      }
+      isPasswordValid = false;
+    }
+  }
 
-        if (!isEmailValid || !isPasswordValid) {
-          recordLoginAttempt(ip, false);
-          if (process.env.NODE_ENV !== "production")
-            logger.error(
-              `[SECURITY] Failed login attempt for ${emailInput} from IP: ${ip}`,
-            );
-          throw new Error("Invalid credentials");
-        }
+  if (!isEmailValid || !isPasswordValid) {
+    recordLoginAttempt(ip, false);
+    if (process.env.NODE_ENV !== "production")
+      logger.error(
+        `[SECURITY] Failed login attempt for ${emailInput} from IP: ${ip}`,
+      );
+    throw new Error("Invalid credentials");
+  }
 
-        recordLoginAttempt(ip, true);
-        if (process.env.NODE_ENV !== "production")
-          logger.info(
-            `[SECURITY] Successful admin login for ${credentials.email} from IP: ${ip}`,
-          );
+  recordLoginAttempt(ip, true);
+  if (process.env.NODE_ENV !== "production")
+    logger.info(
+      `[SECURITY] Successful admin login for ${emailInput} from IP: ${ip}`,
+    );
 
-        return {
-          id: "admin",
-          email: ADMIN_EMAIL,
-          name: "Admin",
-          role: "admin",
-          ip: ip,
-        } as AdminUser;
-      },
+  return {
+    id: "admin",
+    email: ADMIN_EMAIL,
+    name: "Admin",
+    role: "admin",
+    ip: ip,
+  } as AdminUser;
+}
     }),
   ],
   session: {
@@ -200,6 +207,7 @@ const config: NextAuthConfig = {
     signIn: "/admin/login",
     error: "/admin/login",
   },
+  trustHost: true,
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

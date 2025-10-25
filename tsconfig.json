@@ -28,6 +28,6 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "app/admin/layout.tsx.backup"
-  ],
+, "scripts/generate-admin-hash.ts"  ],
   "exclude": ["node_modules"]
 }

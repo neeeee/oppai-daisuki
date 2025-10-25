@@ -262,7 +262,7 @@ export default function PhotoDetailPage() {
           {/* Main Photo */}
           <div className="lg:col-span-2">
             <div className="bg-white dark:bg-neutral-800 rounded-xl overflow-hidden shadow-lg">
-              <div className="relative">
+              <div className="relative w-full" style={{minHeight: "400px"}}>
                 {!imageLoaded && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -271,8 +271,11 @@ export default function PhotoDetailPage() {
                 <Image
                   src={photo.imageUrl}
                   alt={photo.altText || photo.title || "Photo"}
-                  className={`w-full h-auto ${imageLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
+                  fill
+                  className={`object-contain ${imageLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 50vw"
                   onLoad={() => setImageLoaded(true)}
+                  priority
                 />
 
                 {/* Overlay badges */}

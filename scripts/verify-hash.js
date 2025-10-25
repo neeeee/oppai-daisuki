@@ -20,7 +20,7 @@ async function verifyHash() {
   console.log(`Hash Length: ${adminHash.length}`);
 
   // Test the exact password from the logs
-  const testPassword = "QVuNgv!7vG7?9S?R";
+  const testPassword = "X7WD@w2ga!ebnmM4";
 
   console.log(`\nTesting password: "${testPassword}"`);
   console.log(`Password length: ${testPassword.length}`);
@@ -94,6 +94,4 @@ async function verifyHash() {
   }
 }
 
-if (require.main === module) {
-  verifyHash().catch(console.error);
-}
+verifyHash().catch(console.error);

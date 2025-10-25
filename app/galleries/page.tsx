@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import GalleryTile from "../components/tiles/GalleryTile";
 
 interface Gallery {
@@ -69,9 +69,15 @@ export default function GalleriesPage() {
   const [showAdult, setShowAdult] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<GalleriesResponse["stats"] | null>(null);
+  
+  // Prevent duplicate requests
+  const isLoadingRef = useRef(false);
 
   const fetchGalleries = useCallback(async () => {
+    if (isLoadingRef.current) return;
+    
     try {
+      isLoadingRef.current = true;
       setLoading(true);
       setError(null);
 
@@ -99,8 +105,8 @@ export default function GalleriesPage() {
       const data: GalleriesResponse = await response.json();
 
       if (data.success) {
-        setGalleries(
-          currentPage === 1 ? data.data : [...galleries, ...data.data],
+        setGalleries((prevGalleries) =>
+          currentPage === 1 ? data.data : [...prevGalleries, ...data.data]
         );
         setStats(data.stats);
       } else {
@@ -110,35 +116,30 @@ export default function GalleriesPage() {
       setError("Network error occurred");
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  }, [
-    currentPage,
-    sortBy,
-    sortOrder,
-    searchTerm,
-    filterTag,
-    showAdult,
-    galleries,
-  ]);
+  }, [currentPage, sortBy, sortOrder, searchTerm, filterTag, showAdult]);
 
+  // Reset when filters change
   useEffect(() => {
     setGalleries([]);
     setCurrentPage(1);
   }, [sortBy, sortOrder, searchTerm, filterTag, showAdult]);
 
+  // Fetch galleries when dependencies change
   useEffect(() => {
     fetchGalleries();
   }, [fetchGalleries]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    // These state changes will trigger the effect above
     setCurrentPage(1);
     setGalleries([]);
-    fetchGalleries();
   };
 
   const loadMoreGalleries = () => {
-    setCurrentPage(currentPage + 1);
+    setCurrentPage((prev) => prev + 1);
   };
 
   const featuredGalleries = galleries.filter(
