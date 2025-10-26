@@ -1,7 +1,6 @@
 "use client";
-import logger from "@/lib/utils/logger";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import VideoTile from "../components/tiles/VideoTile";
 import Link from "next/link";
@@ -16,15 +15,18 @@ interface Video {
   thumbnailUrl: string;
   videoSourceUrl: string;
   createdAt: string;
+  tags?: string[];
+  category?: string;
+  isAdult?: boolean;
 }
 
 interface PaginationData {
   currentPage: number;
   totalPages: number;
-  totalVideos: number;
+  totalItems: number;
   hasNextPage: boolean;
   hasPrevPage: boolean;
-  limit: number;
+  itemsPerPage: number;
 }
 
 function VideosPageContent() {
@@ -33,35 +35,158 @@ function VideosPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Search and filter states
+  const [searchInput, setSearchInput] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryInput, setCategoryInput] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [showAdult, setShowAdult] = useState(false);
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
 
+  const isLoadingRef = useRef(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const categoryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const tagTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounce search input
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 500);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchInput]);
+
+  // Debounce category input
+  useEffect(() => {
+    if (categoryTimeoutRef.current) {
+      clearTimeout(categoryTimeoutRef.current);
+    }
+
+    categoryTimeoutRef.current = setTimeout(() => {
+      setCategoryFilter(categoryInput);
+    }, 500);
+
+    return () => {
+      if (categoryTimeoutRef.current) {
+        clearTimeout(categoryTimeoutRef.current);
+      }
+    };
+  }, [categoryInput]);
+
+  // Debounce tag input
+  useEffect(() => {
+    if (tagTimeoutRef.current) {
+      clearTimeout(tagTimeoutRef.current);
+    }
+
+    tagTimeoutRef.current = setTimeout(() => {
+      setTagFilter(tagInput);
+    }, 500);
+
+    return () => {
+      if (tagTimeoutRef.current) {
+        clearTimeout(tagTimeoutRef.current);
+      }
+    };
+  }, [tagInput]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      router.push("/videos?page=1");
+    }
+  }, [searchTerm, categoryFilter, tagFilter, sortBy, sortOrder, showAdult]);
+
+  const fetchVideos = useCallback(
+    async (page: number) => {
+      if (isLoadingRef.current) return;
+
+      try {
+        isLoadingRef.current = true;
+        setLoading(true);
+        setError(null);
+
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: "24",
+          sortBy,
+          sortOrder,
+        });
+
+        if (searchTerm) {
+          params.append("search", searchTerm);
+        }
+
+        if (categoryFilter) {
+          params.append("category", categoryFilter);
+        }
+
+        if (tagFilter) {
+          params.append("tags", tagFilter);
+        }
+
+        if (!showAdult) {
+          params.append("isAdult", "false");
+        }
+
+        const response = await fetch(`/api/videos?${params}`);
+        const data = await response.json();
+
+        if (data.success) {
+          setVideos(data.data);
+          setPagination(data.pagination);
+        } else {
+          setError("Failed to load videos");
+        }
+      } catch (err) {
+        console.error("Error fetching videos:", err);
+        setError("Failed to load videos");
+      } finally {
+        setLoading(false);
+        isLoadingRef.current = false;
+      }
+    },
+    [searchTerm, categoryFilter, tagFilter, sortBy, sortOrder, showAdult]
+  );
+
   useEffect(() => {
     fetchVideos(currentPage);
-  }, [currentPage]);
+  }, [fetchVideos, currentPage]);
 
-  const fetchVideos = async (page: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(
-        `/api/videos/paginated?page=${page}&limit=24`,
-      );
-      const data = await response.json();
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchTerm(searchInput);
+    setCategoryFilter(categoryInput);
+    setTagFilter(tagInput);
+    router.push("/videos?page=1");
+  };
 
-      if (data.success) {
-        setVideos(data.data.videos);
-        setPagination(data.data.pagination);
-      } else {
-        setError("Failed to load videos");
-      }
-    } catch (error) {
-      logger.error("Error fetching videos:", error);
-      setError("Failed to load videos");
-    } finally {
-      setLoading(false);
-    }
+  const handleClearFilters = () => {
+    setSearchInput("");
+    setSearchTerm("");
+    setCategoryInput("");
+    setCategoryFilter("");
+    setTagInput("");
+    setTagFilter("");
+    setSortBy("createdAt");
+    setSortOrder("desc");
+    router.push("/videos?page=1");
   };
 
   const handlePageChange = (page: number) => {
@@ -83,7 +208,6 @@ function VideosPageContent() {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
 
-    // Previous button
     if (pagination.hasPrevPage) {
       pages.push(
         <button
@@ -92,11 +216,10 @@ function VideosPageContent() {
           className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-l-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white transition-colors"
         >
           Previous
-        </button>,
+        </button>
       );
     }
 
-    // Page numbers
     for (let i = startPage; i <= endPage; i++) {
       pages.push(
         <button
@@ -109,11 +232,10 @@ function VideosPageContent() {
           } transition-colors`}
         >
           {i}
-        </button>,
+        </button>
       );
     }
 
-    // Next button
     if (pagination.hasNextPage) {
       pages.push(
         <button
@@ -122,7 +244,7 @@ function VideosPageContent() {
           className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-r-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white transition-colors"
         >
           Next
-        </button>,
+        </button>
       );
     }
 
@@ -173,35 +295,31 @@ function VideosPageContent() {
               </h1>
               {pagination && !loading && (
                 <p className="text-gray-600 dark:text-gray-300">
-                  {pagination.totalVideos.toLocaleString()} videos available
+                  {pagination.totalItems.toLocaleString()} videos available
                 </p>
               )}
             </div>
 
-            <div className="flex items-center gap-4">
-              {/* Breadcrumb */}
-              <nav className="flex" aria-label="Breadcrumb">
-                <ol className="flex items-center space-x-2">
-                  <li>
-                    <Link
-                      href="/"
-                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-                    >
-                      Home
-                    </Link>
-                  </li>
-                  <li>
-                    <span className="text-gray-400 mx-2">/</span>
-                    <span className="text-gray-900 dark:text-white font-medium">
-                      Videos
-                    </span>
-                  </li>
-                </ol>
-              </nav>
-            </div>
+            <nav className="flex" aria-label="Breadcrumb">
+              <ol className="flex items-center space-x-2">
+                <li>
+                  <Link
+                    href="/"
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                  >
+                    Home
+                  </Link>
+                </li>
+                <li>
+                  <span className="text-gray-400 mx-2">/</span>
+                  <span className="text-gray-900 dark:text-white font-medium">
+                    Videos
+                  </span>
+                </li>
+              </ol>
+            </nav>
           </div>
 
-          {/* Stats bar */}
           {pagination && !loading && (
             <div className="mt-6 flex items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
               <div className="flex items-center gap-2">
@@ -216,6 +334,83 @@ function VideosPageContent() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Search and Filters */}
+        <div className="mb-8 space-y-4">
+          <form onSubmit={handleSearch} className="flex gap-4">
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search videos by title..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+            <input
+              type="text"
+              placeholder="Category"
+              value={categoryInput}
+              onChange={(e) => setCategoryInput(e.target.value)}
+              className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-36"
+            />
+            <input
+              type="text"
+              placeholder="Tag"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-32"
+            />
+            <button
+              type="submit"
+              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+            >
+              Search
+            </button>
+          </form>
+
+          {/* Filter Controls */}
+          <div className="flex flex-wrap items-center gap-4">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="createdAt">Sort by Upload Date</option>
+              <option value="title">Sort by Title</option>
+              <option value="viewCount">Sort by Views</option>
+              <option value="duration">Sort by Duration</option>
+            </select>
+
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
+              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="desc">Newest First</option>
+              <option value="asc">Oldest First</option>
+            </select>
+
+            <label className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+              <input
+                type="checkbox"
+                checked={showAdult}
+                onChange={(e) => setShowAdult(e.target.checked)}
+                className="rounded text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className="text-sm">Show 18+ content</span>
+            </label>
+
+            {(searchTerm || categoryFilter || tagFilter) && (
+              <button
+                onClick={handleClearFilters}
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Error State */}
@@ -245,9 +440,19 @@ function VideosPageContent() {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               No Videos Found
             </h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              There are no videos available at the moment.
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              {searchTerm || categoryFilter || tagFilter
+                ? "No videos match your search criteria."
+                : "There are no videos available at the moment."}
             </p>
+            {(searchTerm || categoryFilter || tagFilter) && (
+              <button
+                onClick={handleClearFilters}
+                className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         )}
 
@@ -260,7 +465,6 @@ function VideosPageContent() {
               ))}
             </div>
 
-            {/* Pagination */}
             {renderPagination()}
           </>
         )}
@@ -269,7 +473,7 @@ function VideosPageContent() {
         {pagination && !loading && videos.length > 0 && (
           <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
             Showing page {pagination.currentPage} of {pagination.totalPages} (
-            {pagination.totalVideos.toLocaleString()} total videos)
+            {pagination.totalItems.toLocaleString()} total videos)
           </div>
         )}
       </div>
@@ -279,16 +483,20 @@ function VideosPageContent() {
 
 export default function VideosPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 dark:bg-neutral-900">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600 dark:text-gray-300">Loading videos...</p>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 dark:bg-neutral-900">
+          <div className="container mx-auto px-4 py-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600 dark:text-gray-300">
+                Loading videos...
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <VideosPageContent />
     </Suspense>
   );

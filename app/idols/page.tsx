@@ -65,18 +65,39 @@ export default function IdolsPage() {
   const [idols, setIdols] = useState<Idol[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [filterStatus, setFilterStatus] = useState<
-    "all" | "active" | "retired"
-  >("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "retired">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<IdolsResponse["stats"] | null>(null);
 
   const isLoadingRef = useRef(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounce search input
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 500);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchInput]);
+
   const fetchIdols = useCallback(async () => {
     if (isLoadingRef.current) return;
+    
     try {
       isLoadingRef.current = true;
       setLoading(true);
@@ -116,17 +137,29 @@ export default function IdolsPage() {
       setError("Network error occurred");
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
   }, [currentPage, sortBy, sortOrder, searchTerm, filterStatus]);
 
+  // Reset when filters change - THIS WAS MISSING!
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortBy, sortOrder, searchTerm, filterStatus]);
+
+  // Fetch idols when dependencies change
   useEffect(() => {
     fetchIdols();
   }, [fetchIdols]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setSearchTerm(searchInput);
     setCurrentPage(1);
-    setIdols([]);
+  };
+
+  const handleClearFilters = () => {
+    setSearchInput("");
+    setSearchTerm("");
   };
 
   const featuredIdols = idols.filter((idol) => idol.metadata?.featured);
@@ -197,8 +230,8 @@ export default function IdolsPage() {
               <input
                 type="text"
                 placeholder="Search idols by name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               />
             </div>
@@ -322,7 +355,7 @@ export default function IdolsPage() {
               </p>
               {searchTerm && (
                 <button
-                  onClick={() => setSearchTerm("")}
+                  onClick={handleClearFilters}
                   className="mt-4 text-pink-600 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-200"
                 >
                   Clear search

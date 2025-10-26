@@ -62,16 +62,54 @@ export default function GalleriesPage() {
   const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [filterTag, setFilterTag] = useState("");
+
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [filterTag, setFilterTag] = useState("");
   const [showAdult, setShowAdult] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<GalleriesResponse["stats"] | null>(null);
   
   // Prevent duplicate requests
   const isLoadingRef = useRef(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout>(null);
+  const tagTimeoutRef = useRef<null | NodeJS.Timeout>(null);
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 500);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchInput]);
+
+  useEffect(() => {
+    if (tagTimeoutRef.current) {
+      clearTimeout(tagTimeoutRef.current);
+    }
+
+    tagTimeoutRef.current = setTimeout(() => {
+      setFilterTag(tagInput);
+    }, 500);
+
+    return () => {
+      if (tagTimeoutRef.current) {
+        clearTimeout(tagTimeoutRef.current);
+      }
+    }
+  }, [tagInput]);
 
   const fetchGalleries = useCallback(async () => {
     if (isLoadingRef.current) return;
@@ -133,9 +171,16 @@ export default function GalleriesPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // These state changes will trigger the effect above
+    setSearchTerm(searchInput);
+    setFilterTag(tagInput);
     setCurrentPage(1);
     setGalleries([]);
+  };
+
+  const handleClearFilters = () => {
+    setSearchInput("");
+    setSearchTerm("");
+    setFilterTag("");
   };
 
   const loadMoreGalleries = () => {
@@ -215,16 +260,16 @@ export default function GalleriesPage() {
               <input
                 type="text"
                 placeholder="Search galleries by title, description, or photographer..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
             </div>
             <input
               type="text"
               placeholder="Filter by tag"
-              value={filterTag}
-              onChange={(e) => setFilterTag(e.target.value)}
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
               className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-48"
             />
             <button
@@ -348,10 +393,7 @@ export default function GalleriesPage() {
               </p>
               {(searchTerm || filterTag) && (
                 <button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setFilterTag("");
-                  }}
+                  onClick={handleClearFilters}
                   className="mt-4 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
                 >
                   Clear filters

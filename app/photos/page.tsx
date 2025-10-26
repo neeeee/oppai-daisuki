@@ -64,17 +64,55 @@ export default function PhotosPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [filterTag, setFilterTag] = useState("");
+
   const [sortBy, setSortBy] = useState("uploadDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [filterTag, setFilterTag] = useState("");
   const [showAdult, setShowAdult] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<PhotosResponse["stats"] | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "masonry">("masonry");
   
-  // Prevent duplicate requests
+
   const isLoadingRef = useRef(false);
+  const searchTimeoutRef = useRef<null | NodeJS.Timeout>(null);
+  const tagTimeoutRef = useRef<null | NodeJS.Timeout>(null);
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 500);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchInput]);
+
+  useEffect(() => {
+    if (tagTimeoutRef.current) {
+      clearTimeout(tagTimeoutRef.current);
+    }
+
+    tagTimeoutRef.current = setTimeout(() => {
+      setFilterTag(tagInput);
+    }, 500);
+
+    return () => {
+      if (tagTimeoutRef.current) {
+        clearTimeout(tagTimeoutRef.current);
+      }
+    };
+  }, [tagInput]);
 
   const fetchPhotos = useCallback(async () => {
     if (isLoadingRef.current) return;
@@ -136,10 +174,18 @@ export default function PhotosPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // These state changes will trigger the effect above
+    setSearchTerm(searchInput);
+    setFilterTag(tagInput);
     setCurrentPage(1);
     setPhotos([]);
   };
+
+  const handleClearFilters = () => {
+    setSearchInput("");
+    setSearchTerm("");
+    setTagInput("");
+    setFilterTag("");
+  }
 
   const loadMorePhotos = () => {
     setCurrentPage((prev) => prev + 1);
@@ -216,20 +262,20 @@ export default function PhotosPage() {
         {/* Search and Filters */}
         <div className="mb-8 space-y-4">
           <form onSubmit={handleSearch} className="flex gap-4">
-            <div className="flex-1">
+            <div className="flex-1 ">
               <input
                 type="text"
                 placeholder="Search photos by title, description, or tags..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
             <input
               type="text"
               placeholder="Filter by tag"
-              value={filterTag}
-              onChange={(e) => setFilterTag(e.target.value)}
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
               className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent w-48"
             />
             <button
@@ -394,10 +440,7 @@ export default function PhotosPage() {
               </p>
               {(searchTerm || filterTag) && (
                 <button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setFilterTag("");
-                  }}
+                  onClick={handleClearFilters}
                   className="mt-4 text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200"
                 >
                   Clear filters

@@ -64,15 +64,53 @@ export default function NewsPage() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [searchInput, setSearchInput] = useState(""); 
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [filterTag, setFilterTag] = useState("");
+
   const [sortBy, setSortBy] = useState("publishedAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [filterTag, setFilterTag] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<NewsResponse["stats"] | null>(null);
 
   const isLoadingRef = useRef(false);
+  const searchTimeoutRef = useRef<null | NodeJS.Timeout>(null);
+  const tagTimeoutRef = useRef<null | NodeJS.Timeout>(null);
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 500);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    }
+  }, [searchInput]);
+
+  useEffect(() => {
+    if (tagTimeoutRef.current) {
+      clearTimeout(tagTimeoutRef.current);
+    }
+
+    tagTimeoutRef.current = setTimeout(() => {
+      setFilterTag(tagInput);
+    }, 500);
+
+    return () => {
+      if (tagTimeoutRef.current) {
+        clearTimeout(tagTimeoutRef.current);
+      }
+    }
+  }, [tagInput]);
 
   const fetchNews = useCallback(async () => {
     if (isLoadingRef.current) return;
@@ -135,10 +173,18 @@ export default function NewsPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // These state changes will trigger the effect above
+    setSearchTerm(searchInput);
+    setFilterTag(tagInput);
     setCurrentPage(1);
     setArticles([]);
   };
+
+  const handleClearFilters = () => {
+    setSearchInput("");
+    setSearchTerm("");
+    setFilterCategory("");
+    setFilterTag("");
+  }
 
   const loadMoreArticles = () => {
     setCurrentPage((prev) => prev + 1);
@@ -243,23 +289,16 @@ export default function NewsPage() {
               <input
                 type="text"
                 placeholder="Search articles by title, content, or author..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <input
               type="text"
-              placeholder="Category"
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent w-36"
-            />
-            <input
-              type="text"
-              placeholder="Tag"
-              value={filterTag}
-              onChange={(e) => setFilterTag(e.target.value)}
+              placeholder="Filter by Tag"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
               className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent w-32"
             />
             <button
@@ -575,11 +614,7 @@ export default function NewsPage() {
               </p>
               {(searchTerm || filterCategory || filterTag) && (
                 <button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setFilterCategory("");
-                    setFilterTag("");
-                  }}
+                  onClick={handleClearFilters}
                   className="mt-4 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
                 >
                   Clear filters
