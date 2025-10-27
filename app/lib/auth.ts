@@ -24,7 +24,7 @@ const ALLOWED_IPS = (process.env.ALLOWED_ADMIN_IPS || "")
   .filter(Boolean);
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
-const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
+const SESSION_MAX_AGE = 1 * 24 * 60 * 60; // 1 day
 
 const loginAttempts = new Map<string, LoginAttempt>();
 

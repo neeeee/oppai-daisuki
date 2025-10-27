@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import VideoTile from "../components/tiles/VideoTile";
+import VideoTile from "@/components/tiles/VideoTile";
 import Link from "next/link";
 
 interface Video {

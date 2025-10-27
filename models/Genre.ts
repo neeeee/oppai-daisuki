@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import logger from "@/lib/utils/logger";
 
 const GenreSchema = new mongoose.Schema(
   {
@@ -160,9 +159,7 @@ GenreSchema.pre("save", async function (next) {
       await mongoose.model("Genre").findByIdAndUpdate(this.parentGenre, {
         $addToSet: { subGenres: this._id },
       });
-    } catch (error) {
-      logger.error("Error updating parent genre:", error);
-    }
+    } catch {}
   }
   next();
 });
@@ -184,9 +181,7 @@ GenreSchema.pre(
       await mongoose
         .model("Genre")
         .updateMany({ parentGenre: this._id }, { $unset: { parentGenre: 1 } });
-    } catch (error) {
-      logger.error("Error during genre cleanup:", error);
-    }
+    } catch {}
     next();
   },
 );
@@ -214,9 +209,7 @@ GenreSchema.pre("findOneAndDelete", async function (next) {
           { $unset: { parentGenre: 1 } },
         );
     }
-  } catch (error) {
-    logger.error("Error during genre cleanup:", error);
-  }
+  } catch {}
   next();
 });
 

@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import VideoPlayer from "../../components/video/VideoPlayer";
-import VideoInfo from "../../components/video/VideoInfo";
-import RelatedVideos from "../../components/video/RelatedVideos";
+import VideoPlayer from "@/components/video/VideoPlayer";
+import VideoInfo from "@/components/video/VideoInfo";
+import RelatedVideos from "@/components/video/RelatedVideos";
+import { TheaterModeProvider, useTheaterMode } from "@/components/video/TheaterModeContext";
 import Link from "next/link";
 
 interface Video {
@@ -19,10 +20,11 @@ interface Video {
   createdAt: string;
 }
 
-export default function WatchPage() {
+function WatchPageContent() {
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isTheaterMode } = useTheaterMode();
 
   const params = useParams();
   const router = useRouter();
@@ -55,6 +57,22 @@ export default function WatchPage() {
     fetchVideo();
   }, [fetchVideo]);
 
+  // Keyboard shortcut for theater mode
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      if (e.key === "t" || e.key === "T") {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, []);
+
   const handleViewIncrement = async () => {
     if (!video) return;
 
@@ -70,7 +88,6 @@ export default function WatchPage() {
         }),
       });
 
-      // Update local state
       setVideo((prev) =>
         prev ? { ...prev, viewCount: prev.viewCount + 1 } : null,
       );
@@ -86,16 +103,28 @@ export default function WatchPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className={`mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-300 ${
+          isTheaterMode ? "max-w-none" : "max-w-7xl"
+        }`}>
           <div className="animate-pulse">
-            <div className="aspect-video bg-gray-200 rounded-lg mb-6"></div>
-            <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-              <div className="lg:col-span-2 space-y-6">
+            <div className={`bg-gray-200 rounded-lg mb-6 transition-all duration-300 ${
+              isTheaterMode ? "aspect-[21/9]" : "aspect-video"
+            }`}></div>
+            <div className={`transition-all duration-300 ${
+              isTheaterMode 
+                ? "grid grid-cols-4 gap-8" 
+                : "lg:grid lg:grid-cols-3 lg:gap-8"
+            }`}>
+              <div className={`space-y-6 ${
+                isTheaterMode ? "col-span-3" : "lg:col-span-2"
+              }`}>
                 <div className="h-8 bg-gray-200 rounded"></div>
                 <div className="h-20 bg-gray-200 rounded"></div>
                 <div className="h-40 bg-gray-200 rounded"></div>
               </div>
-              <div className="lg:col-span-1 space-y-4">
+              <div className={`space-y-4 ${
+                isTheaterMode ? "col-span-1" : "lg:col-span-1"
+              }`}>
                 <div className="h-6 bg-gray-200 rounded"></div>
                 <div className="space-y-4">
                   {Array.from({ length: 5 }).map((_, i) => (
@@ -134,7 +163,9 @@ export default function WatchPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className={`mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-300 ${
+        isTheaterMode ? "max-w-none" : "max-w-7xl"
+      }`}>
         <div className="mb-4">
           <button
             onClick={() => router.back()}
@@ -151,8 +182,14 @@ export default function WatchPage() {
           </button>
         </div>
 
-        <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-          <div className="lg:col-span-2 space-y-6">
+        <div className={`transition-all duration-300 ${
+          isTheaterMode 
+            ? "grid grid-cols-4 gap-8" 
+            : "lg:grid lg:grid-cols-3 lg:gap-8"
+        }`}>
+          <div className={`space-y-6 ${
+            isTheaterMode ? "col-span-4" : "lg:col-span-2"
+          }`}>
             <VideoPlayer
               src={video.videoSourceUrl}
               poster={video.thumbnailUrl}
@@ -160,14 +197,34 @@ export default function WatchPage() {
               onViewIncrement={handleViewIncrement}
             />
 
-            <VideoInfo video={video} />
+            <div className={isTheaterMode ? "grid grid-cols-4 gap-8" : ""}>
+              <div className={isTheaterMode ? "col-span-3" : ""}>
+                <VideoInfo video={video} />
+              </div>
+              
+              {isTheaterMode && (
+                <div className="col-span-1">
+                  <RelatedVideos currentVideoId={videoId} />
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="lg:col-span-1 mt-8 lg:mt-0">
-            <RelatedVideos currentVideoId={videoId} />
-          </div>
+          {!isTheaterMode && (
+            <div className="lg:col-span-1 mt-8 lg:mt-0">
+              <RelatedVideos currentVideoId={videoId} />
+            </div>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function WatchPage() {
+  return (
+    <TheaterModeProvider>
+      <WatchPageContent />
+    </TheaterModeProvider>
   );
 }

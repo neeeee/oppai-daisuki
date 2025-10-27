@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "../../lib/mongodb";
-import Gallery from "../../models/Gallery";
-import Idol from "../../models/Idol";
-import Genre from "../../models/Genre";
-import Photo from "../../models/Photo";
-import { auth } from "../../lib/auth";
-import logger from "../../lib/utils/logger";
+import dbConnect from "@/lib/mongodb";
+import Gallery from "@/models/Gallery";
+import Idol from "@/models/Idol";
+import Genre from "@/models/Genre";
+import Photo from "@/models/Photo";
+import { auth } from "@/lib/auth";
+import logger from "@/lib/utils/logger";
 
 export async function GET(request: NextRequest) {
   try {

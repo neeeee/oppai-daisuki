@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "../../../lib/mongodb";
-import Photo from "../../../models/Photo";
-import { auth } from "../../../lib/auth";
+import dbConnect from "@/lib/mongodb";
+import Photo from "@/models/Photo";
+import { auth } from "@/lib/auth";
 import logger from "@/lib/utils/logger";
 import mongoose from "mongoose";
 

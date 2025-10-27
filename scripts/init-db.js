@@ -5,12 +5,12 @@ import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 // Import models
-import { Video } from "@/models/Video";
-import { Photo } from "@/models/Photo";
-import { Gallery } from "@/models/Gallery";
-import { Idol } from "@/models/Idol";
-import { Genre } from "@/models/Genre";
-import { News } from "@/models/News";
+import { Video } from "../models/Video.js";
+import { Photo } from "../models/Photo.js";
+import { Gallery } from "../models/Gallery.js";
+import { Idol } from "../models/Idol.js";
+import { Genre } from "../models/Genre.js";
+import { News } from "../models/News.js";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 

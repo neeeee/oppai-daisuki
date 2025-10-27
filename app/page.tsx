@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import VideoTile from "./components/tiles/VideoTile";
-import PhotoTile from "./components/tiles/PhotoTile";
-import GalleryTile from "./components/tiles/GalleryTile";
-import NewsTile from "./components/tiles/NewsTile";
+import VideoTile from "@/components/tiles/VideoTile";
+import PhotoTile from "@/components/tiles/PhotoTile";
+import GalleryTile from "@/components/tiles/GalleryTile";
+import NewsTile from "@/components/tiles/NewsTile";
 
 
 interface Video {

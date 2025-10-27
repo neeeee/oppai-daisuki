@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "../../../lib/mongodb";
-import Idol from "../../../models/Idol";
-import Photo from "../../../models/Photo";
-import Gallery from "../../../models/Gallery";
-import Video from "../../../models/Video";
+import dbConnect from "@/lib/mongodb";
+import Idol from "@/models/Idol";
+import Photo from "@/models/Photo";
+import Gallery from "@/models/Gallery";
+import Video from "@/models/Video";
 import mongoose from "mongoose";
 import logger from "@/lib/utils/logger";
 

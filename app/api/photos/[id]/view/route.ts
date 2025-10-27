@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "../../../../lib/mongodb";
-import Photo from "../../../../models/Photo";
+import dbConnect from "@/lib/mongodb";
+import Photo from "@/models/Photo";
 import logger from "@/lib/utils/logger";
 import mongoose from "mongoose";
 

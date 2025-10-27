@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { UploadDropzone } from "../../lib/uploadthing";
-import TagInput from "../../../components/admin/TagInput";
+import { UploadDropzone } from "@/lib/uploadthing";
+import TagInput from "../../components/admin/TagInput";
 import logger from "@/lib/utils/logger";
 import Image from "next/image";
 

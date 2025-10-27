@@ -1,5 +1,5 @@
-import dbConnect from "../../../lib/mongodb";
-import Video from "../../../models/Video";
+import dbConnect from "@/lib/mongodb";
+import Video from "@/models/Video";
 import { NextRequest, NextResponse } from "next/server";
 import logger from "@/lib/utils/logger";
 

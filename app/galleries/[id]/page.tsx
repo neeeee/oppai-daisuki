@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import ImageModal from "../../../components/common/ImageModal";
+import ImageModal from "../../components/common/ImageModal";
 
 interface Photo {
   _id: string;
@@ -147,49 +147,6 @@ export default function GalleryDetailPage() {
       }
     } catch {
       // Silently fail like action
-    }
-  };
-
-  const handleDownload = async () => {
-    try {
-      // Download all gallery images as ZIP
-      const response = await fetch(`/api/galleries/${galleryId}/download`);
-
-      if (!response.ok) {
-        throw new Error("Failed to download gallery");
-      }
-
-      // Get the ZIP file as blob
-      const blob = await response.blob();
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${gallery?.title || "gallery"}.zip`.replace(
-        /[^\w\-_.]/g,
-        "_",
-      );
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Clean up the URL object
-      window.URL.revokeObjectURL(url);
-
-      // Update local state to reflect incremented download count
-      if (gallery) {
-        setGallery({
-          ...gallery,
-          downloadCount: gallery.downloadCount + 1,
-        });
-      }
-    } catch (error) {
-      (() => {
-        import("@/lib/utils/logger").then((m) =>
-          m.default.error("Failed to download gallery:", error),
-        );
-      })();
     }
   };
 
@@ -579,12 +536,6 @@ export default function GalleryDetailPage() {
                   className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   ❤️ Like Gallery
-                </button>
-                <button
-                  onClick={handleDownload}
-                  className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  ⬇️ Download All Photos (ZIP)
                 </button>
                 <button
                   onClick={handleShare}

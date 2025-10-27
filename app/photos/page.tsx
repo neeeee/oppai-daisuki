@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import PhotoTile from "../components/tiles/PhotoTile";
+import PhotoTile from "@/components/tiles/PhotoTile";
 
 interface Photo {
   _id: string;

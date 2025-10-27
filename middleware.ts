@@ -1,19 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Security headers configuration
-const securityHeaders = {
-  "X-DNS-Prefetch-Control": "off",
-  "X-Frame-Options": "DENY",
-  "X-Content-Type-Options": "nosniff",
-  "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Permissions-Policy":
-    "camera=(), microphone=(), geolocation=(), interest-cohort=()",
-  "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
-  "Content-Security-Policy":
-    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none';",
-};
-
 // Rate limiting storage (in production, replace with a shared store like Redis/Upstash)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_ENABLED = process.env.RATE_LIMIT_ENABLED !== "false";
@@ -22,6 +9,12 @@ const RATE_LIMIT_ENABLED = process.env.RATE_LIMIT_ENABLED !== "false";
 
 function getRateLimitKey(ip: string, path: string): string {
   return `${ip}:${path}`;
+}
+
+function generateNonce(): string {
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return btoa(String.fromCharCode(...Array.from(array)));
 }
 
 function isRateLimited(
@@ -57,18 +50,38 @@ export default function middleware(request: NextRequest) {
     request.headers.get("x-real-ip") ||
     "unknown";
 
-  // Add security headers to all responses
   const response = NextResponse.next();
+  const nonce = generateNonce();
+
+  const securityHeaders: Record<string, string> = {
+    "X-DNS-Prefetch-Control": "off",
+    "X-Frame-Options": "DENY",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy":
+      "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+  };
 
   Object.entries(securityHeaders).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
-  // Dynamic CSP: stricter in production, dev-friendly otherwise
-  const csp =
-    process.env.NODE_ENV === "production"
-      ? "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
-      : "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
+
+  const csp = [
+    `default-src 'self'`,
+    `media-src 'self' https: data: blob:;`, 
+    `script-src 'self' 'nonce-${nonce}'`,
+    `style-src 'self' 'unsafe-inline'`,
+    `img-src 'self' data: blob: https:`,
+    `font-src 'self' data:`,
+    `connect-src 'self' https:`,
+    `frame-ancestors 'none'`,
+    `base-uri 'self'`,
+    `form-action 'self'`,
+  ].join("; ");
+
   response.headers.set("Content-Security-Policy", csp);
+  response.headers.set("x-nonce", nonce);
 
   // Rate limiting for admin routes (but allow login page)
   if (pathname.startsWith("/admin")) {
@@ -122,6 +135,7 @@ export default function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/((?!_next/static|_next/image|favicon.ico).*)",
     // Match all admin routes
     "/admin/:path*",
     // Match API routes

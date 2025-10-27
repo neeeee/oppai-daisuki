@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import NavItem from "./NavItem";
-import { ThemeToggleButton } from "../theme/ThemeToggle";
+import ThemeToggle  from "../theme/ThemeToggle";
 
 const pages = [
   { title: "Videos", href: "/videos" },
@@ -32,7 +32,7 @@ const Navbar: React.FC = () => {
           </div>
 
           <div className="flex items-center">
-            <ThemeToggleButton />
+            <ThemeToggle />
           </div>
         </div>
 

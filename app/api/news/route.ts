@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "../../lib/mongodb";
-import News from "../../models/News";
+import dbConnect from "@/lib/mongodb";
+import News from "@/models/News";
 
-import Genre from "../../models/Genre";
+import Genre from "@/models/Genre";
 import mongoose from "mongoose";
-import { auth } from "../../lib/auth";
+import { auth } from "@/lib/auth";
 import { AdminUser } from "@/lib/types";
 import logger from "@/lib/utils/logger";
 

@@ -1,0 +1,58 @@
+services:
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mino
+      MONGO_INITDB_ROOT_PASSWORD: se4hd8taw
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  seeder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: seeder
+    container_name: db_seeder
+    depends_on:
+      - mongodb
+    environment:
+      MONGODB_URI: mongodb://mino:se4hd8taw@mongodb:27017/oppai?authSource=admin
+      ADMIN_EMAIL: minotaurosu@pm.me
+      ADMIN_PASSWORD: P92JB5Ap2$yyB5V@
+    command: >
+      sh -c "
+        echo '⏳ Waiting for MongoDB...';
+        until nc -z mongodb 27017; do sleep 1; done;
+        echo '✅ MongoDB ready';
+        node dist-scripts/init-db.js &&
+        node dist-scripts/setup-admin.js > .env.secrets &&
+        echo '✅ Admin setup complete, secrets written to .env.secrets';
+      "
+    volumes:
+      - ./data/.env.secrets:/app/.env.secrets  # optional persistence for secrets
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: oppaidaisuki_app
+    depends_on:
+      - seeder
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mino:se4hd8taw@mongodb:27017/oppai?authSource=admin
+      # NEXTAUTH_URL: https://oppai-daisuki.net
+      NEXTAUTH_URL: http://localhost:3000
+    env_file:
+      - .env.local
+      - data/.env.secrets
+    restart: unless-stopped
+
+volumes:
+  mongo_data:

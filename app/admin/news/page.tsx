@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { UploadDropzone } from "@/lib/uploadthing";
-import TagInput from "../../../components/admin/TagInput";
+import TagInput from "../../components/admin/TagInput";
 
 type ObjectId = string;
 

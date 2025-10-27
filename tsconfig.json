@@ -19,7 +19,18 @@
       }
     ],
     "paths": {
-      "@/*": ["./app/*"]
+      "@/api/*": ["./app/api/*"],
+      "@/admin/*": ["./app/admin/*"],
+      "@/components/*": ["./app/components/*"],
+      "@/genres/*": ["./app/genres/*"],
+      "@/galleries/*": ["./app/galleries/*"],
+      "@/idols/*": ["./app/idols/*"],
+      "@/lib/*": ["./app/lib/*"],
+      "@/news/*": ["./app/news/*"],
+      "@/photos/*": ["./app/photos/*"],
+      "@/videos/*": ["./app/videos/*"],
+      "@/watch/*": ["./app/watch/*"],
+      "@/models/*": ["./models/*"],
     }
   },
   "include": [

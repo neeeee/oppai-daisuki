@@ -1,8 +1,10 @@
+import Script from "next/script";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Providers from "./components/Providers";
-import { ThemeProvider } from "./components/theme/ThemeProvider";
-import Navbar from "./components/nav/Navbar";
+import Providers from "@/components/Providers";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import Navbar from "@/components/nav/Navbar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,36 +22,27 @@ export const metadata: Metadata = {
   description: "Gravure Video Stream Collection",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonceHeader = await headers();
+  const nonceValue = nonceHeader.get("x-nonce");
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var theme = localStorage.getItem('theme') || 'system';
-                  var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                  var resolvedTheme = theme === 'system' ? systemTheme : theme;
-
-                  document.documentElement.classList.remove('light', 'dark');
-                  document.documentElement.classList.add(resolvedTheme);
-                } catch (e) {
-                  // Silently handle errors
-                }
-              })();
-            `,
-          }}
-        />
+            <head>
+        {nonceValue && <meta name="csp-nonce" content={nonceValue} />}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200`}
       >
+        <Script
+          id="theme-init"
+          nonce={nonceValue ?? undefined}
+          strategy="beforeInteractive"
+          referrerPolicy="no-referrer"
+        />
         <ThemeProvider>
           <Providers>
             <Navbar />

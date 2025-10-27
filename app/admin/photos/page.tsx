@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { UploadDropzone } from "../../lib/uploadthing";
-import TagInput from "../../../components/admin/TagInput";
+import { UploadDropzone } from "@/lib/uploadthing";
+import TagInput from "../../components/admin/TagInput";
 import logger from "@/lib/utils/logger";
 
 type IdolOption = {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "../../../lib/mongodb";
-import News from "../../../models/News";
+import dbConnect from "@/lib/mongodb";
+import News from "@/models/News";
 import logger from "@/lib/utils/logger";
 
 export async function GET(

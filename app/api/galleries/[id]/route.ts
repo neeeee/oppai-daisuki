@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import Gallery from "../../../models/Gallery";
-import Photo from "../../../models/Photo";
-import dbConnect from "../../../lib/mongodb";
+import Gallery from "@/models/Gallery";
+import Photo from "@/models/Photo";
+import dbConnect from "@/lib/mongodb";
 import logger from "@/lib/utils/logger";
 
 export async function GET(

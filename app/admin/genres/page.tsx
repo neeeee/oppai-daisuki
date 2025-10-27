@@ -4,8 +4,8 @@ import logger from "@/lib/utils/logger";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
-import { UploadDropzone } from "../../lib/uploadthing";
-import TagInput from "../../../components/admin/TagInput";
+import { UploadDropzone } from "@/lib/uploadthing";
+import TagInput from "../../components/admin/TagInput";
 
 type Genre = {
   _id: string;

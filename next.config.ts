@@ -16,18 +16,6 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '3001',
-        pathname: '/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '3002',
-        pathname: '/**',
-      },
-      {
         protocol: 'https',
         hostname: 'corwj2q0xb.ufs.sh',
         pathname: '/**',
@@ -104,6 +92,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  output: "standalone",
 };
 
 export default nextConfig;

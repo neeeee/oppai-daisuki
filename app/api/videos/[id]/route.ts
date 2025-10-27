@@ -1,7 +1,7 @@
-import dbConnect from "../../../lib/mongodb";
-import Video from "../../../models/Video";
+import dbConnect from "@/lib/mongodb";
+import Video from "@/models/Video";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../lib/auth";
+import { auth } from "@/lib/auth";
 import { AdminUser } from "@/lib/types";
 
 export async function GET(

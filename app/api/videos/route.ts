@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "../../lib/mongodb";
-import Video from "../../models/Video";
-import Idol from "../../models/Idol";
-import Genre from "../../models/Genre";
+import dbConnect from "@/lib/mongodb";
+import Video from "@/models/Video";
+import Idol from "@/models/Idol";
+import Genre from "@/models/Genre";
 import mongoose from "mongoose";
-import { auth } from "../../lib/auth";
+import { auth } from "@/lib/auth";
 import logger from "@/lib/utils/logger";
 
 interface AuthenticatedUser {

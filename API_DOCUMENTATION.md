@@ -5,7 +5,7 @@ This document provides comprehensive information about the REST API endpoints fo
 ## Base URL
 
 ```
-http://localhost:3002/api  (Development)
+http://localhost:3000/api  (Development)
 https://yourdomain.com/api  (Production)
 ```
 
