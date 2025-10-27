@@ -10,6 +10,8 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    networks:
+      - app-network
 
   seeder:
     build:
@@ -21,8 +23,6 @@ services:
       - mongodb
     environment:
       MONGODB_URI: mongodb://mino:se4hd8taw@mongodb:27017/oppai?authSource=admin
-      ADMIN_EMAIL: minotaurosu@pm.me
-      ADMIN_PASSWORD: P92JB5Ap2$yyB5V@
     command: >
       sh -c "
         echo '⏳ Waiting for MongoDB...';
@@ -33,7 +33,9 @@ services:
         echo '✅ Admin setup complete, secrets written to .env.secrets';
       "
     volumes:
-      - ./data/.env.secrets:/app/.env.secrets  # optional persistence for secrets
+      - ./data/.env.secrets:/app/.env.secrets
+    networks:
+      - app-network
 
   app:
     build:
@@ -47,12 +49,17 @@ services:
     environment:
       NODE_ENV: production
       MONGODB_URI: mongodb://mino:se4hd8taw@mongodb:27017/oppai?authSource=admin
-      # NEXTAUTH_URL: https://oppai-daisuki.net
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: https://oppai-daisuki.net
     env_file:
       - .env.local
       - data/.env.secrets
     restart: unless-stopped
+    networks:
+      - app-network
 
 volumes:
   mongo_data:
+
+networks:
+  app-network:
+    driver: bridge

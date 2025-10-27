@@ -115,12 +115,38 @@ const config: NextAuthConfig = {
       },
       // lib/auth.ts - Updated authorize function
 async authorize(credentials, request) {
+  const headers = request.headers;
+  const xForwarded = headers?.get("x-forwarded-for") || "";
+  const xRealIP = headers?.get("x-real-ip") || "";
+  const xOriginalIP = headers?.get("x-original-forwarded-for") || "";
+  const cfConnectingIP = headers?.get("cf-connecting-ip") || "";
   const fwd = request.headers?.get("x-forwarded-for") || "";
   const xri = request.headers?.get("x-real-ip") || "";
+  const host = request.headers?.get("host") || "";
+
   let ip = (fwd.split(",")[0] || "").trim() || xri.trim() || "unknown";
+
+  if (xForwarded) {
+    ip = xForwarded.split(",")[0].trim();
+  } else if (xRealIP) {
+    ip = xRealIP.trim();
+  } else if (xOriginalIP) {
+    ip = xOriginalIP.split(",")[0].trim();
+  } else if (cfConnectingIP) {
+    ip = cfConnectingIP.trim();
+  }
   if (ip.startsWith("::ffff:")) {
     ip = ip.substring(7);
   }
+
+  console.log(`[AUTH DEBUG] All IP sources:`, {
+    xForwarded,
+    xRealIP,
+    xOriginalIP,
+    cfConnectingIP,
+    finalIP: ip,
+    host: headers?.get("host")
+  });
 
   if (process.env.NODE_ENV !== "production")
     logger.warn(`[SECURITY] Admin login attempt from IP: ${ip}`);
@@ -132,6 +158,19 @@ async authorize(credentials, request) {
         `[SECURITY] Blocked login attempt from unauthorized IP: ${ip}`,
       );
     throw new Error("Access denied from this IP address");
+  }
+
+    const adminUrl = process.env.ADMIN_URL;
+  const allowAdminOnMainSite = process.env.ALLOW_ADMIN_ON_MAIN_SITE === 'true';
+  
+  if (adminUrl && !allowAdminOnMainSite) {
+    const adminHost = new URL(adminUrl).host;
+    if (host !== adminHost) {
+      logger.error(
+        `[SECURITY] Admin login blocked on non-admin host: ${host}. Expected: ${adminHost}`
+      );
+      throw new Error("Admin access not allowed on this domain");
+    }
   }
 
   // Check rate limiting

@@ -93,6 +93,24 @@ const nextConfig: NextConfig = {
     ],
   },
   output: "standalone",
+  assetPrefix: process.env.NODE_ENV === 'production' ? undefined : undefined,
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+        ],
+      },
+    ];
+  },
+	env: {
+    NEXT_PUBLIC_ADMIN_URL: process.env.ADMIN_URL,
+    NEXT_PUBLIC_ALLOW_ADMIN_ON_MAIN_SITE: process.env.ALLOW_ADMIN_ON_MAIN_SITE,
+  },
 };
 
 export default nextConfig;

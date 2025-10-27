@@ -5,6 +5,7 @@ import News from "@/models/News";
 import Genre from "@/models/Genre";
 import mongoose from "mongoose";
 import { auth } from "@/lib/auth";
+import { isOriginAllowed } from "@/lib/utils/origin-validation";
 import { AdminUser } from "@/lib/types";
 import logger from "@/lib/utils/logger";
 
@@ -148,15 +149,19 @@ export async function POST(request: NextRequest) {
         { status: 401 },
       );
     }
+    console.log("[API] Starting request processing...");
+
     const origin = request.headers.get("origin");
-    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
-    if (origin && !origin.startsWith(baseUrl)) {
+    const originAllowed = isOriginAllowed(origin, request.url);
+    if (!originAllowed) {
+      console.log(`[API] Rejecting request due to origin validation`);
       return NextResponse.json(
         { success: false, error: "Bad origin" },
         { status: 403 },
       );
     }
 
+    console.log("[API] Origin validation passed, continuing...");
     const body = await request.json();
 
     // Validate required fields
@@ -231,14 +236,15 @@ export async function PUT(request: NextRequest) {
       );
     }
     const origin = request.headers.get("origin");
-    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
-    if (origin && !origin.startsWith(baseUrl)) {
+    console.log(`[PUT API] Origin: ${origin}`);
+
+    if (!isOriginAllowed(origin, request.url)) {
+      console.log(`[PUT API] Origin validation failed for: ${origin}`);
       return NextResponse.json(
         { success: false, error: "Bad origin" },
         { status: 403 },
       );
     }
-
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -342,9 +348,12 @@ export async function DELETE(request: NextRequest) {
         { status: 401 },
       );
     }
+
     const origin = request.headers.get("origin");
-    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
-    if (origin && !origin.startsWith(baseUrl)) {
+    console.log(`[DELETE API] Origin: ${origin}`);
+
+    if (!isOriginAllowed(origin, request.url)) {
+      console.log(`[DELETE API] Origin validation failed for: ${origin}`);
       return NextResponse.json(
         { success: false, error: "Bad origin" },
         { status: 403 },

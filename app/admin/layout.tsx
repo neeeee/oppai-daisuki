@@ -12,6 +12,8 @@ import {
   ComputerDesktopIcon,
 } from "@heroicons/react/24/outline";
 
+import AdminGuard from "@/components/admin/AdminGuard";
+
 
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
@@ -232,5 +234,5 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AdminLayoutContent>{children}</AdminLayoutContent>;
+  return <AdminGuard><AdminLayoutContent>{children}</AdminLayoutContent></AdminGuard>;
 }

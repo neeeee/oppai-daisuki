@@ -4,6 +4,7 @@ import Photo from "@/models/Photo";
 import Gallery from "@/models/Gallery";
 import Idol from "@/models/Idol";
 import { auth } from "@/lib/auth";
+import { isOriginAllowed } from "@/lib/utils/origin-validation";
 import { AdminUser } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
@@ -129,8 +130,9 @@ export async function POST(request: NextRequest) {
       );
     }
     const origin = request.headers.get("origin");
-    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
-    if (origin && !origin.startsWith(baseUrl)) {
+    const originAllowed = isOriginAllowed(origin, request.url);
+    if (!originAllowed) {
+      console.log(`[API] Rejecting request due to origin validation`);
       return NextResponse.json(
         { success: false, error: "Bad origin" },
         { status: 403 },
@@ -212,8 +214,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
     const origin = request.headers.get("origin");
-    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
-    if (origin && !origin.startsWith(baseUrl)) {
+    const originAllowed = isOriginAllowed(origin, request.url);
+    if (!originAllowed) {
+      console.log(`[API] Rejecting request due to origin validation`);
       return NextResponse.json(
         { success: false, error: "Bad origin" },
         { status: 403 },

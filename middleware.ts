@@ -43,8 +43,24 @@ function isRateLimited(
   return false;
 }
 
+function isMainSite(request: NextRequest): boolean {
+  const host = request.headers.get('host') || '';
+  const adminUrl = process.env.ADMIN_URL;
+
+  if (!adminUrl) return true; // If no ADMIN_URL set, treat as main site
+
+  const adminHost = new URL(adminUrl).host;
+  return host !== adminHost;
+}
+
+function isAdminRoute(pathname: string): boolean {
+  return pathname.startsWith('/admin') && 
+          !pathname.startsWith('/api/auth');
+}
+
 export default function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const host = request.headers.get('host') || '';
   const ip =
     request.headers.get("x-forwarded-for") ||
     request.headers.get("x-real-ip") ||
@@ -83,6 +99,45 @@ export default function middleware(request: NextRequest) {
   response.headers.set("Content-Security-Policy", csp);
   response.headers.set("x-nonce", nonce);
 
+   if (pathname.startsWith('/admin') && !pathname.startsWith('/api/auth/')) {
+    const allowAdminOnMainSite = process.env.ALLOW_ADMIN_ON_MAIN_SITE === 'true';
+    const adminUrl = process.env.ADMIN_URL;
+    
+    if (adminUrl && !allowAdminOnMainSite && isMainSite(request)) {
+      console.log(
+        `[SECURITY] Admin route ${pathname} blocked on main site (${host}). ` +
+        `Redirecting to admin URL. IP: ${ip}`
+      );
+      
+      const adminUrlObj = new URL(adminUrl);
+      const redirectUrl = new URL(request.url);
+      redirectUrl.host = adminUrlObj.host;
+      redirectUrl.protocol = adminUrlObj.protocol;
+      redirectUrl.port = '';
+      
+      return NextResponse.redirect(redirectUrl.toString(), 302);
+    }
+  }
+
+  // Handle auth API routes differently - allow them on both domains
+  if (pathname.startsWith('/api/auth/')) {
+    // Only block auth if it's an admin-specific auth route AND on main site
+    if (pathname.includes('admin') || pathname.includes('login')) {
+      const allowAdminOnMainSite = process.env.ALLOW_ADMIN_ON_MAIN_SITE === 'true';
+      const adminUrl = process.env.ADMIN_URL;
+      
+      if (adminUrl && !allowAdminOnMainSite && isMainSite(request)) {
+        const adminUrlObj = new URL(adminUrl);
+        const redirectUrl = new URL(request.url);
+        redirectUrl.host = adminUrlObj.host;
+        redirectUrl.protocol = adminUrlObj.protocol;
+        redirectUrl.port = '';
+        
+        return NextResponse.redirect(redirectUrl.toString(), 302);
+      }
+    }
+  }
+
   // Rate limiting for admin routes (but allow login page)
   if (pathname.startsWith("/admin")) {
     if (RATE_LIMIT_ENABLED && isRateLimited(ip, "/admin", 20, 60000)) {
@@ -97,21 +152,7 @@ export default function middleware(request: NextRequest) {
         },
       });
     }
-
-    // Only protect admin routes other than login and auth
-    if (
-      pathname.startsWith("/admin") &&
-      pathname !== "/admin/login" &&
-      !pathname.startsWith("/api/auth/")
-    ) {
-      // For protected admin pages, redirect to login if no session
-      // Note: We can't easily check session in middleware with NextAuth v5
-      // So we'll let the page components handle auth checks
-      console.log(
-        `[SECURITY] Admin route accessed: ${pathname} from IP: ${ip}`,
-      );
-    }
-  }
+	}
 
   // General rate limiting for API routes
   if (pathname.startsWith("/api/")) {
@@ -136,9 +177,7 @@ export default function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico).*)",
-    // Match all admin routes
     "/admin/:path*",
-    // Match API routes
     "/api/:path*",
   ],
 };
