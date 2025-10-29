@@ -208,7 +208,7 @@ function generateIdolSlug(
   name: string,
   stageName?: string | null | undefined,
 ): string {
-  const nameToSlugify = stageName || name;
+  const nameToSlugify = name;
   return nameToSlugify
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
@@ -221,9 +221,9 @@ function generateIdolSlug(
 IdolSchema.pre("validate", function (next) {
   if (
     this.name &&
-    (!this.slug || this.isModified("name") || this.isModified("stageName"))
+    (!this.slug || this.isModified("name"))
   ) {
-    this.slug = generateIdolSlug(this.name, typeof this.stageName === "string" ? this.stageName : undefined);
+    this.slug = generateIdolSlug(this.name);
   }
   next();
 });
@@ -232,9 +232,9 @@ IdolSchema.pre("validate", function (next) {
 IdolSchema.pre("save", function (next) {
   if (
     this.name &&
-    (!this.slug || this.isModified("name") || this.isModified("stageName"))
+    (!this.slug || this.isModified("name"))
   ) {
-    this.slug = generateIdolSlug(this.name, typeof this.stageName === "string" ? this.stageName : undefined);
+    this.slug = generateIdolSlug(this.name);
   }
   next();
 });
