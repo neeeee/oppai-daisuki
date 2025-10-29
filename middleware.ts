@@ -104,20 +104,28 @@ export default function middleware(request: NextRequest) {
     const adminUrl = process.env.ADMIN_URL;
     
     if (adminUrl && !allowAdminOnMainSite && isMainSite(request)) {
-      console.log(
-        `[SECURITY] Admin route ${pathname} blocked on main site (${host}). ` +
-        `Redirecting to admin URL. IP: ${ip}`
-      );
-      
-      const adminUrlObj = new URL(adminUrl);
-      const redirectUrl = new URL(request.url);
-      redirectUrl.host = adminUrlObj.host;
-      redirectUrl.protocol = adminUrlObj.protocol;
-      redirectUrl.port = '';
-      
-      return NextResponse.redirect(redirectUrl.toString(), 302);
-    }
+      if (RATE_LIMIT_ENABLED && isRateLimited(ip, "/admin-forbidden", 5, 300000)) { // 5 attempts per 5 minutes
+    console.log(
+      `[SECURITY] Rate limit exceeded for admin access attempts from IP: ${ip}`,
+    );
+    return new NextResponse("Too Many Requests", {
+      status: 429,
+      headers: {
+        "Retry-After": "300",
+        ...securityHeaders,
+				},
+				});
+			}
+  
+  console.log(
+    `[SECURITY] Admin route ${pathname} blocked on main site (${host}). ` +
+    `Redirecting to forbidden page. IP: ${ip}`
+  );
+  
+  const forbiddenUrl = new URL('/forbidden', request.url);
+  return NextResponse.redirect(forbiddenUrl.toString(), 302);
   }
+}
 
   // Handle auth API routes differently - allow them on both domains
   if (pathname.startsWith('/api/auth/')) {
@@ -127,12 +135,7 @@ export default function middleware(request: NextRequest) {
       const adminUrl = process.env.ADMIN_URL;
       
       if (adminUrl && !allowAdminOnMainSite && isMainSite(request)) {
-        const adminUrlObj = new URL(adminUrl);
-        const redirectUrl = new URL(request.url);
-        redirectUrl.host = adminUrlObj.host;
-        redirectUrl.protocol = adminUrlObj.protocol;
-        redirectUrl.port = '';
-        
+       const redirectUrl = new URL('/forbidden', request.url);
         return NextResponse.redirect(redirectUrl.toString(), 302);
       }
     }
@@ -169,9 +172,8 @@ export default function middleware(request: NextRequest) {
         },
       );
     }
+		return response;
   }
-
-  return response;
 }
 
 export const config = {
