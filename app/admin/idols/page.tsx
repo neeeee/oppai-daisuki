@@ -460,6 +460,16 @@ export default function AdminIdolsPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Profile Image
               </label>
+              <input
+                type="url"
+                value={form.profileImage}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, profileImage: e.target.value }))
+                }
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                placeholder="https://..."
+              />
               {form.profileImage ? (
                 <div className="mt-1">
                   <div className="relative w-24 h-24 rounded-full border mb-2 overflow-hidden">
@@ -502,6 +512,16 @@ export default function AdminIdolsPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Cover Image
               </label>
+              <input
+                type="url"
+                value={form.coverImage}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, coverImage: e.target.value }))
+                }
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                placeholder="https://..."
+              />
               {form.coverImage ? (
                 <div className="mt-1">
                   <div className="relative w-48 h-24 rounded border mb-2 overflow-hidden">
@@ -689,6 +709,26 @@ export default function AdminIdolsPage() {
                       measurements: {
                         ...p.measurements,
                         bloodType: e.target.value || undefined,
+                      },
+                    }))
+                  }
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  placeholder="A, B, AB, O"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 dark:text-gray-400">
+                  Cup Size
+                </label>
+                <input
+                  type="text"
+                  value={form.measurements?.cupSize ?? ""}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      measurements: {
+                        ...p.measurements,
+                        cupSize: e.target.value || undefined,
                       },
                     }))
                   }

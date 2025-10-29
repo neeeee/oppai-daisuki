@@ -192,7 +192,16 @@ export default function AdminVideosPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, search, idolFilter, genreFilter, categoryFilter, sortBy, sortOrder]);
+  }, [
+    page,
+    limit,
+    search,
+    idolFilter,
+    genreFilter,
+    categoryFilter,
+    sortBy,
+    sortOrder,
+  ]);
 
   useEffect(() => {
     fetchIdols();
@@ -441,13 +450,26 @@ export default function AdminVideosPage() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Thumbnail Image *
                   </label>
+                  <input
+                    type="url"
+                    value={form.thumbnailUrl}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, thumbnailUrl: e.target.value }))
+                    }
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                    placeholder="https://..."
+                  />
                   {form.thumbnailUrl ? (
                     <div className="mt-1">
-                      <Image
-                        src={form.thumbnailUrl}
-                        alt="Thumbnail preview"
-                        className="w-full max-w-xs h-32 object-cover rounded border mb-2"
-                      />
+                      <div className="relative w-full max-w-xs h-32 mb-2">
+                        <Image
+                          src={form.thumbnailUrl}
+                          alt="Thumbnail preview"
+                          fill
+                          className="object-cover rounded border"
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() =>
@@ -482,6 +504,16 @@ export default function AdminVideosPage() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Video File *
                   </label>
+                  <input
+                    type="url"
+                    value={form.videoSourceUrl}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, videoSourceUrl: e.target.value }))
+                    }
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                    placeholder="https://..."
+                  />
                   {form.videoSourceUrl ? (
                     <div className="mt-1">
                       <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
@@ -554,11 +586,14 @@ export default function AdminVideosPage() {
                   </label>
                   {form.channelAvatar ? (
                     <div className="mt-1">
-                      <Image
-                        src={form.channelAvatar}
-                        alt="Channel avatar preview"
-                        className="w-16 h-16 object-cover rounded-full border mb-2"
-                      />
+                      <div className="relative w-16 h-16 mb-2">
+                        <Image
+                          src={form.channelAvatar}
+                          alt="Channel avatar preview"
+                          fill
+                          className="object-cover rounded-full border"
+                        />
+                      </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         Using idol profile image
                       </p>
@@ -996,11 +1031,12 @@ export default function AdminVideosPage() {
                 >
                   <div className="flex items-start gap-4">
                     {/* Thumbnail */}
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 relative w-32 h-20">
                       <Image
                         src={v.thumbnailUrl}
                         alt={v.title}
-                        className="w-32 h-20 object-cover rounded"
+                        fill
+                        className="object-cover rounded"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src =
                             "https://via.placeholder.com/160x90?text=No+Image";

@@ -465,14 +465,18 @@ export default function IdolProfilePage() {
               <div className="space-y-3">
                 {idol.age && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 text-sm">Age:</span>
+                    <span className="text-gray-500 dark:text-gray-100 text-sm">
+                      Age:
+                    </span>
                     <span className="text-sm font-medium">{idol.age}</span>
                   </div>
                 )}
 
                 {idol.birthPlace && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 text-sm">Birthplace:</span>
+                    <span className="text-gray-500 dark:text-gray-100 text-sm">
+                      Birthplace:
+                    </span>
                     <span className="text-sm font-medium">
                       {idol.birthPlace}
                     </span>
@@ -481,8 +485,10 @@ export default function IdolProfilePage() {
 
                 {idol.height && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 text-sm">Height:</span>
-                    <span className="text-sm font-medium">
+                    <span className="text-gray-500 dark:text-gray-100 text-sm">
+                      Height:
+                    </span>
+                    <span className="text-sm dark:text-gray-100 font-medium">
                       {idol.height} cm
                     </span>
                   </div>
@@ -493,10 +499,10 @@ export default function IdolProfilePage() {
                     idol.measurements.waist ||
                     idol.measurements.hips) && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500 text-sm">
+                      <span className="text-gray-500 dark:text-gray-100 text-sm">
                         Measurements:
                       </span>
-                      <span className="text-sm font-medium">
+                      <span className="text-sm dark:text-gray-100  font-medium">
                         {[
                           idol.measurements.bust,
                           idol.measurements.waist,
@@ -512,7 +518,9 @@ export default function IdolProfilePage() {
 
                 {idol.bloodType && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 text-sm">Blood Type:</span>
+                    <span className="text-gray-500 dark:text-gray-100 text-sm">
+                      Blood Type:
+                    </span>
                     <span className="text-sm font-medium">
                       {idol.bloodType}
                     </span>
@@ -521,7 +529,9 @@ export default function IdolProfilePage() {
 
                 {idol.zodiacSign && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 text-sm">Zodiac:</span>
+                    <span className="text-gray-500 dark:text-gray-100 text-sm">
+                      Zodiac:
+                    </span>
                     <span className="text-sm font-medium">
                       {idol.zodiacSign}
                     </span>
@@ -530,24 +540,32 @@ export default function IdolProfilePage() {
 
                 {idol.agency && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 text-sm">Agency:</span>
-                    <span className="text-sm font-medium">{idol.agency}</span>
+                    <span className="text-gray-500 dark:text-gray-100 text-sm">
+                      Agency:
+                    </span>
+                    <span className="text-sm dark:text-gray-100 font-medium">
+                      {idol.agency}
+                    </span>
                   </div>
                 )}
 
                 {idol.careerStart && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 text-sm">Career Start:</span>
-                    <span className="text-sm font-medium">
+                    <span className="text-gray-500 dark:text-gray-100 text-sm">
+                      Career Start:
+                    </span>
+                    <span className="text-sm dark:text-gray-100 font-medium">
                       {new Date(idol.careerStart).getFullYear()}
                     </span>
                   </div>
                 )}
 
                 <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">Status:</span>
+                  <span className="text-gray-500 dark:text-gray-100 text-sm">
+                    Status:
+                  </span>
                   <span
-                    className={`text-sm font-medium capitalize ${
+                    className={`text-sm dark:text-gray-100 font-medium capitalize ${
                       idol.status === "active"
                         ? "text-green-600"
                         : idol.status === "retired"

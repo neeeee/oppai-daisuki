@@ -31,18 +31,12 @@ export default async function RootLayout({
   const nonceValue = nonceHeader.get("x-nonce");
   return (
     <html lang="en" suppressHydrationWarning>
-            <head>
+      <head>
         {nonceValue && <meta name="csp-nonce" content={nonceValue} />}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200`}
       >
-        <Script
-          id="theme-init"
-          nonce={nonceValue ?? undefined}
-          strategy="beforeInteractive"
-          referrerPolicy="no-referrer"
-        />
         <ThemeProvider>
           <Providers>
             <Navbar />

@@ -63,7 +63,7 @@ export default function GenresPage() {
   const isLoadingRef = useRef(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>(null);
 
-    useEffect(() => {
+  useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
@@ -163,7 +163,7 @@ export default function GenresPage() {
             Explore Genres
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg">
-            Discover content organized by categories and themes
+            Content organized by Genre
           </p>
 
           {/* Stats */}

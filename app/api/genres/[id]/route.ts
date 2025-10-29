@@ -118,10 +118,15 @@ export async function GET(
       if (contentType === "idols") totalCount = idolsCount;
     }
 
-    // For videos, we'll use a simple approach since Video model doesn't have genre field
     if (contentType === "all" || contentType === "videos") {
       const [videos, videosCount] = await Promise.all([
-        Video.find({})
+        Video.find({
+          $or: [
+            { genre: (genre as unknown as { _id: unknown })._id },
+            { genres: (genre as unknown as { _id: unknown })._id },
+          ],
+          isPublic: true,
+        })
           .sort({ createdAt: -1 })
           .skip(contentType === "videos" ? skip : 0)
           .limit(contentType === "videos" ? limit : 12)
@@ -129,12 +134,18 @@ export async function GET(
             "title thumbnailUrl duration viewCount channelName channelAvatar createdAt",
           )
           .lean(),
-        Video.countDocuments({}),
+        Video.countDocuments({
+          $or: [
+            { genre: (genre as unknown as { _id: unknown })._id },
+            { genres: (genre as unknown as { _id: unknown })._id },
+          ],
+          isPublic: true,
+        }),
       ]);
       content.videos = videos;
+
       if (contentType === "videos") totalCount = videosCount;
     }
-
     // Calculate pagination info
     const totalPages = Math.ceil(totalCount / limit);
 
