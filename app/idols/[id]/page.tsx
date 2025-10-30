@@ -297,7 +297,7 @@ export default function IdolProfilePage() {
                       href={`/watch/${video._id}`}
                       className="group"
                     >
-                      <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                      <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                         <div className="relative aspect-video">
                           <Image
                             src={video.thumbnailUrl}
@@ -322,7 +322,7 @@ export default function IdolProfilePage() {
                           </div>
                         </div>
                         <div className="p-3">
-                          <h3 className="font-medium text-sm line-clamp-2 mb-1 group-hover:text-indigo-600 transition-colors">
+                          <h3 className="font-medium text-sm line-clamp-2 mb-1 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
                             {video.title}
                           </h3>
                           <p className="text-xs text-gray-500">
@@ -650,17 +650,19 @@ export default function IdolProfilePage() {
             {/* Social Media */}
             {idol.socialMedia &&
               Object.values(idol.socialMedia).some(Boolean) && (
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <h2 className="text-lg font-semibold mb-4">Social Media</h2>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                  <h2 className="text-lg dark:text-white font-semibold mb-4">
+                    Social Media
+                  </h2>
                   <div className="space-y-2">
                     {idol.socialMedia.twitter && (
                       <a
                         href={idol.socialMedia.twitter}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 text-sm text-blue-500 hover:text-blue-700"
+                        className="flex items-center gap-3 text-sm dark:text-indigo-300 text-blue-500 hover:text-blue-700 dark:hover:text-blue-500"
                       >
-                        <span>🐦</span> Twitter
+                        Twitter
                       </a>
                     )}
                     {idol.socialMedia.instagram && (
@@ -668,9 +670,9 @@ export default function IdolProfilePage() {
                         href={idol.socialMedia.instagram}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 text-sm text-pink-500 hover:text-pink-700"
+                        className="flex items-center gap-3 text-sm dark:text-indigo-300 text-blue-500 hover:text-blue-700 dark:hover:text-blue-500"
                       >
-                        <span>📷</span> Instagram
+                        Instagram
                       </a>
                     )}
                     {idol.socialMedia.tiktok && (
@@ -678,9 +680,9 @@ export default function IdolProfilePage() {
                         href={idol.socialMedia.tiktok}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 text-sm text-black hover:text-gray-700"
+                        className="flex items-center gap-3 text-sm dark:text-indigo-300 text-blue-500 hover:text-blue-700 dark:hover:text-blue-500"
                       >
-                        <span>🎵</span> TikTok
+                        TikTok
                       </a>
                     )}
                     {idol.socialMedia.youtube && (
@@ -688,9 +690,9 @@ export default function IdolProfilePage() {
                         href={idol.socialMedia.youtube}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 text-sm text-red-500 hover:text-red-700"
+                        className="flex items-center gap-3 text-sm dark:text-indigo-300 text-blue-500 hover:text-blue-700 dark:hover:text-blue-500"
                       >
-                        <span>📺</span> YouTube
+                        YouTube
                       </a>
                     )}
                     {idol.socialMedia.website && (
@@ -698,9 +700,9 @@ export default function IdolProfilePage() {
                         href={idol.socialMedia.website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 text-sm text-indigo-500 hover:text-indigo-700"
+                        className="flex items-center gap-3 text-sm dark:text-indigo-300 text-blue-500 hover:text-blue-700 dark:hover:text-blue-500"
                       >
-                        <span>🌐</span> Website
+                        Website
                       </a>
                     )}
                   </div>
