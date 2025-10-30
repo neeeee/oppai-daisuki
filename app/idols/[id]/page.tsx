@@ -206,7 +206,7 @@ export default function IdolProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-neutral-900">
       {/* Hero Section with Cover Image */}
       <div className="relative h-64 sm:h-80 lg:h-96 overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-600">
         {idol.coverImage ? (
@@ -214,13 +214,12 @@ export default function IdolProfilePage() {
             src={idol.coverImage}
             alt={`${idol.stageName || idol.name} cover`}
             fill
-            className="object-cover"
+            className="object-cover opacity-20"
             priority
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
         )}
-        <div className="absolute inset-0 bg-black bg-opacity-20"></div>
 
         {/* Profile Image Overlay */}
         <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8">
@@ -240,12 +239,10 @@ export default function IdolProfilePage() {
               )}
             </div>
             <div className="text-white mb-2">
-              <h1 className="text-2xl sm:text-3xl font-bold">
+              <h1 className="text-2xl sm:text-3xl font-bold text-shadow-lg">
                 {idol.stageName || idol.name}
               </h1>
-              {idol.stageName && (
-                <p className="text-lg opacity-90">{idol.name}</p>
-              )}
+              {idol.stageName && <p className="text-lg">{idol.name}</p>}
             </div>
           </div>
         </div>
@@ -257,13 +254,13 @@ export default function IdolProfilePage() {
           {/* Content Area */}
           <div className="lg:col-span-2">
             {/* Navigation Tabs */}
-            <div className="flex space-x-1 bg-gray-100 rounded-lg p-1 mb-6">
+            <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mb-6">
               <button
                 onClick={() => setActiveTab("videos")}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                   activeTab === "videos"
-                    ? "bg-white text-indigo-600 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-white dark:bg-gray-600 text-indigo-600 dark:text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700 dark:hover:text-indigo-300"
                 }`}
               >
                 Videos ({videos.length})
@@ -272,8 +269,8 @@ export default function IdolProfilePage() {
                 onClick={() => setActiveTab("photos")}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                   activeTab === "photos"
-                    ? "bg-white text-indigo-600 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-white dark:bg-gray-600 text-indigo-600 dark:text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700 dark:hover:text-indigo-300"
                 }`}
               >
                 Photos ({photos.length})
@@ -282,8 +279,8 @@ export default function IdolProfilePage() {
                 onClick={() => setActiveTab("galleries")}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                   activeTab === "galleries"
-                    ? "bg-white text-indigo-600 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-white dark:bg-gray-600 text-indigo-600 dark:text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700 dark:hover:text-indigo-300"
                 }`}
               >
                 Galleries ({galleries.length})
@@ -418,8 +415,7 @@ export default function IdolProfilePage() {
                           )}
                           <div className="flex justify-between items-center text-sm text-gray-500">
                             <span>{gallery.photoCount} photos</span>
-                            <div className="flex items-center gap-4">
-                            </div>
+                            <div className="flex items-center gap-4"></div>
                           </div>
                         </div>
                       </div>
@@ -456,7 +452,9 @@ export default function IdolProfilePage() {
                     <span className="text-gray-500 dark:text-gray-100 text-sm">
                       Age:
                     </span>
-                    <span className="text-sm font-medium">{idol.age}</span>
+                    <span className="text-sm dark:text-gray-100 font-medium">
+                      {idol.age}
+                    </span>
                   </div>
                 )}
 
@@ -465,7 +463,7 @@ export default function IdolProfilePage() {
                     <span className="text-gray-500 dark:text-gray-100 text-sm">
                       Birthplace:
                     </span>
-                    <span className="text-sm font-medium">
+                    <span className="text-sm dark:text-gray-100 font-medium">
                       {idol.birthPlace}
                     </span>
                   </div>
@@ -569,7 +567,7 @@ export default function IdolProfilePage() {
 
             {/* Genres */}
             {idol.genres && idol.genres.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="bg-white text-gray-500 dark:text-gray-100 dark:bg-gray-800 rounded-lg shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Genres</h2>
                 <div className="flex flex-wrap gap-2">
                   {idol.genres.map((genre) => (
@@ -588,13 +586,13 @@ export default function IdolProfilePage() {
 
             {/* Tags */}
             {idol.tags && idol.tags.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="bg-white text-gray-500 dark:text-gray-100 dark:bg-gray-800 rounded-lg shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Tags</h2>
                 <div className="flex flex-wrap gap-2">
                   {idol.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-xs font-medium text-gray-700"
+                      className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-xs font-medium text-gray-500"
                     >
                       #{tag}
                     </span>
@@ -711,7 +709,7 @@ export default function IdolProfilePage() {
 
             {/* Stats */}
             {contentStats && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-100 rounded-lg shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Statistics</h2>
                 <div className="space-y-3">
                   <div className="flex justify-between">
