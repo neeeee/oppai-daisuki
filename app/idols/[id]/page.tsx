@@ -507,7 +507,7 @@ export default function IdolProfilePage() {
                     <span className="text-gray-500 dark:text-gray-100 text-sm">
                       Blood Type:
                     </span>
-                    <span className="text-sm font-medium">
+                    <span className="text-sm dark:text-gray-100 font-medium">
                       {idol.bloodType}
                     </span>
                   </div>
@@ -592,7 +592,7 @@ export default function IdolProfilePage() {
                   {idol.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-xs font-medium text-gray-500"
+                      className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 dark:bg-indigo-600 dark:text-gray-100 text-xs font-medium text-gray-500"
                     >
                       #{tag}
                     </span>

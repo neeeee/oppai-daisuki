@@ -228,7 +228,9 @@ export default function AdminIdolsPage() {
         youtube: idol.socialMedia?.youtube || "",
         website: idol.socialMedia?.website || "",
       },
-      genres: (idol.genres || []) as ObjectId[],
+      genres: (idol.genres || []).map((g) =>
+        typeof g === "string" ? g : g._id,
+      ),
       tags: idol.tags || [],
       isVerified: !!idol.isVerified,
       isPublic: !!idol.isPublic,
@@ -423,7 +425,7 @@ export default function AdminIdolsPage() {
                   setForm((p) => ({ ...p, name: e.target.value }))
                 }
                 required
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
                 placeholder="Full name"
               />
               {!!form.name.trim() && (
@@ -448,7 +450,7 @@ export default function AdminIdolsPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, stageName: e.target.value }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
                 placeholder="Optional stage name"
               />
             </div>
@@ -571,7 +573,7 @@ export default function AdminIdolsPage() {
               value={form.bio || ""}
               onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
               rows={4}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
               placeholder="Brief biography"
             />
           </div>
@@ -589,7 +591,7 @@ export default function AdminIdolsPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, birthDate: e.target.value }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
               />
             </div>
             <div>
@@ -602,7 +604,7 @@ export default function AdminIdolsPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, birthPlace: e.target.value }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
                 placeholder="City, Country"
               />
             </div>
@@ -619,7 +621,7 @@ export default function AdminIdolsPage() {
                     height: e.target.value ? Number(e.target.value) : undefined,
                   }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
                 placeholder="e.g., 165"
                 min="120"
                 max="220"
@@ -651,7 +653,7 @@ export default function AdminIdolsPage() {
                       },
                     }))
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
                 />
               </div>
               <div>
@@ -672,7 +674,7 @@ export default function AdminIdolsPage() {
                       },
                     }))
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
                 />
               </div>
               <div>
@@ -693,7 +695,7 @@ export default function AdminIdolsPage() {
                       },
                     }))
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
                 />
               </div>
               <div>
@@ -706,13 +708,10 @@ export default function AdminIdolsPage() {
                   onChange={(e) =>
                     setForm((p) => ({
                       ...p,
-                      measurements: {
-                        ...p.measurements,
-                        bloodType: e.target.value || undefined,
-                      },
+                      bloodType: e.target.value || undefined,
                     }))
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
                   placeholder="A, B, AB, O"
                 />
               </div>
@@ -732,8 +731,8 @@ export default function AdminIdolsPage() {
                       },
                     }))
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  placeholder="A, B, AB, O"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
+                  placeholder="A, B, C, D..."
                 />
               </div>
             </div>
@@ -742,7 +741,7 @@ export default function AdminIdolsPage() {
           {/* Career & status */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 p-2">
                 Career Start
               </label>
               <input
@@ -751,12 +750,12 @@ export default function AdminIdolsPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, careerStart: e.target.value }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
               />
             </div>
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 p-2">
                 Status
               </label>
               <select
@@ -767,7 +766,7 @@ export default function AdminIdolsPage() {
                     status: e.target.value as "active" | "retired" | "hiatus",
                   }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
               >
                 {STATUSES.map((s) => (
                   <option key={s} value={s}>
@@ -777,7 +776,7 @@ export default function AdminIdolsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 p-2">
                 Agency
               </label>
               <input
@@ -786,7 +785,7 @@ export default function AdminIdolsPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, agency: e.target.value }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
               />
             </div>
           </div>
@@ -814,8 +813,8 @@ export default function AdminIdolsPage() {
                       },
                     }))
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  placeholder="@handle or URL"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
+                  placeholder="https://x.com/..."
                 />
               </div>
               <div>
@@ -834,7 +833,7 @@ export default function AdminIdolsPage() {
                       },
                     }))
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
                   placeholder="https://instagram.com/..."
                 />
               </div>
@@ -851,7 +850,7 @@ export default function AdminIdolsPage() {
                       socialMedia: { ...p.socialMedia, tiktok: e.target.value },
                     }))
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
                   placeholder="https://tiktok.com/@..."
                 />
               </div>
@@ -871,7 +870,7 @@ export default function AdminIdolsPage() {
                       },
                     }))
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
                   placeholder="https://youtube.com/..."
                 />
               </div>
@@ -891,8 +890,7 @@ export default function AdminIdolsPage() {
                       },
                     }))
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-500:w
-                  "
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-500 p-2"
                   placeholder="https://..."
                 />
               </div>
