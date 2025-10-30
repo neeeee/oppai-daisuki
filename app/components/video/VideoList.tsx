@@ -94,7 +94,6 @@ export default function VideoList({
                       </span>
                     </div>
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                      <span>{formatViewCount(video.viewCount)} views</span>
                       <span>{video.duration}</span>
                       <span>
                         {new Date(video.createdAt).toLocaleDateString("en-US", {

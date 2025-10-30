@@ -64,7 +64,6 @@ export default function PhotoDetailPage() {
 
       if (data.success) {
         setPhoto(data.data);
-        incrementViewCount();
       } else {
         setError("Photo not found");
       }
@@ -78,16 +77,6 @@ export default function PhotoDetailPage() {
   useEffect(() => {
     fetchPhoto();
   }, [fetchPhoto]);
-
-  const incrementViewCount = async () => {
-    try {
-      await fetch(`/api/photos/${photoId}/view`, {
-        method: "POST",
-      });
-    } catch {
-      // Silently fail - view count increment is not critical
-    }
-  };
 
   const handleLike = async () => {
     try {
@@ -328,19 +317,6 @@ export default function PhotoDetailPage() {
                 </p>
               )}
 
-              {/* Stats */}
-              <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
-                <span className="flex items-center gap-1">
-                  👁️ {formatCount(photo.viewCount)} views
-                </span>
-                <span className="flex items-center gap-1">
-                  ❤️ {formatCount(photo.likeCount)} likes
-                </span>
-                <span className="flex items-center gap-1">
-                  ⬇️ {formatCount(photo.downloadCount)} downloads
-                </span>
-              </div>
-
               {/* Upload date */}
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 Uploaded {formatDate(photo.uploadDate)}
@@ -436,33 +412,6 @@ export default function PhotoDetailPage() {
                 </div>
               </div>
             )}
-
-            {/* Actions */}
-            <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 shadow-sm">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-                Actions
-              </h3>
-              <div className="space-y-3">
-                <button
-                  onClick={handleLike}
-                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  ❤️ Like Photo
-                </button>
-                <button
-                  onClick={handleDownload}
-                  className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  ⬇️ Download
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                >
-                  📤 Share
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>

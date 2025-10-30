@@ -38,7 +38,6 @@ export default function VideoInfo({ video }: VideoInfoProps) {
 Enjoy this content from ${video.channelName}!
 
 Video duration: ${video.duration}
-Views: ${formatCount(video.viewCount)}
 
 #video #content #${video.channelName.toLowerCase().replace(/\s+/g, "")}`;
 
@@ -50,8 +49,6 @@ Views: ${formatCount(video.viewCount)}
 
       <div className="flex items-center justify-between border-b border-gray-200 pb-4">
         <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-white">
-          <span>{formatCount(video.viewCount)} views</span>
-          <span>•</span>
           <span>{formatDate(video.createdAt)}</span>
         </div>
       </div>

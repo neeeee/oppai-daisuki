@@ -192,15 +192,14 @@ export default function PhotosPage() {
   };
 
   const featuredPhotos = photos.filter((photo) => photo.metadata?.featured);
-  const trendingPhotos = photos.filter((photo) => photo.metadata?.trending);
   const regularPhotos = photos.filter(
-    (photo) => !photo.metadata?.featured && !photo.metadata?.trending,
+    (photo) => !photo.metadata?.featured
   );
 
   // Group photos by different criteria for masonry layout
   const getPhotosByCategory = () => {
-    if (featuredPhotos.length > 0 || trendingPhotos.length > 0) {
-      return { featuredPhotos, trendingPhotos, regularPhotos };
+    if (featuredPhotos.length > 0) {
+      return { featuredPhotos, regularPhotos };
     }
     return { regularPhotos: photos };
   };
@@ -253,8 +252,6 @@ export default function PhotosPage() {
               <span>{stats.totalPhotos?.toLocaleString()} total photos</span>
               <span>•</span>
               <span>{stats.featuredCount} featured</span>
-              <span>•</span>
-              <span>{stats.trendingCount} trending</span>
             </div>
           )}
         </div>
@@ -296,7 +293,6 @@ export default function PhotosPage() {
               <option value="uploadDate">Sort by Upload Date</option>
               <option value="captureDate">Sort by Capture Date</option>
               <option value="title">Sort by Title</option>
-              <option value="viewCount">Sort by Views</option>
               <option value="likeCount">Sort by Likes</option>
               <option value="downloadCount">Sort by Downloads</option>
               <option value="qualityScore">Sort by Quality</option>
@@ -377,38 +373,12 @@ export default function PhotosPage() {
             </div>
           )}
 
-        {/* Trending Photos */}
-        {photoCategories.trendingPhotos &&
-          photoCategories.trendingPhotos.length > 0 && (
-            <div className="mb-12">
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                🔥 Trending Photos
-              </h2>
-              <div
-                className={`grid gap-4 ${
-                  viewMode === "masonry"
-                    ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-                    : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
-                }`}
-              >
-                {photoCategories.trendingPhotos.map((photo) => (
-                  <PhotoTile
-                    key={photo._id}
-                    photo={photo}
-                    showStats={viewMode === "masonry"}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
 
         {/* All Photos */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
             {(photoCategories.featuredPhotos &&
-              photoCategories.featuredPhotos.length > 0) ||
-            (photoCategories.trendingPhotos &&
-              photoCategories.trendingPhotos.length > 0)
+              photoCategories.featuredPhotos.length > 0)
               ? "All Photos"
               : "Photos"}
           </h2>

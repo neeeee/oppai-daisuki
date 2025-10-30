@@ -190,17 +190,15 @@ export default function GalleriesPage() {
   const featuredGalleries = galleries.filter(
     (gallery) => gallery.metadata?.featured,
   );
-  const trendingGalleries = galleries.filter(
-    (gallery) => gallery.metadata?.trending,
-  );
+
   const regularGalleries = galleries.filter(
-    (gallery) => !gallery.metadata?.featured && !gallery.metadata?.trending,
+    (gallery) => !gallery.metadata?.featured,
   );
 
   // Group galleries by different criteria
   const getGalleriesByCategory = () => {
-    if (featuredGalleries.length > 0 || trendingGalleries.length > 0) {
-      return { featuredGalleries, trendingGalleries, regularGalleries };
+    if (featuredGalleries.length > 0) {
+      return { featuredGalleries, regularGalleries };
     }
     return { regularGalleries: galleries };
   };
@@ -247,8 +245,6 @@ export default function GalleriesPage() {
               <span>{stats.totalPhotos?.toLocaleString()} photos</span>
               <span>•</span>
               <span>{stats.featuredCount} featured</span>
-              <span>•</span>
-              <span>{stats.trendingCount} trending</span>
             </div>
           )}
         </div>
@@ -290,8 +286,6 @@ export default function GalleriesPage() {
               <option value="createdAt">Sort by Created Date</option>
               <option value="updatedAt">Sort by Updated Date</option>
               <option value="title">Sort by Title</option>
-              <option value="viewCount">Sort by Views</option>
-              <option value="likeCount">Sort by Likes</option>
               <option value="photoCount">Sort by Photo Count</option>
               <option value="qualityScore">Sort by Quality</option>
             </select>
@@ -342,32 +336,11 @@ export default function GalleriesPage() {
             </div>
           )}
 
-        {/* Trending Galleries */}
-        {galleryCategories.trendingGalleries &&
-          galleryCategories.trendingGalleries.length > 0 && (
-            <div className="mb-12">
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                🔥 Trending Galleries
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {galleryCategories.trendingGalleries.map((gallery) => (
-                  <GalleryTile
-                    key={gallery._id}
-                    gallery={gallery}
-                    showPreview={true}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
         {/* All Galleries */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
             {(galleryCategories.featuredGalleries &&
-              galleryCategories.featuredGalleries.length > 0) ||
-            (galleryCategories.trendingGalleries &&
-              galleryCategories.trendingGalleries.length > 0)
+              galleryCategories.featuredGalleries.length > 0)
               ? "All Galleries"
               : "Galleries"}
           </h2>

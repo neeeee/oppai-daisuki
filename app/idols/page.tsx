@@ -163,17 +163,14 @@ export default function IdolsPage() {
   };
 
   const featuredIdols = idols.filter((idol) => idol.metadata?.featured);
-  const trendingIdols = idols.filter((idol) => idol.metadata?.trending);
   const verifiedIdols = idols.filter(
     (idol) =>
       idol.metadata?.verified &&
-      !idol.metadata?.featured &&
-      !idol.metadata?.trending,
+      !idol.metadata?.featured 
   );
   const regularIdols = idols.filter(
     (idol) =>
       !idol.metadata?.featured &&
-      !idol.metadata?.trending &&
       !idol.metadata?.verified,
   );
 
@@ -301,20 +298,6 @@ export default function IdolsPage() {
           </div>
         )}
 
-        {/* Trending Idols */}
-        {trendingIdols.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              🔥 Trending Idols
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {trendingIdols.map((idol) => (
-                <IdolTile key={idol._id} idol={idol} />
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Verified Idols */}
         {verifiedIdols.length > 0 && (
           <div className="mb-12">
@@ -333,7 +316,6 @@ export default function IdolsPage() {
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
             {featuredIdols.length > 0 ||
-            trendingIdols.length > 0 ||
             verifiedIdols.length > 0
               ? "All Idols"
               : "Idols"}

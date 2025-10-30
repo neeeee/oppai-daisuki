@@ -100,9 +100,6 @@ export default function VideoTile({ video, showStats = true }: VideoTileProps) {
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-3">
                     <span className="flex items-center gap-1">
-                      👁️ {formatCount(video.viewCount || 0)} views
-                    </span>
-                    <span className="flex items-center gap-1">
                       ⏱️ {video.duration}
                     </span>
                   </div>
@@ -144,8 +141,6 @@ export default function VideoTile({ video, showStats = true }: VideoTileProps) {
           {/* Stats and Date */}
           <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
             <div className="flex items-center gap-3">
-              <span>{formatCount(video.viewCount || 0)} views</span>
-              <span>•</span>
               <span>{formatDate(video.createdAt)}</span>
             </div>
           </div>

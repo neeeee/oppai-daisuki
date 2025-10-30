@@ -257,10 +257,6 @@ export default function GalleryTile({
 
           {/* Stats Bar */}
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-3 border-t border-gray-100 dark:border-gray-700">
-            <div className="flex items-center gap-3">
-              <span>{formatCount(gallery.viewCount || 0)} views</span>
-              <span>{formatCount(gallery.likeCount || 0)} likes</span>
-            </div>
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span>Available</span>

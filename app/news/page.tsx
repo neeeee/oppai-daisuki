@@ -217,14 +217,11 @@ export default function NewsPage() {
     (article) => article.metadata?.featured,
   );
   const breakingNews = articles.filter((article) => article.metadata?.breaking);
-  const trendingArticles = articles.filter(
-    (article) => article.metadata?.trending,
-  );
+
   const regularArticles = articles.filter(
     (article) =>
       !article.metadata?.featured &&
-      !article.metadata?.breaking &&
-      !article.metadata?.trending,
+      !article.metadata?.breaking
   );
 
   if (loading && articles.length === 0) {
@@ -276,8 +273,6 @@ export default function NewsPage() {
               <span>{stats.publishedCount} published articles</span>
               <span>•</span>
               <span>{stats.featuredCount} featured</span>
-              <span>•</span>
-              <span>{stats.trendingCount} trending</span>
             </div>
           )}
         </div>
@@ -319,7 +314,6 @@ export default function NewsPage() {
               <option value="publishedAt">Sort by Publish Date</option>
               <option value="updatedAt">Sort by Updated Date</option>
               <option value="title">Sort by Title</option>
-              <option value="viewCount">Sort by Views</option>
               <option value="likeCount">Sort by Likes</option>
               <option value="commentCount">Sort by Comments</option>
             </select>
@@ -404,8 +398,6 @@ export default function NewsPage() {
                         </time>
                         <span>•</span>
                         <span>{article.readingTime} min read</span>
-                        <span>•</span>
-                        <span>{formatCount(article.viewCount)} views</span>
                       </div>
                       <h3 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-3 line-clamp-2">
                         {article.title}
@@ -445,65 +437,10 @@ export default function NewsPage() {
           </div>
         )}
 
-        {/* Trending Articles */}
-        {trendingArticles.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              🔥 Trending Articles
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {trendingArticles.map((article) => (
-                <Link
-                  key={article._id}
-                  href={`/news/${article.slug}`}
-                  className="group"
-                >
-                  <article className="bg-white dark:bg-neutral-800 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    {article.featuredImage && (
-                      <div className="aspect-[16/10] overflow-hidden">
-                        <Image
-                          src={article.featuredImage}
-                          alt={article.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                    )}
-                    <div className="p-4">
-                      <div className="flex items-center gap-2 mb-2 text-xs text-gray-500 dark:text-gray-400">
-                        <time dateTime={article.publishedAt}>
-                          {formatDate(article.publishedAt)}
-                        </time>
-                        <span>•</span>
-                        <span>{article.readingTime} min read</span>
-                      </div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2 line-clamp-2">
-                        {article.title}
-                      </h3>
-                      {article.excerpt && (
-                        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3">
-                          {article.excerpt}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                        <span>{article.author.name}</span>
-                        <div className="flex items-center gap-2">
-                          <span>{formatCount(article.viewCount)} views</span>
-                          <span>❤️ {formatCount(article.likeCount)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* All Articles */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
             {featuredArticles.length > 0 ||
-            trendingArticles.length > 0 ||
             breakingNews.length > 0
               ? "All Articles"
               : "Recent Articles"}
@@ -586,15 +523,6 @@ export default function NewsPage() {
                             )}
                             <span className="text-sm text-gray-700 dark:text-gray-300">
                               {article.author.name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                            <span>{formatCount(article.viewCount)} views</span>
-                            <span className="flex items-center gap-1">
-                              ❤️ {formatCount(article.likeCount)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              💬 {formatCount(article.commentCount)}
                             </span>
                           </div>
                         </div>

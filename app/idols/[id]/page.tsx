@@ -246,12 +246,6 @@ export default function IdolProfilePage() {
               {idol.stageName && (
                 <p className="text-lg opacity-90">{idol.name}</p>
               )}
-              <div className="flex items-center gap-2 mt-1">
-                {idol.isVerified && <span className="text-blue-400">✓</span>}
-                <span className="text-sm opacity-75">
-                  {formatNumber(idol.viewCount)} views
-                </span>
-              </div>
             </div>
           </div>
         </div>
@@ -338,7 +332,6 @@ export default function IdolProfilePage() {
                             {video.channelName}
                           </p>
                           <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
-                            <span>{formatNumber(video.viewCount)} views</span>
                             <span>{formatDate(video.createdAt)}</span>
                           </div>
                         </div>
@@ -376,7 +369,6 @@ export default function IdolProfilePage() {
                             {photo.title}
                           </h3>
                           <div className="flex justify-between text-xs text-gray-500">
-                            <span>{formatNumber(photo.viewCount)} views</span>
                             <span>♥ {formatNumber(photo.likeCount)}</span>
                           </div>
                         </div>
@@ -427,10 +419,6 @@ export default function IdolProfilePage() {
                           <div className="flex justify-between items-center text-sm text-gray-500">
                             <span>{gallery.photoCount} photos</span>
                             <div className="flex items-center gap-4">
-                              <span>
-                                {formatNumber(gallery.viewCount)} views
-                              </span>
-                              <span>♥ {formatNumber(gallery.likeCount)}</span>
                             </div>
                           </div>
                         </div>
@@ -727,12 +715,6 @@ export default function IdolProfilePage() {
                 <h2 className="text-lg font-semibold mb-4">Statistics</h2>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-500 text-sm">Total Views:</span>
-                    <span className="text-sm font-medium">
-                      {formatNumber(contentStats.totalViews)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-gray-500 text-sm">
                       Content Items:
                     </span>
@@ -777,9 +759,6 @@ export default function IdolProfilePage() {
                         <h3 className="text-sm font-medium truncate">
                           {relatedIdol.stageName || relatedIdol.name}
                         </h3>
-                        <p className="text-xs text-gray-500">
-                          {formatNumber(relatedIdol.viewCount)} views
-                        </p>
                       </div>
                     </Link>
                   ))}

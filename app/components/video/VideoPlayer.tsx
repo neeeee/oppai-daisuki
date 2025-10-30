@@ -7,13 +7,11 @@ interface VideoPlayerProps {
   src: string;
   poster?: string;
   title: string;
-  onViewIncrement?: () => void;
 }
 
 export default function VideoPlayer({
   src,
   poster,
-  onViewIncrement,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { isTheaterMode, toggleTheaterMode } = useTheaterMode();
@@ -26,13 +24,12 @@ export default function VideoPlayer({
     const handlePlay = () => {
       if (!hasStarted) {
         setHasStarted(true);
-        onViewIncrement?.();
       }
     };
 
     video.addEventListener("play", handlePlay);
     return () => video.removeEventListener("play", handlePlay);
-  }, [hasStarted, onViewIncrement]);
+  }, [hasStarted]);
 
   return (
     <div className="relative group">

@@ -38,11 +38,6 @@ export async function GET(
       );
     }
 
-    // Increment view count
-    await Idol.findByIdAndUpdate((idol as { _id: unknown })._id, {
-      $inc: { viewCount: 1 },
-    });
-
     // Fetch related content in parallel
     const [photos, galleries, videos] = await Promise.all([
       // Get recent photos

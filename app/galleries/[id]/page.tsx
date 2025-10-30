@@ -67,19 +67,6 @@ export default function GalleryDetailPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  const incrementViewCount = useCallback(async () => {
-    try {
-      await fetch(`/api/galleries/${galleryId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action: "view" }),
-      });
-    } catch {
-      // Silently fail - view count increment is not critical
-    }
-  }, [galleryId]);
 
   const fetchGallery = useCallback(async () => {
     try {
@@ -91,7 +78,6 @@ export default function GalleryDetailPage() {
 
       if (data.success) {
         setGallery(data.data);
-        incrementViewCount();
       } else {
         setError(data.message || "Gallery not found");
       }
@@ -100,7 +86,7 @@ export default function GalleryDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [galleryId, incrementViewCount]);
+  }, [galleryId]);
 
   useEffect(() => {
     if (galleryId) {
@@ -385,11 +371,6 @@ export default function GalleryDetailPage() {
                         ⭐ Featured
                       </span>
                     )}
-                    {gallery.metadata?.trending && (
-                      <span className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs px-2 py-1 rounded-full font-medium">
-                        🔥 Trending
-                      </span>
-                    )}
                     {gallery.isAdult && (
                       <span className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs px-2 py-1 rounded-full font-medium">
                         18+
@@ -409,12 +390,6 @@ export default function GalleryDetailPage() {
               <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
                 <span className="flex items-center gap-1">
                   📷 {gallery.photoCount} photos
-                </span>
-                <span className="flex items-center gap-1">
-                  👁️ {formatCount(gallery.viewCount)} views
-                </span>
-                <span className="flex items-center gap-1">
-                  ❤️ {formatCount(gallery.likeCount)} likes
                 </span>
               </div>
 

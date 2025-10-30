@@ -1042,12 +1042,6 @@ export default function AdminPhotosPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="font-medium truncate">{p.title}</div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded border text-gray-600">
-                    Views {p.viewCount ?? 0}
-                  </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded border text-gray-600">
-                    Likes {p.likeCount ?? 0}
-                  </span>
                 </div>
 
                 <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1 text-xs text-gray-600">

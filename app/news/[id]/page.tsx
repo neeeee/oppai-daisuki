@@ -1,12 +1,11 @@
 "use client";
 import { toSafeHtmlForReact } from "@/lib/utils/sanitize";
-import logger from "@/lib/utils/logger";
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Calendar, User, Eye, Heart, Share2, Clock, Tag } from "lucide-react";
+import { Calendar, User, Eye, Clock, Tag } from "lucide-react";
 
 interface NewsArticle {
   _id: string;
@@ -75,7 +74,6 @@ export default function NewsDetailPage() {
 
       if (data.success) {
         setArticle(data.data);
-        incrementViewCount();
       } else {
         setError(data.message || "Article not found");
       }
@@ -89,82 +87,6 @@ export default function NewsDetailPage() {
   useEffect(() => {
     fetchArticle();
   }, [fetchArticle]);
-
-  const incrementViewCount = useCallback(async () => {
-    try {
-      await fetch(`/api/news/${newsId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action: "view" }),
-      });
-    } catch {
-      // Silently fail - view count increment is not critical
-    }
-  }, [newsId]);
-
-  const handleLike = async () => {
-    try {
-      await fetch(`/api/news/${newsId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action: "like" }),
-      });
-
-      if (article) {
-        setArticle({
-          ...article,
-          engagement: {
-            ...article.engagement,
-            likeCount: article.engagement.likeCount + 1,
-          },
-        });
-      }
-    } catch (error) {
-      logger.error("Failed to like article:", error);
-    }
-  };
-
-  const handleShare = async () => {
-    try {
-      // Share using Web Share API if available
-      if (navigator.share && article) {
-        await navigator.share({
-          title: article.title,
-          text: article.excerpt || article.title,
-          url: window.location.href,
-        });
-      } else {
-        // Fallback: copy to clipboard
-        await navigator.clipboard.writeText(window.location.href);
-        // You could show a toast notification here
-      }
-
-      // Increment share count
-      await fetch(`/api/news/${newsId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action: "share" }),
-      });
-
-      if (article) {
-        setArticle({
-          ...article,
-          engagement: {
-            ...article.engagement,
-            shareCount: article.engagement.shareCount + 1,
-          },
-        });
-      }
-    } catch (error) {
-      logger.error("Failed to share article:", error);
-    }
-  };
 
   const formatCount = (count: number) => {
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
@@ -326,30 +248,6 @@ export default function NewsDetailPage() {
                 <Clock size={16} />
                 <span>{article.readingTime} min read</span>
               </div>
-
-              <div className="flex items-center gap-2">
-                <Eye size={16} />
-                <span>{formatCount(article.engagement.viewCount)} views</span>
-              </div>
-            </div>
-
-            {/* Engagement Actions */}
-            <div className="flex items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={handleLike}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
-              >
-                <Heart size={16} />
-                <span>{formatCount(article.engagement.likeCount)}</span>
-              </button>
-
-              <button
-                onClick={handleShare}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
-              >
-                <Share2 size={16} />
-                <span>{formatCount(article.engagement.shareCount)}</span>
-              </button>
             </div>
           </div>
 

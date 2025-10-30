@@ -160,15 +160,6 @@ export default function NewsTile({
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="absolute bottom-4 left-4 right-4 text-white">
                   <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1">
-                        <Eye size={14} />
-                        {formatCount(article.engagement.viewCount)} views
-                      </span>
-                      <span className="flex items-center gap-1">
-                        ❤️ {formatCount(article.engagement.likeCount)}
-                      </span>
-                    </div>
                   </div>
                 </div>
               </div>

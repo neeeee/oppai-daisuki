@@ -73,8 +73,6 @@ export default function VideoCard({ video }: VideoCardProps) {
               </h3>
               <p className="text-sm text-gray-600 mb-1">{video.channelName}</p>
               <div className="flex items-center text-xs text-gray-500 space-x-1">
-                <span>{formatCount(video.viewCount)} views</span>
-                <span>•</span>
                 <span>{formatDate(video.createdAt)}</span>
               </div>
             </div>

@@ -73,33 +73,6 @@ function WatchPageContent() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, []);
 
-  const handleViewIncrement = async () => {
-    if (!video) return;
-
-    try {
-      await fetch(`/api/videos/${videoId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...video,
-          viewCount: video.viewCount + 1,
-        }),
-      });
-
-      setVideo((prev) =>
-        prev ? { ...prev, viewCount: prev.viewCount + 1 } : null,
-      );
-    } catch (error) {
-      (() => {
-        import("@/lib/utils/logger").then((m) =>
-          m.default.error("Error incrementing view count:", error),
-        );
-      })();
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 py-8">
@@ -194,7 +167,6 @@ function WatchPageContent() {
               src={video.videoSourceUrl}
               poster={video.thumbnailUrl}
               title={video.title}
-              onViewIncrement={handleViewIncrement}
             />
 
             <div className={isTheaterMode ? "grid grid-cols-4 gap-8" : ""}>

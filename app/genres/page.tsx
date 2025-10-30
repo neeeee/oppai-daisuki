@@ -129,9 +129,8 @@ export default function GenresPage() {
   };
 
   const featuredGenres = genres.filter((genre) => genre.metadata?.featured);
-  const trendingGenres = genres.filter((genre) => genre.metadata?.trending);
   const regularGenres = genres.filter(
-    (genre) => !genre.metadata?.featured && !genre.metadata?.trending,
+    (genre) => !genre.metadata?.featured
   );
 
   if (loading && genres.length === 0) {
@@ -172,8 +171,6 @@ export default function GenresPage() {
               <span>{stats.totalGenres} total genres</span>
               <span>•</span>
               <span>{stats.featuredCount} featured</span>
-              <span>•</span>
-              <span>{stats.trendingCount} trending</span>
             </div>
           )}
         </div>
@@ -206,8 +203,6 @@ export default function GenresPage() {
               className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
             >
               <option value="name">Sort by Name</option>
-              <option value="viewCount">Sort by Views</option>
-              <option value="followCount">Sort by Followers</option>
               <option value="createdAt">Sort by Date</option>
             </select>
 
@@ -252,24 +247,10 @@ export default function GenresPage() {
           </div>
         )}
 
-        {/* Trending Genres */}
-        {trendingGenres.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              🔥 Trending Genres
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {trendingGenres.map((genre) => (
-                <GenreTile key={genre._id} genre={genre} />
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* All Genres */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-            {featuredGenres.length > 0 || trendingGenres.length > 0
+            {featuredGenres.length > 0 
               ? "All Genres"
               : "Genres"}
           </h2>

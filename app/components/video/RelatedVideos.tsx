@@ -135,8 +135,6 @@ export default function RelatedVideos({
                 </div>
               </div>
               <div className="flex items-center text-xs text-gray-500 dark:text-white space-x-1">
-                <span>{formatCount(video.viewCount)} views</span>
-                <span>•</span>
                 <span>{formatDate(video.createdAt)}</span>
               </div>
             </div>

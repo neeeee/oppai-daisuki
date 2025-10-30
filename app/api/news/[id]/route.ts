@@ -116,23 +116,6 @@ export async function POST(
     }
 
     switch (action) {
-      case "view":
-        // Increment view count
-        if (id.match(/^[0-9a-fA-F]{24}$/)) {
-          await News.findByIdAndUpdate(id, {
-            $inc: { "engagement.viewCount": 1 },
-          });
-        } else {
-          await News.findOneAndUpdate(
-            { slug: id },
-            { $inc: { "engagement.viewCount": 1 } },
-          );
-        }
-        return NextResponse.json({
-          success: true,
-          message: "View count incremented",
-        });
-
       case "like":
         // Increment like count
         if (id.match(/^[0-9a-fA-F]{24}$/)) {

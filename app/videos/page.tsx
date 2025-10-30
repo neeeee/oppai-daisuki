@@ -379,7 +379,6 @@ function VideosPageContent() {
             >
               <option value="createdAt">Sort by Upload Date</option>
               <option value="title">Sort by Title</option>
-              <option value="viewCount">Sort by Views</option>
               <option value="duration">Sort by Duration</option>
             </select>
 

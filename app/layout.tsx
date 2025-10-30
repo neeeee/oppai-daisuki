@@ -1,4 +1,3 @@
-import Script from "next/script";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";

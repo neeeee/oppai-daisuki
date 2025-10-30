@@ -991,7 +991,6 @@ export default function AdminVideosPage() {
                 >
                   <option value="createdAt">Created Date</option>
                   <option value="title">Title</option>
-                  <option value="viewCount">Views</option>
                   <option value="likeCount">Likes</option>
                 </select>
               </div>
@@ -1068,12 +1067,6 @@ export default function AdminVideosPage() {
                               Size: {formatFileSize(v.metadata?.fileSize)}
                             </div>
                             <div>Channel: {v.channelName}</div>
-                            <div>
-                              Views: {v.viewCount?.toLocaleString() || 0}
-                            </div>
-                            <div>
-                              Likes: {v.likeCount?.toLocaleString() || 0}
-                            </div>
                           </div>
 
                           {!!v.tags?.length && (
