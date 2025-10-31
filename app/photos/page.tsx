@@ -76,7 +76,6 @@ export default function PhotosPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<PhotosResponse["stats"] | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "masonry">("masonry");
-  
 
   const isLoadingRef = useRef(false);
   const searchTimeoutRef = useRef<null | NodeJS.Timeout>(null);
@@ -116,7 +115,7 @@ export default function PhotosPage() {
 
   const fetchPhotos = useCallback(async () => {
     if (isLoadingRef.current) return;
-    
+
     try {
       isLoadingRef.current = true;
       setLoading(true);
@@ -146,8 +145,8 @@ export default function PhotosPage() {
       const data: PhotosResponse = await response.json();
 
       if (data.success) {
-        setPhotos((prevPhotos) => 
-          currentPage === 1 ? data.data : [...prevPhotos, ...data.data]
+        setPhotos((prevPhotos) =>
+          currentPage === 1 ? data.data : [...prevPhotos, ...data.data],
         );
         setStats(data.stats);
       } else {
@@ -185,16 +184,14 @@ export default function PhotosPage() {
     setSearchTerm("");
     setTagInput("");
     setFilterTag("");
-  }
+  };
 
   const loadMorePhotos = () => {
     setCurrentPage((prev) => prev + 1);
   };
 
   const featuredPhotos = photos.filter((photo) => photo.metadata?.featured);
-  const regularPhotos = photos.filter(
-    (photo) => !photo.metadata?.featured
-  );
+  const regularPhotos = photos.filter((photo) => !photo.metadata?.featured);
 
   // Group photos by different criteria for masonry layout
   const getPhotosByCategory = () => {
@@ -242,9 +239,7 @@ export default function PhotosPage() {
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
             Photo Gallery
           </h1>
-          <p className="text-gray-600 dark:text-gray-300 text-lg">
-            Discover stunning photography and memorable moments
-          </p>
+          <p className="text-gray-600 dark:text-gray-300 text-lg">All Photos</p>
 
           {/* Stats */}
           {stats && (
@@ -373,12 +368,11 @@ export default function PhotosPage() {
             </div>
           )}
 
-
         {/* All Photos */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-            {(photoCategories.featuredPhotos &&
-              photoCategories.featuredPhotos.length > 0)
+            {photoCategories.featuredPhotos &&
+            photoCategories.featuredPhotos.length > 0
               ? "All Photos"
               : "Photos"}
           </h2>

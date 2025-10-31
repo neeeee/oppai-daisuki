@@ -71,7 +71,9 @@ export default function IdolsPage() {
 
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "retired">("all");
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "active" | "retired"
+  >("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<IdolsResponse["stats"] | null>(null);
 
@@ -97,7 +99,7 @@ export default function IdolsPage() {
 
   const fetchIdols = useCallback(async () => {
     if (isLoadingRef.current) return;
-    
+
     try {
       isLoadingRef.current = true;
       setLoading(true);
@@ -164,14 +166,10 @@ export default function IdolsPage() {
 
   const featuredIdols = idols.filter((idol) => idol.metadata?.featured);
   const verifiedIdols = idols.filter(
-    (idol) =>
-      idol.metadata?.verified &&
-      !idol.metadata?.featured 
+    (idol) => idol.metadata?.verified && !idol.metadata?.featured,
   );
   const regularIdols = idols.filter(
-    (idol) =>
-      !idol.metadata?.featured &&
-      !idol.metadata?.verified,
+    (idol) => !idol.metadata?.featured && !idol.metadata?.verified,
   );
 
   if (loading && idols.length === 0) {
@@ -203,7 +201,7 @@ export default function IdolsPage() {
             Discover Idols
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg">
-            Explore profiles and content from your favorite idols
+            Idol profiles
           </p>
 
           {/* Stats */}
@@ -315,8 +313,7 @@ export default function IdolsPage() {
         {/* All Idols */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-            {featuredIdols.length > 0 ||
-            verifiedIdols.length > 0
+            {featuredIdols.length > 0 || verifiedIdols.length > 0
               ? "All Idols"
               : "Idols"}
           </h2>

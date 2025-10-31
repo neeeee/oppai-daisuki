@@ -89,6 +89,38 @@ const CATEGORIES = [
 
 const RESOLUTIONS = ["480p", "720p", "1080p", "1440p", "4K", "8K"];
 
+async function getVideoDuration(url: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+
+    video.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(video.src);
+      resolve(video.duration); // duration in seconds (float)
+    };
+
+    video.onerror = () => reject(new Error("Failed to load video metadata"));
+    video.src = url;
+  });
+}
+
+export function formatDuration(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return "00:00";
+
+  const totalSeconds = Math.floor(seconds);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  if (hours > 0) {
+    return [hours, minutes, secs]
+      .map((v) => v.toString().padStart(2, "0"))
+      .join(":");
+  } else {
+    return [minutes, secs].map((v) => v.toString().padStart(2, "0")).join(":");
+  }
+}
+
 export default function AdminVideosPage() {
   useSession();
 
@@ -294,7 +326,7 @@ export default function AdminVideosPage() {
         channelName:
           form.channelName ||
           (selectedIdol ? selectedIdol.stageName || selectedIdol.name : ""),
-        duration: form.duration.trim() || "0:00", // Default if not provided
+        duration: form.duration || "0:00", // Default if not provided
         thumbnailUrl: form.thumbnailUrl.trim(),
         videoSourceUrl: form.videoSourceUrl.trim(),
         idol: form.idol,
@@ -355,10 +387,6 @@ export default function AdminVideosPage() {
         return g.name;
       })
       .join(", ");
-  };
-
-  const formatDuration = (duration: string) => {
-    return duration || "—";
   };
 
   const formatFileSize = (bytes?: number) => {
@@ -538,11 +566,17 @@ export default function AdminVideosPage() {
                     <div className="mt-1">
                       <UploadDropzone
                         endpoint="videoUploader"
-                        onClientUploadComplete={(res) => {
+                        onClientUploadComplete={async (res) => {
                           if (res?.[0]) {
+                            const videoUrl = res[0].url;
+                            const duration = await getVideoDuration(videoUrl);
                             setForm((p) => ({
                               ...p,
-                              videoSourceUrl: res[0].url,
+                              videoSourceUrl: videoUrl,
+                            }));
+                            setForm((p) => ({
+                              ...p,
+                              duration: formatDuration(duration),
                             }));
                           }
                         }}
@@ -625,9 +659,6 @@ export default function AdminVideosPage() {
                 <input
                   type="text"
                   value={form.duration}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, duration: e.target.value }))
-                  }
                   className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   placeholder="e.g., 5:32 (will be auto-detected if not provided)"
                 />

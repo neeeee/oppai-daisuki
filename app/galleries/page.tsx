@@ -58,6 +58,21 @@ interface GalleriesResponse {
   };
 }
 
+async function getVideoDuration(url: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+
+    video.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(video.src);
+      resolve(video.duration); // duration in seconds (float)
+    };
+
+    video.onerror = () => reject(new Error("Failed to load video metadata"));
+    video.src = url;
+  });
+}
+
 export default function GalleriesPage() {
   const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +88,7 @@ export default function GalleriesPage() {
   const [showAdult, setShowAdult] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [stats, setStats] = useState<GalleriesResponse["stats"] | null>(null);
-  
+
   // Prevent duplicate requests
   const isLoadingRef = useRef(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>(null);
@@ -108,12 +123,12 @@ export default function GalleriesPage() {
       if (tagTimeoutRef.current) {
         clearTimeout(tagTimeoutRef.current);
       }
-    }
+    };
   }, [tagInput]);
 
   const fetchGalleries = useCallback(async () => {
     if (isLoadingRef.current) return;
-    
+
     try {
       isLoadingRef.current = true;
       setLoading(true);
@@ -144,7 +159,7 @@ export default function GalleriesPage() {
 
       if (data.success) {
         setGalleries((prevGalleries) =>
-          currentPage === 1 ? data.data : [...prevGalleries, ...data.data]
+          currentPage === 1 ? data.data : [...prevGalleries, ...data.data],
         );
         setStats(data.stats);
       } else {
@@ -231,10 +246,10 @@ export default function GalleriesPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Gallery Collections
+            Galleries
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg">
-            Explore curated photo collections and themed galleries
+            Photo collections and themed galleries
           </p>
 
           {/* Stats */}
@@ -339,8 +354,8 @@ export default function GalleriesPage() {
         {/* All Galleries */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-            {(galleryCategories.featuredGalleries &&
-              galleryCategories.featuredGalleries.length > 0)
+            {galleryCategories.featuredGalleries &&
+            galleryCategories.featuredGalleries.length > 0
               ? "All Galleries"
               : "Galleries"}
           </h2>
