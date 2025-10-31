@@ -213,4 +213,6 @@ GenreSchema.pre("findOneAndDelete", async function (next) {
   next();
 });
 
-export default mongoose.models.Genre || mongoose.model("Genre", GenreSchema);
+const Genre = mongoose.models.Genre || mongoose.model("Genre", GenreSchema);
+export { Genre };
+export default Genre;

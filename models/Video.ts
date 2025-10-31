@@ -155,4 +155,6 @@ VideoSchema.pre("save", function (next) {
   next();
 });
 
-export default mongoose.models.Video || mongoose.model("Video", VideoSchema);
+const Video = mongoose.models.Video || mongoose.model("Video", VideoSchema);
+export { Video };
+export default Video;

@@ -96,7 +96,7 @@ async function getVideoDuration(url: string): Promise<number> {
 
     video.onloadedmetadata = () => {
       window.URL.revokeObjectURL(video.src);
-      resolve(video.duration); // duration in seconds (float)
+      resolve(video.duration);
     };
 
     video.onerror = () => reject(new Error("Failed to load video metadata"));
@@ -197,6 +197,8 @@ export default function AdminVideosPage() {
     }
   }, []);
 
+  // In app/(admin)/admin/videos/page.tsx - UPDATE fetchVideos function
+
   const fetchVideos = useCallback(async () => {
     try {
       setLoading(true);
@@ -205,6 +207,7 @@ export default function AdminVideosPage() {
         limit: limit.toString(),
         sortBy,
         sortOrder,
+        admin: "true", // Fetch videos even if private to manage
       });
 
       if (search) params.append("search", search);
@@ -1072,6 +1075,11 @@ export default function AdminVideosPage() {
                             "https://via.placeholder.com/160x90?text=No+Image";
                         }}
                       />
+                      {!v.isPublic && (
+                        <div className="absolute top-1 right-1 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded font-semibold">
+                          PRIVATE
+                        </div>
+                      )}
                     </div>
 
                     {/* Info */}
@@ -1080,6 +1088,11 @@ export default function AdminVideosPage() {
                         <div className="flex-1">
                           <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                             {v.title}
+                            {!v.isPublic && (
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold">
+                                PRIVATE
+                              </span>
+                            )}
                           </h3>
                           {v.description && (
                             <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">
@@ -1119,9 +1132,13 @@ export default function AdminVideosPage() {
                           )}
 
                           <div className="mt-2 flex items-center gap-2">
-                            {v.isPublic && (
+                            {v.isPublic ? (
                               <span className="text-[10px] px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
                                 Public
+                              </span>
+                            ) : (
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
+                                Private
                               </span>
                             )}
                             {v.isAdult && (

@@ -8,10 +8,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "setup-admin": "node scripts/setup-admin.js",
-    "init-db": "node scripts/init-database.js",
-    "db:seed": "node scripts/init-database.js",
-    "db:stats": "node -e \"require('./scripts/init-database.js').getDatabaseStats()\""
+    "setup-admin": "node --env-file .env.local scripts/setup-admin.js",
+    "build:scripts": "tsc -p tsconfig.scripts.json",
+    "init-db": "npm run build:scripts && node dist/scripts/init-db.js",
+    "db:seed": "node scripts/init-db.js",
+    "db:stats": "node -e \"require('./scripts/init-db.js').getDatabaseStats()\""
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.0",

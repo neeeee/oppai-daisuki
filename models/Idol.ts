@@ -219,10 +219,7 @@ function generateIdolSlug(
 
 // Pre-validate middleware to generate slug BEFORE validation runs
 IdolSchema.pre("validate", function (next) {
-  if (
-    this.name &&
-    (!this.slug || this.isModified("name"))
-  ) {
+  if (this.name && (!this.slug || this.isModified("name"))) {
     this.slug = generateIdolSlug(this.name);
   }
   next();
@@ -230,10 +227,7 @@ IdolSchema.pre("validate", function (next) {
 
 // Pre-save middleware as backup
 IdolSchema.pre("save", function (next) {
-  if (
-    this.name &&
-    (!this.slug || this.isModified("name"))
-  ) {
+  if (this.name && (!this.slug || this.isModified("name"))) {
     this.slug = generateIdolSlug(this.name);
   }
   next();
@@ -244,4 +238,6 @@ IdolSchema.set("toJSON", { virtuals: true });
 IdolSchema.set("toObject", { virtuals: true });
 
 // Delete the model from cache if it exists to ensure fresh schema
-export default mongoose.models.Idol || mongoose.model("Idol", IdolSchema);
+const Idol = mongoose.models.Idol || mongoose.model("Idol", IdolSchema);
+export { Idol };
+export default Idol;

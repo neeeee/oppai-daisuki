@@ -15,8 +15,22 @@ interface AuthenticatedUser {
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
-
     const { searchParams } = new URL(request.url);
+
+    // Check if this is an admin request
+    const isAdmin = searchParams.get("admin") === "true";
+
+    // If admin request, verify authentication
+    if (isAdmin) {
+      const session = await auth();
+      if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
+        return NextResponse.json(
+          { success: false, error: "Unauthorized" },
+          { status: 401 },
+        );
+      }
+    }
+
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "12", 10);
     const idol = searchParams.get("idol");
@@ -29,7 +43,11 @@ export async function GET(request: NextRequest) {
     const isAdult = searchParams.get("isAdult");
 
     // Build query
-    const query: Record<string, unknown> = { isPublic: true };
+    const query: Record<string, unknown> = {};
+
+    if (!isAdmin) {
+      query.isPublic = true;
+    }
 
     if (idol) {
       query.idol = idol;

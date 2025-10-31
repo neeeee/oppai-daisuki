@@ -141,5 +141,7 @@ GallerySchema.pre("save", function (next) {
   next();
 });
 
-export default mongoose.models.Gallery ||
-  mongoose.model("Gallery", GallerySchema);
+const Gallery =
+  mongoose.models.Gallery || mongoose.model("Gallery", GallerySchema);
+export { Gallery };
+export default Gallery;

@@ -309,4 +309,6 @@ NewsSchema.pre("save", function (next) {
 NewsSchema.set("toJSON", { virtuals: true });
 NewsSchema.set("toObject", { virtuals: true });
 
-export default mongoose.models.News || mongoose.model("News", NewsSchema);
+const News = mongoose.models.News || mongoose.model("News", NewsSchema);
+export { News };
+export default News;

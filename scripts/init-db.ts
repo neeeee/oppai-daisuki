@@ -5,12 +5,12 @@ import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 // Import models
-import { Video } from "../models/Video.js";
-import { Photo } from "../models/Photo.js";
-import { Gallery } from "../models/Gallery.js";
-import { Idol } from "../models/Idol.js";
-import { Genre } from "../models/Genre.js";
-import { News } from "../models/News.js";
+import Video from "../models/Video.js";
+import Photo from "../models/Photo.js";
+import Gallery from "../models/Gallery.js";
+import Idol from "../models/Idol.js";
+import Genre from "../models/Genre.js";
+import News from "../models/News.js";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -21,7 +21,7 @@ if (!MONGODB_URI) {
 
 async function connectDB() {
   try {
-    await mongoose.connect(MONGODB_URI, {
+    await mongoose.connect(String(MONGODB_URI), {
       bufferCommands: false,
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
@@ -378,14 +378,14 @@ async function getDatabaseStats() {
 
     // Database size info
     const db = mongoose.connection.db;
-    const stats = await db.stats();
+    const stats = await db!.stats();
     console.log(
-      `   Database Size: ${(stats.dataSize / 1024 / 1024).toFixed(2)} MB`,
+      `   Database Size: ${(stats?.dataSize / 1024 / 1024).toFixed(2)} MB`,
     );
     console.log(
-      `   Index Size: ${(stats.indexSize / 1024 / 1024).toFixed(2)} MB`,
+      `   Index Size: ${(stats?.indexSize / 1024 / 1024).toFixed(2)} MB`,
     );
-    console.log(`   Collections: ${stats.collections}`);
+    console.log(`   Collections: ${stats?.collections}`);
   } catch (error) {
     console.error("❌ Error getting database stats:", error);
   }
@@ -451,14 +451,12 @@ process.on("SIGTERM", async () => {
 });
 
 // Run the initialization
-if (require.main === module) {
-  main().catch((error) => {
-    console.error("❌ Unexpected error:", error);
-    process.exit(1);
-  });
-}
+main().catch((error) => {
+  console.error("❌ Unexpected error:", error);
+  process.exit(1);
+});
 
-module.exports = {
+export {
   connectDB,
   createIndexes,
   seedGenres,

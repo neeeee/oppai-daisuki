@@ -15,6 +15,9 @@ export async function GET(
     if (!video) {
       return NextResponse.json({ success: false }, { status: 404 });
     }
+    if (!video.isPublic) {
+      return NextResponse.json({ success: false }, { status: 404 });
+    }
     return NextResponse.json({ success: true, data: video });
   } catch {
     return NextResponse.json({ success: false }, { status: 400 });

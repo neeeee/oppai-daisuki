@@ -4,7 +4,6 @@ import logger from "@/lib/utils/logger";
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { formatCount } from "../../lib/utils/dateUtils";
 
 interface Video {
   _id: string;
@@ -31,7 +30,15 @@ export default function RelatedVideos({
 
   const fetchRelatedVideos = useCallback(async () => {
     try {
-      const response = await fetch(`/api/videos/paginated?limit=${limit}`);
+      const params = new URLSearchParams({
+        page: "1",
+        limit: limit.toString(),
+        sortBy: "createdAt",
+        sortOrder: "desc",
+        // Do NOT add admin: "true" - this ensures only public videos are returned
+      });
+
+      const response = await fetch(`/api/videos?${params.toString()}`);
       const data = await response.json();
 
       if (data.success) {
@@ -108,7 +115,9 @@ export default function RelatedVideos({
               <Image
                 src={video.thumbnailUrl}
                 alt={video.title}
+                fill
                 className="w-40 h-24 object-cover rounded group-hover:scale-105 transition-transform"
+                sizes="160px"
               />
               <div className="absolute bottom-1 right-1 bg-black bg-opacity-75 text-white text-xs px-1 py-0.5 rounded">
                 {video.duration}

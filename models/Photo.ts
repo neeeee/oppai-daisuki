@@ -169,4 +169,6 @@ PhotoSchema.pre("save", function (next) {
   next();
 });
 
-export default mongoose.models.Photo || mongoose.model("Photo", PhotoSchema);
+const Photo = mongoose.models.Photo || mongoose.model("Photo", PhotoSchema);
+export { Photo };
+export default Photo;
