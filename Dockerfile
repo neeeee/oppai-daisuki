@@ -18,16 +18,16 @@ COPY . .
 
 # Build Next.js and compile scripts  
 RUN npm run build
-RUN npx tsc --outDir dist-scripts $(find scripts models -name "*.ts")
+RUN npm run build:scripts
 
 FROM base AS seeder
 WORKDIR /app
-COPY --from=builder /app/dist-scripts ./dist-scripts
+COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 
 # Keep as root user for seeding tasks
 ENV NODE_ENV=production
-CMD ["node", "dist-scripts/init-db.js"]
+CMD ["node", "dist/scripts/init-db.js"]
 
 # 3️⃣ Runtime image
 FROM base AS runner
@@ -39,7 +39,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/dist-scripts ./dist-scripts
+COPY --from=builder --chown=nextjs:nodejs /app/dist/scripts ./dist/scripts
 
 USER nextjs
 EXPOSE 3000

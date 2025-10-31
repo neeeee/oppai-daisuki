@@ -4,8 +4,8 @@ services:
     container_name: mongodb
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: mino
-      MONGO_INITDB_ROOT_PASSWORD: se4hd8taw
+      MONGO_INITDB_ROOT_USERNAME: $MONGO_INITDB_ROOT_USERNAME
+      MONGO_INITDB_ROOT_PASSWORD: $MONGO_INITDB_ROOT_PASSWORD
     ports:
       - "27017:27017"
     volumes:
@@ -22,14 +22,14 @@ services:
     depends_on:
       - mongodb
     environment:
-      MONGODB_URI: mongodb://mino:se4hd8taw@mongodb:27017/oppai?authSource=admin
+      MONGODB_URI: $MONGODB_URI
     command: >
       sh -c "
         echo '⏳ Waiting for MongoDB...';
         until nc -z mongodb 27017; do sleep 1; done;
         echo '✅ MongoDB ready';
-        node dist-scripts/init-db.js &&
-        node dist-scripts/setup-admin.js > .env.secrets &&
+        node dist/scripts/init-db.js &&
+        node dist/scripts/setup-admin.js > .env.secrets &&
         echo '✅ Admin setup complete, secrets written to .env.secrets';
       "
     volumes:
@@ -48,10 +48,10 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      MONGODB_URI: mongodb://mino:se4hd8taw@mongodb:27017/oppai?authSource=admin
-      NEXTAUTH_URL: https://oppai-daisuki.net
+      MONGODB_URI: $MONGODB_URI
+      NEXTAUTH_URL: $NEXTAUTH_URL
     env_file:
-      - .env.local
+      - .env
       - data/.env.secrets
     restart: unless-stopped
     networks:

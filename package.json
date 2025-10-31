@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "setup-admin": "node --env-file .env.local scripts/setup-admin.js",
+    "setup-admin": "node --env-file .env.local dist/scripts/setup-admin.js",
     "build:scripts": "tsc -p tsconfig.scripts.json",
     "init-db": "npm run build:scripts && node dist/scripts/init-db.js",
     "db:seed": "node scripts/init-db.js",
