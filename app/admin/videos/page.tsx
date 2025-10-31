@@ -104,7 +104,7 @@ async function getVideoDuration(url: string): Promise<number> {
   });
 }
 
-export function formatDuration(seconds: number): string {
+function formatDuration(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "00:00";
 
   const totalSeconds = Math.floor(seconds);
@@ -1103,7 +1103,7 @@ export default function AdminVideosPage() {
                             <div>Idol: {idolDisplay}</div>
                             <div>Genres: {genresDisplay}</div>
                             <div>Category: {v.category || "—"}</div>
-                            <div>Duration: {formatDuration(v.duration)}</div>
+                            <div>Duration: {v.duration}</div>
                             <div>
                               Resolution: {v.metadata?.resolution || "—"}
                             </div>

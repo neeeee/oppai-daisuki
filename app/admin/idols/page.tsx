@@ -4,6 +4,7 @@ import logger from "@/lib/utils/logger";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import { Genre } from "@/models/Genre";
 import { UploadDropzone } from "@/lib/uploadthing";
 import TagInput from "../../components/admin/TagInput";
 
@@ -42,7 +43,7 @@ type Idol = {
     youtube?: string;
     website?: string;
   };
-  genres?: ObjectId[];
+  genres?: ObjectId[] | GenreOption[];
   tags?: string[];
   isVerified: boolean;
   isPublic: boolean;
