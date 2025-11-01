@@ -35,7 +35,6 @@ export default function RelatedVideos({
         limit: limit.toString(),
         sortBy: "createdAt",
         sortOrder: "desc",
-        // Do NOT add admin: "true" - this ensures only public videos are returned
       });
 
       const response = await fetch(`/api/videos?${params.toString()}`);
