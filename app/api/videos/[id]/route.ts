@@ -11,7 +11,10 @@ export async function GET(
   try {
     await dbConnect();
     const { id } = await params;
-    const video = await Video.findById(id);
+    const video = await Video.findById(id)
+      .populate("idol", "name slug channelAvatar")
+      .populate("genres", "name slug color");
+
     if (!video) {
       return NextResponse.json({ success: false }, { status: 404 });
     }

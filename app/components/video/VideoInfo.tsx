@@ -1,19 +1,34 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
-import { formatCount } from "../../lib/utils/dateUtils";
+import Link from "next/link";
+
+interface Idol {
+  name: string;
+  slug: string;
+  channelAvatar: string;
+}
+
+interface Genre {
+  _id: string;
+  name: string;
+  slug: string;
+  color: string;
+}
 
 interface Video {
   _id: string;
   title: string;
   channelAvatar: string;
+  idol: Idol;
+  description: string;
   channelName: string;
   duration: string;
   viewCount: number;
   thumbnailUrl: string;
   videoSourceUrl: string;
   createdAt: string;
+  genres: Genre[];
 }
 
 interface VideoInfoProps {
@@ -21,8 +36,6 @@ interface VideoInfoProps {
 }
 
 export default function VideoInfo({ video }: VideoInfoProps) {
-  const [showFullDescription, setShowFullDescription] = useState(false);
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -31,15 +44,6 @@ export default function VideoInfo({ video }: VideoInfoProps) {
       day: "numeric",
     });
   };
-
-  // Mock description - you might want to add this field to your schema
-  const description = `This video was uploaded on ${formatDate(video.createdAt)}.
-
-Enjoy this content from ${video.channelName}!
-
-Video duration: ${video.duration}
-
-#video #content #${video.channelName.toLowerCase().replace(/\s+/g, "")}`;
 
   return (
     <div className="space-y-4">
@@ -53,44 +57,51 @@ Video duration: ${video.duration}
         </div>
       </div>
 
-      <div className="flex items-start space-x-3">
-        <div className="relative w-12 h-12 rounded-full overflow-hidden">
-          <Image
-            src={video.channelAvatar}
-            alt={video.channelName}
-            fill
-            className="object-cover"
-            sizes="48px"
-          />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">
-                {video.channelName}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-white">Creator</p>
-            </div>
+      <div className="flex items-center space-x-3">
+        <Link 
+          href={`/idols/${video.idol.slug}`} 
+          className="flex items-center space-x-3 font-semibold text-gray-900 dark:text-white hover:text-indigo-300"
+        > 
+          <div className="relative w-12 h-12 rounded-full overflow-hidden">
+            <Image
+              src={video.channelAvatar}
+              alt={video.channelName}
+              fill
+              className="object-cover"
+              sizes="48px"
+            />
           </div>
-        </div>
+          <div className="flex-1">
+            {video.channelName}
+          </div>
+        </Link>
       </div>
 
-      <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
+      <div className="bg-neutral-200 dark:bg-neutral-800 rounded-lg p-4">
         <div
-          className={`text-sm text-gray-700 dark:text-white ${showFullDescription ? "" : "line-clamp-3"}`}
+          className={`text-sm text-gray-700 dark:text-white`}
         >
-          {description.split("\n").map((line, index) => (
-            <p key={index} className={index > 0 ? "mt-2" : ""}>
-              {line}
-            </p>
-          ))}
+  
+  <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+    This video was uploaded on {formatDate(video.createdAt)}<br></br>
+    Enjoy this content from {video.channelName}!<br></br>
+    {video.description || "No description available."}
+  </p>
+            {video.genres?.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {video.genres.map((genre) => (
+              <Link
+                key={genre._id}
+                href={`/genres/${genre.slug}`}
+                className="px-2 py-1 text-xs font-medium rounded transition-transform hover:scale-105 text-white"
+                style={{ backgroundColor: genre.color || "#6366f1" }}
+              >
+                {genre.name}
+              </Link>
+              ))}
+            </div>
+          )}
         </div>
-        <button
-          onClick={() => setShowFullDescription(!showFullDescription)}
-          className="text-sm font-medium text-indigo-600 hover:text-indigo-700 mt-2"
-        >
-          {showFullDescription ? "Show less" : "Show more"}
-        </button>
       </div>
     </div>
   );

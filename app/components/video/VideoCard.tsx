@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { formatCount } from "../../lib/utils/dateUtils";
 
 interface Video {
   _id: string;

@@ -8,16 +8,33 @@ import RelatedVideos from "@/components/video/RelatedVideos";
 import { TheaterModeProvider, useTheaterMode } from "@/components/video/TheaterModeContext";
 import Link from "next/link";
 
+interface Idol {
+  name: string;
+  slug: string;
+  channelAvatar: string;
+}
+
+interface Genre {
+  _id: string;
+  name: string;
+  slug: string;
+  color: string;
+}
+
 interface Video {
   _id: string;
   title: string;
   channelAvatar: string;
+  description: string;
   channelName: string;
+  idol: Idol;
   duration: string;
   viewCount: number;
   thumbnailUrl: string;
   videoSourceUrl: string;
   createdAt: string;
+  genres: Genre[];
+  tags: string[];
 }
 
 function WatchPageContent() {

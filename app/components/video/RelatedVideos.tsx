@@ -42,7 +42,7 @@ export default function RelatedVideos({
 
       if (data.success) {
         // Filter out current video and use deterministic shuffling based on video IDs
-        const filtered = data.data.videos
+        const filtered = data.data
           .filter((video: Video) => video._id !== currentVideoId)
           .sort((a: Video, b: Video) => {
             // Use video ID hash for deterministic but pseudo-random ordering
@@ -57,6 +57,7 @@ export default function RelatedVideos({
           .slice(0, limit);
         setVideos(filtered);
       }
+
     } catch (error) {
       logger.error("Error fetching related videos:", error);
     } finally {
@@ -108,13 +109,14 @@ export default function RelatedVideos({
           <Link
             key={video._id}
             href={`/watch/${video._id}`}
-            className="flex space-x-3 group hover:bg-gray-50 p-2 rounded-lg transition-colors"
+            className="flex space-x-3 group hover:bg-gray-200 dark:hover:bg-neutral-500 p-2 rounded-lg transition-colors"
           >
             <div className="relative flex-shrink-0">
               <Image
                 src={video.thumbnailUrl}
                 alt={video.title}
-                fill
+                width={40}
+                height={24}
                 className="w-40 h-24 object-cover rounded group-hover:scale-105 transition-transform"
                 sizes="160px"
               />
@@ -123,7 +125,7 @@ export default function RelatedVideos({
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-indigo-600">
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-indigo-300">
                 {video.title}
               </h4>
               <div className="flex items-center space-x-2 mb-1">
