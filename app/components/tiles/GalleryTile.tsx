@@ -11,7 +11,7 @@ interface PhotoRef {
   thumbnailUrl?: string;
 }
 
-interface Gallery {
+interface GalleryTileData {
   _id: string;
   title: string;
   description?: string;
@@ -43,13 +43,13 @@ interface Gallery {
   genre?: {
     _id: string;
     name: string;
-    slug: string;
-    color: string;
+    slug?: string;
+    color?: string;
   };
 }
 
 interface GalleryTileProps {
-  gallery: Gallery;
+  gallery: GalleryTileData;
   showPreview?: boolean;
 }
 

@@ -403,7 +403,7 @@ export default function HomePage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {data.galleries.map((gallery) => (
-                  <GalleryTile key={gallery._id} gallery={gallery} />
+                  <GalleryTile key={gallery._id} gallery={gallery} showPreview={true} />
                 ))}
               </div>
             </section>

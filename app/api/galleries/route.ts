@@ -181,8 +181,9 @@ export async function POST(req: Request) {
     // ✅ 3. Link them back to the gallery
     await Gallery.findByIdAndUpdate(gallery._id, {
       $set: { photos: createdPhotos.map((p) => p._id) },
-      $setOnInsert: { coverPhoto: createdPhotos[0].imageUrl },
-      $setOnInsert: { photoCount: createdPhotos.length },
+      $setOnInsert: { coverPhoto: createdPhotos[0].imageUrl,
+                      photoCount: createdPhotos.length
+       },
     });
   }
 

@@ -3,6 +3,7 @@ import dbConnect from "@/lib/mongodb";
 import Photo from "@/models/Photo";
 import Gallery from "@/models/Gallery";
 import Idol from "@/models/Idol";
+import logger from "@/lib/utils/logger";
 import { auth } from "@/lib/auth";
 import { isOriginAllowed } from "@/lib/utils/origin-validation";
 import { deleteUploadThingFiles } from "@/lib/utils/uploadthing/deleteFiles";

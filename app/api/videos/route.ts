@@ -426,7 +426,7 @@ export async function DELETE(request: NextRequest) {
         const key = v.idol.toString();
         idolUpdates.set(key, (idolUpdates.get(key) || 0) + 1);
       }
-      v.genres?.forEach((g) => {
+      v.genres?.forEach((g: string) => {
         const key = g.toString();
         genreUpdates.set(key, (genreUpdates.get(key) || 0) + 1);
       });
