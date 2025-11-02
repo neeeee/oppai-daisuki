@@ -5,6 +5,7 @@ import Gallery from "@/models/Gallery";
 import Idol from "@/models/Idol";
 import { auth } from "@/lib/auth";
 import { isOriginAllowed } from "@/lib/utils/origin-validation";
+import { deleteUploadThingFiles } from "@/lib/utils/uploadthing/deleteFiles";
 import { AdminUser } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
@@ -207,79 +208,30 @@ export async function DELETE(request: NextRequest) {
     await dbConnect();
 
     const session = await auth();
-    if (!session || (session.user as AdminUser)?.role !== "admin") {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
+    if (!session || session.user?.role !== "admin") {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+
     const origin = request.headers.get("origin");
-    const originAllowed = isOriginAllowed(origin, request.url);
-    if (!originAllowed) {
-      console.log(`[API] Rejecting request due to origin validation`);
-      return NextResponse.json(
-        { success: false, error: "Bad origin" },
-        { status: 403 },
-      );
+    if (!isOriginAllowed(origin, request.url)) {
+      return NextResponse.json({ success: false, error: "Bad origin" }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
     const ids = searchParams.get("ids");
+    if (!ids) return NextResponse.json({ success: false, error: "Photo IDs required" }, { status: 400 });
 
-    if (!ids) {
-      return NextResponse.json(
-        { success: false, error: "Photo IDs are required" },
-        { status: 400 },
-      );
-    }
+    const photoIds = ids.split(",").map((id) => id.trim());
+    const photos = await Photo.find({ _id: { $in: photoIds } }).select("uploadThingKey imageUrl");
 
-    const photoIds = ids.split(",");
+    const keys = photos.map((p) => p.uploadThingKey).filter(Boolean);
+    if (keys.length) await deleteUploadThingFiles(keys);
 
-    // Get photos before deletion to update counters
-    const photos = await Photo.find({ _id: { $in: photoIds } });
+    await Photo.deleteMany({ _id: { $in: photoIds } });
 
-    // Delete photos
-    const result = await Photo.deleteMany({ _id: { $in: photoIds } });
-
-    // Update gallery and idol counters
-    const galleryUpdates = new Map<string, number>();
-    const idolUpdates = new Map<string, number>();
-
-    photos.forEach((photo) => {
-      if (photo.gallery) {
-        galleryUpdates.set(
-          photo.gallery.toString(),
-          (galleryUpdates.get(photo.gallery.toString()) || 0) + 1,
-        );
-      }
-      if (photo.idol) {
-        idolUpdates.set(
-          photo.idol.toString(),
-          (idolUpdates.get(photo.idol.toString()) || 0) + 1,
-        );
-      }
-    });
-
-    // Update counters
-    await Promise.all([
-      ...Array.from(galleryUpdates.entries()).map(([galleryId, count]) =>
-        Gallery.findByIdAndUpdate(galleryId, { $inc: { photoCount: -count } }),
-      ),
-      ...Array.from(idolUpdates.entries()).map(([idolId, count]) =>
-        Idol.findByIdAndUpdate(idolId, { $inc: { photoCount: -count } }),
-      ),
-    ]);
-
-    return NextResponse.json({
-      success: true,
-      message: `${result.deletedCount} photos deleted successfully`,
-      deletedCount: result.deletedCount,
-    });
-  } catch (error: unknown) {
-    void error;
-    return NextResponse.json(
-      { success: false, error: "Failed to delete photos" },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: true, deletedCount: photoIds.length });
+  } catch (error) {
+    logger.error("Error deleting photos:", error);
+    return NextResponse.json({ success: false, error: "Deletion failed" }, { status: 500 });
   }
 }

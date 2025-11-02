@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { UploadDropzone } from "@/lib/uploadthing";
+import { deleteItems } from "@/lib/admin/deleteItems";
 import TagInput from "../../components/admin/TagInput";
 import logger from "@/lib/utils/logger";
 import Image from "next/image";
@@ -131,6 +132,7 @@ export default function AdminVideosPage() {
   const [loadingIdols, setLoadingIdols] = useState(true);
   const [loadingGenres, setLoadingGenres] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const [page, setPage] = useState(1);
   const [limit] = useState(12);
@@ -289,23 +291,26 @@ export default function AdminVideosPage() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this video? This action cannot be undone.")) return;
-    try {
-      const res = await fetch(`/api/videos?ids=${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      });
-      const json = await res.json();
-      if (!json?.success) {
-        alert(json?.error || "Failed to delete video");
-        return;
-      }
-      fetchVideos();
-    } catch (error) {
-      alert("Error deleting video");
-      logger.error("Error deleting video", error);
-    }
-  };
+async function handleDelete(targetIds?: string[] | string) {
+  const ids = Array.isArray(targetIds)
+  ? targetIds
+  : targetIds
+  ? [targetIds]
+  : Array.from(selected);
+
+  if (ids.length === 0) {
+    alert("No items selected");
+    return;
+  }
+
+  const result = await deleteItems("video", ids);
+  console.log(ids);
+  alert(result.message);
+  if (result.success) {
+    setSelected(new Set());
+    fetchVideos();
+  }
+}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -520,6 +525,7 @@ export default function AdminVideosPage() {
                             setForm((p) => ({
                               ...p,
                               thumbnailUrl: res[0].url,
+                              thumbnailUploadKey: res[0].key
                             }));
                           }
                         }}
@@ -576,6 +582,7 @@ export default function AdminVideosPage() {
                             setForm((p) => ({
                               ...p,
                               videoSourceUrl: videoUrl,
+                              videoUploadKey: res[0].key
                             }));
                             setForm((p) => ({
                               ...p,

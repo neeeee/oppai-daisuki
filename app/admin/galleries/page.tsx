@@ -28,6 +28,7 @@ type Gallery = {
   slug: string;
   coverPhoto?: string;
   isPublic: boolean;
+  photos: string[];
   photoCount: number;
   tags?: string[];
   category?: string;
@@ -46,6 +47,7 @@ type GalleryForm = {
   title: string;
   description?: string;
   coverPhoto?: string;
+  photos: string[];
   isPublic: boolean;
   tags: string[];
   category?: string;
@@ -60,6 +62,7 @@ type GalleryPayload = {
   title: string;
   description?: string;
   coverPhoto?: string;
+  photos?: string[];
   isPublic: boolean;
   tags: string[];
   category?: string;
@@ -102,6 +105,7 @@ export default function AdminGalleriesPage() {
     title: "",
     description: "",
     coverPhoto: "",
+    photos: [],
     isPublic: true,
     tags: [],
     category: "",
@@ -217,6 +221,7 @@ export default function AdminGalleriesPage() {
       title: g.title || "",
       description: g.description || "",
       coverPhoto: g.coverPhoto || "",
+      photos: g.photos || [],
       isPublic: !!g.isPublic,
       tags: g.tags || [],
       category: g.category || "",
@@ -387,6 +392,7 @@ export default function AdminGalleriesPage() {
       title: form.title.trim(),
       description: form.description?.trim() || "",
       ...(coverPhoto && { coverPhoto }),
+      photos: form.photos || [],
       isPublic: !!form.isPublic,
       tags: (form.tags || []).map((t) => t.trim()).filter(Boolean),
       category: form.category?.trim() || "",
@@ -620,7 +626,36 @@ export default function AdminGalleriesPage() {
               </div>
             )}
           </div>
+<div>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    Photos in Album
+  </label>
 
+  <UploadDropzone
+    endpoint="albumUploader"
+    onClientUploadComplete={(files) => {
+      const urls = files.map((f) => f.url);
+      setForm((p) => ({ ...p, photos: [...(p.photos || []), ...urls] }));
+      alert(`✅ ${urls.length} photos uploaded`);
+    }}
+    onUploadError={(err) => alert(`❌ Upload failed: ${err.message}`)}
+    appearance={{
+      button:
+        "bg-indigo-600 text-white hover:bg-indigo-700 ut-uploading:cursor-not-allowed",
+      allowedContent: "text-gray-600 dark:text-gray-400",
+    }}
+  />
+
+  {!!form.photos?.length && (
+    <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+      {form.photos.map((url) => (
+        <div key={url} className="relative w-full aspect-square border rounded overflow-hidden">
+          <Image src={url} alt="Photo" fill className="object-cover" />
+        </div>
+      ))}
+    </div>
+  )}
+</div>
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">

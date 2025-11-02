@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import GenrePill from "@/components/common/GenrePill";
 
 type IdolData = {
   _id: string;
@@ -571,14 +572,7 @@ export default function IdolProfilePage() {
                 <h2 className="text-lg font-semibold mb-4">Genres</h2>
                 <div className="flex flex-wrap gap-2">
                   {idol.genres.map((genre) => (
-                    <Link
-                      key={genre._id}
-                      href={`/genres/${genre.slug}`}
-                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white hover:opacity-80 transition-opacity"
-                      style={{ backgroundColor: genre.color || "#6366f1" }}
-                    >
-                      {genre.name}
-                    </Link>
+                    <GenrePill key={genre._id} {...genre}></GenrePill>
                   ))}
                 </div>
               </div>

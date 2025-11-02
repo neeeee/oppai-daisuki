@@ -1,3 +1,5 @@
+// src/app/api/galleries/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Gallery from "@/models/Gallery";
@@ -7,6 +9,7 @@ import Photo from "@/models/Photo";
 import { auth } from "@/lib/auth";
 import { isOriginAllowed } from "@/lib/utils/origin-validation";
 import logger from "@/lib/utils/logger";
+import { deleteUploadThingFiles } from "@/lib/utils/uploadthing/deleteFiles";
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,15 +59,51 @@ export async function GET(request: NextRequest) {
     sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
     // Execute
+    // const [galleries, total] = await Promise.all([
+    //   Gallery.find(query)
+    //     .populate("idol", "name stageName slug profileImage")
+    //     .populate("genres", "name slug color")
+    //     .populate({
+    //       path: "photos", 
+    //       select: "imageUrl thumbnailUrl uploadThingKey"
+    //     })
+    //     .sort(sort)
+    //     .skip(skip)
+    //     .limit(limit)
+    //     .lean(),
+    //   Gallery.countDocuments(query),
+    // ]);
+
     const [galleries, total] = await Promise.all([
-      Gallery.find(query)
-        .populate("idol", "name stageName slug profileImage")
-        .populate("genre", "name slug color")
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      Gallery.aggregate([
+        { $match: query },
+        {
+          $addFields: {
+            photos: {
+              $filter: {
+                input: "$photos",
+                as: "p",
+                cond: {
+                  $eq: [
+                    { $type: "$$p" },
+                    "objectId",
+                  ]
+                }
+              }
+            }
+          }
+        },
+        { $sort: sort },
+        { $skip: skip }, 
+        { $limit: limit },
+      ]),
       Gallery.countDocuments(query),
+    ]);
+
+    await Gallery.populate(galleries, [
+      { path: "idol", select: "name stageName slug profileImage"},
+      { path: "genres", select: "name slug color"},
+      { path: "photos", select: "imageUrl thumbnailUrl uploadThingKey"},
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -106,90 +145,52 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    await dbConnect();
+export async function POST(req: Request) {
+  await dbConnect();
 
-    const session = await auth();
-    if (!session || session.user?.role !== "admin") {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
+  const body = await req.json();
+  const { title, photos = [] } = body;
 
-    const origin = request.headers.get("origin");
-    const originAllowed = isOriginAllowed(origin, request.url);
-    if (!originAllowed) {
-      console.log(`[API] Rejecting request due to origin validation`);
-      return NextResponse.json(
-        { success: false, error: "Bad origin" },
-        { status: 403 },
-      );
-    }
-    const body = await request.json();
-
-    // Validate required fields
-    const { title } = body || {};
-    if (!title) {
-      return NextResponse.json(
-        { success: false, error: "Missing required field: title" },
-        { status: 400 },
-      );
-    }
-
-    // Create gallery
-    const gallery = await Gallery.create(body);
-
-    // Update related counters
-    const incOps: Promise<unknown>[] = [];
-    if (gallery.idol) {
-      incOps.push(
-        Idol.findByIdAndUpdate(gallery.idol, { $inc: { galleryCount: 1 } }),
-      );
-    }
-    if (gallery.genre) {
-      incOps.push(
-        Genre.findByIdAndUpdate(gallery.genre, {
-          $inc: { "contentCounts.galleries": 1 },
-        }),
-      );
-    }
-    if (incOps.length > 0) {
-      await Promise.all(incOps);
-    }
-
-    // Populate result
-    const populated = await Gallery.findById(gallery._id)
-      .populate("idol", "name stageName slug profileImage")
-      .populate("genre", "name slug color");
-
+  if (!title) {
     return NextResponse.json(
-      { success: true, data: populated },
-      { status: 201 },
-    );
-  } catch (error: unknown) {
-    const err = error as { name?: string; code?: number; errors?: unknown };
-    logger.error("Error creating gallery:", err);
-
-    if (err?.name === "ValidationError") {
-      return NextResponse.json(
-        { success: false, error: "Validation failed", details: err.errors },
-        { status: 400 },
-      );
-    }
-    if (err?.code === 11000) {
-      return NextResponse.json(
-        { success: false, error: "A gallery with this slug already exists" },
-        { status: 409 },
-      );
-    }
-
-    return NextResponse.json(
-      { success: false, error: "Failed to create gallery" },
-      { status: 500 },
+      { success: false, error: "Missing title" },
+      { status: 400 },
     );
   }
+
+  // ✅ 1. Create the gallery first
+  const gallery = await Gallery.create({
+    ...body,
+    photos: [],
+    photoCount: 0,
+  });
+
+  // ✅ 2. Create Photo docs for each URL
+  if (photos.length) {
+    const photoDocs = photos.map((url: string, i: number) => ({
+      title: `${title} Photo ${i + 1}`,
+      imageUrl: url,
+      thumbnailUrl: url,
+      uploadThingKey: url.split("/f/")[1]?.split("?")[0],
+      gallery: gallery._id,
+      slug: `${gallery.slug}-photo-${i + 1}`,
+    }));
+
+    const createdPhotos = await Photo.insertMany(photoDocs);
+
+    // ✅ 3. Link them back to the gallery
+    await Gallery.findByIdAndUpdate(gallery._id, {
+      $set: { photos: createdPhotos.map((p) => p._id) },
+      $setOnInsert: { coverPhoto: createdPhotos[0].imageUrl },
+      $setOnInsert: { photoCount: createdPhotos.length },
+    });
+  }
+
+  const populated = await Gallery.findById(gallery._id)
+    .populate("photos")
+    .lean();
+
+  return NextResponse.json({ success: true, data: populated }, { status: 201 });
 }
 
 export async function PUT(request: NextRequest) {
@@ -360,26 +361,25 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Optional safety: prevent deletion when photos still exist
-    const photosExist = await Photo.countDocuments({ gallery: { $in: ids } });
-    if (photosExist > 0) {
-      const blocking = await Gallery.find({
-        _id: { $in: ids },
-        photoCount: { $gt: 0 },
-      })
-        .select("_id title photoCount")
-        .lean();
+// Find and remove associated photos and their files
+const photos = await Photo.find({ gallery: { $in: ids } })
+  .select("_id uploadThingKey imageUrl gallery")
+  .lean();
 
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Cannot delete galleries that contain photos. Delete or reassign photos first.",
-          blockingGalleries: blocking,
-        },
-        { status: 400 },
-      );
-    }
+if (photos.length > 0) {
+  const uploadKeys = photos
+    .map((p) => p.uploadThingKey)
+    .filter(Boolean) as string[];
+
+  // Delete UploadThing files
+  if (uploadKeys.length > 0) {
+    const { deleteUploadThingFiles } = await import("@/lib/utils/uploadthing/deleteFiles");
+    await deleteUploadThingFiles(uploadKeys);
+  }
+
+  // Delete photo documents
+  await Photo.deleteMany({ gallery: { $in: ids } });
+}
 
     // Build decrement maps for idols and genres
     const idolDec = new Map<string, number>();
@@ -396,8 +396,12 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    // Delete galleries
-    const result = await Gallery.deleteMany({ _id: { $in: ids } });
+
+    const coverPhotoKeys = await Gallery.find({ _id: { $in: ids  }}).select("coverPhotoKey");
+    const galleryKeys = coverPhotoKeys.map((g) => g.coverPhotoKey).filter(Boolean);
+
+    if (galleryKeys.length) await deleteUploadThingFiles(galleryKeys);
+    await Gallery.deleteMany({ _id: { $in: ids } });
 
     // Apply counter decrements
     const ops: Promise<unknown>[] = [];
@@ -419,8 +423,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `${result.deletedCount} galleries deleted successfully`,
-      deletedCount: result.deletedCount,
+      message: `Gallery deleted successfully`,
     });
   } catch (error) {
     logger.error("Error deleting galleries:", error);

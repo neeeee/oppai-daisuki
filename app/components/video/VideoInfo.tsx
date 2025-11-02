@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import GenrePill from "@/components/common/GenrePill";
 
 interface Idol {
   name: string;
@@ -90,14 +91,7 @@ export default function VideoInfo({ video }: VideoInfoProps) {
             {video.genres?.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
               {video.genres.map((genre) => (
-              <Link
-                key={genre._id}
-                href={`/genres/${genre.slug}`}
-                className="px-2 py-1 text-xs font-medium rounded transition-transform hover:scale-105 text-white"
-                style={{ backgroundColor: genre.color || "#6366f1" }}
-              >
-                {genre.name}
-              </Link>
+                <GenrePill key={genre._id} {...genre}></GenrePill>
               ))}
             </div>
           )}

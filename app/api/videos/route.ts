@@ -6,6 +6,7 @@ import Genre from "@/models/Genre";
 import mongoose from "mongoose";
 import { auth } from "@/lib/auth";
 import { isOriginAllowed } from "@/lib/utils/origin-validation";
+import { deleteUploadThingFiles } from "@/lib/utils/uploadthing/deleteFiles";
 import logger from "@/lib/utils/logger";
 
 interface AuthenticatedUser {
@@ -167,7 +168,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Create video
-    const video = await Video.create(body);
+    const video = await Video.create({
+      ...body,
+      thumbnailUrl: body.thumbnailUrl,
+      thumbnailUploadKey: body.thumbnailUploadKey,
+      videoSourceUrl: body.videoSourceUrl,
+      videoUploadKey: body.videoUploadKey
+    });
 
     // Update idol video count
     if (video.idol) {
@@ -362,77 +369,90 @@ export async function DELETE(request: NextRequest) {
     if (!session || (session.user as AuthenticatedUser)?.role !== "admin") {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 },
+        { status: 401 }
       );
     }
+
     const origin = request.headers.get("origin");
     const originAllowed = isOriginAllowed(origin, request.url);
     if (!originAllowed) {
-      console.log(`[API] Rejecting request due to origin validation`);
       return NextResponse.json(
         { success: false, error: "Bad origin" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
     const { searchParams } = new URL(request.url);
     const ids = searchParams.get("ids");
-
     if (!ids) {
       return NextResponse.json(
         { success: false, error: "Video IDs are required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const videoIds = ids.split(",");
+    const videoIds = ids.split(",").map((s) => s.trim());
 
-    // Get videos before deletion to update counters
-    const videos = await Video.find({ _id: { $in: videoIds } });
+    // ✅ Get UploadThing keys
+    const videos = await Video.find({ _id: { $in: videoIds } }).select(
+      "thumbnailUploadKey videoUploadKey idol genres"
+    );
 
-    // Delete videos
+    // Collect all keys into one array
+    const keys: string[] = [];
+    for (const v of videos) {
+      if (v.thumbnailUploadKey) keys.push(v.thumbnailUploadKey);
+      if (v.videoUploadKey) keys.push(v.videoUploadKey);
+    }
+
+    // ✅ Delete from UploadThing first
+    if (keys.length > 0) {
+      try {
+        await deleteUploadThingFiles(keys);
+        console.log(`🧹 Deleted ${keys.length} UploadThing file(s).`);
+      } catch (err) {
+        console.warn("⚠ UploadThing deletion failed.", err);
+      }
+    }
+
+    // ✅ Delete from MongoDB
     const result = await Video.deleteMany({ _id: { $in: videoIds } });
 
-    // Update idol and genre counters
+    // ✅ Update idol and genre counters
     const idolUpdates = new Map<string, number>();
     const genreUpdates = new Map<string, number>();
-
-    videos.forEach((video) => {
-      if (video.idol) {
-        const idolId = video.idol.toString();
-        idolUpdates.set(idolId, (idolUpdates.get(idolId) || 0) + 1);
+    videos.forEach((v) => {
+      if (v.idol) {
+        const key = v.idol.toString();
+        idolUpdates.set(key, (idolUpdates.get(key) || 0) + 1);
       }
-
-      if (video.genres && video.genres.length > 0) {
-        video.genres.forEach((genreId: mongoose.Types.ObjectId | string) => {
-          const genreIdStr = genreId.toString();
-          genreUpdates.set(genreIdStr, (genreUpdates.get(genreIdStr) || 0) + 1);
-        });
-      }
+      v.genres?.forEach((g) => {
+        const key = g.toString();
+        genreUpdates.set(key, (genreUpdates.get(key) || 0) + 1);
+      });
     });
 
-    // Update counters
     await Promise.all([
-      ...Array.from(idolUpdates.entries()).map(([idolId, count]) =>
-        Idol.findByIdAndUpdate(idolId, { $inc: { videoCount: -count } }),
+      ...Array.from(idolUpdates.entries()).map(([i, n]) =>
+        Idol.findByIdAndUpdate(i, { $inc: { videoCount: -n } })
       ),
-      ...Array.from(genreUpdates.entries()).map(([genreId, count]) =>
-        Genre.findByIdAndUpdate(genreId, {
-          $inc: { "contentCounts.videos": -count },
-        }),
+      ...Array.from(genreUpdates.entries()).map(([g, n]) =>
+        Genre.findByIdAndUpdate(g, {
+          $inc: { "contentCounts.videos": -n },
+        })
       ),
     ]);
 
     return NextResponse.json({
       success: true,
-      message: `${result.deletedCount} videos deleted successfully`,
+      message: `${result.deletedCount} video(s) deleted successfully.`,
       deletedCount: result.deletedCount,
     });
   } catch (error) {
     logger.error("Error deleting videos:", error);
     return NextResponse.json(
       { success: false, error: "Failed to delete videos" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

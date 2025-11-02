@@ -1,147 +1,62 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-const GallerySchema = new mongoose.Schema(
+export interface GalleryDocument extends Document {
+  title: string;
+  description?: string;
+  slug: string;
+  coverPhoto?: string;
+  coverPhotoKey?: string; // UploadThing key for deletion
+  photos: mongoose.Types.ObjectId[]; // reference actual Photo docs
+  isPublic: boolean;
+  photoCount: number;
+  tags: string[];
+  category?: string;
+  genres?: mongoose.Types.ObjectId[];
+  photographer?: string;
+  location?: string;
+  dateTaken?: Date;
+  isAdult: boolean;
+  idol?: mongoose.Types.ObjectId;
+  metadata: { featured: boolean; trending?: boolean };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const GallerySchema = new Schema<GalleryDocument>(
   {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    description: {
-      type: String,
-      trim: true,
-    },
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    coverPhoto: {
-      type: String, // UploadThing URL
-    },
-    isPublic: {
-      type: Boolean,
-      default: true,
-    },
-    photoCount: {
-      type: Number,
-      default: 0,
-    },
-    tags: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
-    category: {
-      type: String,
-      trim: true,
-    },
-    photographer: {
-      type: String,
-      trim: true,
-    },
-    location: {
-      type: String,
-      trim: true,
-    },
-    dateTaken: {
-      type: Date,
-    },
-    isAdult: {
-      type: Boolean,
-      default: false,
-    },
-    viewCount: {
-      type: Number,
-      default: 0,
-    },
-    likeCount: {
-      type: Number,
-      default: 0,
-    },
-    downloadCount: {
-      type: Number,
-      default: 0,
-    },
-    photos: [
-      {
-        type: String,
-      },
-    ],
-    metadata: {
-      featured: {
-        type: Boolean,
-        default: false,
-      },
-      trending: {
-        type: Boolean,
-        default: false,
-      },
-      qualityScore: {
-        type: Number,
-        default: 0,
-      },
-    },
-    idol: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Idol",
-    },
-    genre: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Genre",
-    },
+    title: { type: String, required: true, trim: true },
+    description: { type: String, trim: true },
+    slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    coverPhoto: { type: String },
+    coverPhotoKey: { type: String }, // UploadThing file key
+    photos: [{ type: Schema.Types.ObjectId, ref: "Photo" }],
+    isPublic: { type: Boolean, default: true },
+    isAdult: { type: Boolean, default: false },
+    photoCount: { type: Number, default: 0 },
+    tags: [{ type: String, trim: true }],
+    category: { type: String, trim: true },
+    genres: [{ type: Schema.Types.ObjectId, ref: "Genre" }],
+    photographer: { type: String, trim: true },
+    location: { type: String, trim: true },
+    dateTaken: { type: Date },
+    metadata: { featured: { type: Boolean, default: false }, trending: { type: Boolean, default: false } },
+    idol: { type: Schema.Types.ObjectId, ref: "Idol" },
   },
-  {
-    timestamps: true,
-  },
+  { timestamps: true },
 );
 
-// Create indexes for better query performance
-GallerySchema.index({ title: "text", description: "text", tags: "text" });
-GallerySchema.index({ slug: 1 });
-GallerySchema.index({ category: 1 });
-GallerySchema.index({ isPublic: 1 });
-GallerySchema.index({ isAdult: 1 });
-GallerySchema.index({ createdAt: -1 });
-GallerySchema.index({ viewCount: -1 });
-GallerySchema.index({ likeCount: -1 });
-GallerySchema.index({ downloadCount: -1 });
-GallerySchema.index({ "metadata.featured": 1 });
-GallerySchema.index({ "metadata.trending": 1 });
-GallerySchema.index({ "metadata.qualityScore": -1 });
-GallerySchema.index({ idol: 1 });
-GallerySchema.index({ genre: 1 });
+function genSlug(title: string) {
+  return title.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
+}
 
-// Pre-validate middleware to generate slug BEFORE validation runs
 GallerySchema.pre("validate", function (next) {
   if (this.title && (!this.slug || this.isModified("title"))) {
-    this.slug = this.title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  }
-  next();
-});
-
-// Pre-save middleware as backup
-GallerySchema.pre("save", function (next) {
-  if (this.title && (!this.slug || this.isModified("title"))) {
-    this.slug = this.title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-+|-+$/g, "");
+    this.slug = genSlug(this.title);
   }
   next();
 });
 
 const Gallery =
-  mongoose.models.Gallery || mongoose.model("Gallery", GallerySchema);
-export { Gallery };
+  mongoose.models.Gallery || mongoose.model<GalleryDocument>("Gallery", GallerySchema);
+
 export default Gallery;

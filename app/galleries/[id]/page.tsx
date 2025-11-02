@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import ImageModal from "../../components/common/ImageModal";
+import ImageModal from "@/components/common/ImageModal";
+import GenrePill from "@/components/common/GenrePill";
 
 interface Photo {
   _id: string;
@@ -51,6 +52,7 @@ interface Gallery {
   genre?: {
     _id: string;
     name: string;
+    slug: string;
     description?: string;
   };
   createdAt: string;
@@ -113,132 +115,6 @@ export default function GalleryDetailPage() {
     if (currentImageIndex > 0) {
       setCurrentImageIndex(currentImageIndex - 1);
     }
-  };
-
-  const handleLike = async () => {
-    try {
-      await fetch(`/api/galleries/${galleryId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action: "like" }),
-      });
-
-      if (gallery) {
-        setGallery({
-          ...gallery,
-          likeCount: gallery.likeCount + 1,
-        });
-      }
-    } catch {
-      // Silently fail like action
-    }
-  };
-
-  const handleShare = async () => {
-    try {
-      // Share using Web Share API if available
-      if (navigator.share && gallery) {
-        await navigator.share({
-          title: gallery.title,
-          text: gallery.description || gallery.title,
-          url: window.location.href,
-        });
-      } else {
-        // Fallback: copy to clipboard
-        await navigator.clipboard.writeText(window.location.href);
-        // You could show a toast notification here
-      }
-    } catch (error) {
-      (() => {
-        import("@/lib/utils/logger").then((m) =>
-          m.default.error("Failed to share gallery:", error),
-        );
-      })();
-    }
-  };
-
-  const handleImageLike = async (imageId: string) => {
-    try {
-      await fetch(`/api/photos/${imageId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action: "like" }),
-      });
-    } catch (error) {
-      (() => {
-        import("@/lib/utils/logger").then((m) =>
-          m.default.error("Failed to like image:", error),
-        );
-      })();
-    }
-  };
-
-  const handleImageDownload = async (imageId: string) => {
-    try {
-      await fetch(`/api/photos/${imageId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action: "download" }),
-      });
-
-      // Find the image and trigger download
-      const image = gallery?.photos.find((p) => p._id === imageId);
-      if (image) {
-        const link = document.createElement("a");
-        link.href = image.imageUrl;
-        link.download = image.title || "image";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-    } catch (error) {
-      (() => {
-        import("@/lib/utils/logger").then((m) =>
-          m.default.error("Failed to download image:", error),
-        );
-      })();
-    }
-  };
-
-  const handleImageShare = async (imageId: string) => {
-    try {
-      const image = gallery?.photos.find((p) => p._id === imageId);
-      if (navigator.share && image) {
-        await navigator.share({
-          title: image.title || "Image",
-          text: `Check out this image from ${gallery?.title}`,
-          url: window.location.href,
-        });
-      } else {
-        await navigator.clipboard.writeText(window.location.href);
-      }
-
-      await fetch(`/api/photos/${imageId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action: "share" }),
-      });
-    } catch (error) {
-      (() => {
-        import("@/lib/utils/logger").then((m) =>
-          m.default.error("Failed to share image:", error),
-        );
-      })();
-    }
-  };
-
-  const formatCount = (count: number) => {
-    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
-    if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
-    return count.toString();
   };
 
   const formatDate = (dateString: string) => {
@@ -327,7 +203,10 @@ export default function GalleryDetailPage() {
                     <Image
                       src={photo.thumbnailUrl || photo.imageUrl}
                       alt={photo.altText || photo.title || `Photo ${index + 1}`}
+                      fill
                       className="w-full h-full object-cover transition-opacity group-hover:opacity-90"
+                      sizes="90vw"
+                      priority
                     />
 
                     {/* Hover overlay */}
@@ -389,7 +268,7 @@ export default function GalleryDetailPage() {
               {/* Stats */}
               <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
                 <span className="flex items-center gap-1">
-                  📷 {gallery.photoCount} photos
+                  📷 {gallery.photos.length} photos
                 </span>
               </div>
 
@@ -466,15 +345,10 @@ export default function GalleryDetailPage() {
 
                 {gallery.genre && (
                   <div>
-                    <span className="text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-500 dark:text-gray-400 mr-1">
                       Genre:
                     </span>
-                    <Link
-                      href={`/genres/${gallery.genre._id}`}
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 ml-2"
-                    >
-                      {gallery.genre.name}
-                    </Link>
+                      <GenrePill {...gallery.genre}></GenrePill>
                   </div>
                 )}
               </div>
@@ -499,27 +373,6 @@ export default function GalleryDetailPage() {
                 </div>
               </div>
             )}
-
-            {/* Actions */}
-            <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 shadow-sm">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-                Actions
-              </h3>
-              <div className="space-y-3">
-                <button
-                  onClick={handleLike}
-                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  ❤️ Like Gallery
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                >
-                  📤 Share Gallery
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -533,9 +386,6 @@ export default function GalleryDetailPage() {
           onClose={handleModalClose}
           onNext={handleModalNext}
           onPrevious={handleModalPrevious}
-          onLike={handleImageLike}
-          onDownload={handleImageDownload}
-          onShare={handleImageShare}
         />
       )}
     </div>

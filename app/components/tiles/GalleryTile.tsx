@@ -5,13 +5,19 @@ import Image from "next/image";
 import { useState } from "react";
 import IdolLink from "../common/IdolLink";
 
+interface PhotoRef {
+  _id: string;
+  imageUrl?: string;
+  thumbnailUrl?: string;
+}
+
 interface Gallery {
   _id: string;
   title: string;
   description?: string;
   slug: string;
   coverPhoto?: string;
-  photos: string[];
+  photos: (string | PhotoRef)[];
   photoCount: number;
   viewCount: number;
   likeCount: number;
@@ -37,6 +43,7 @@ interface Gallery {
   genre?: {
     _id: string;
     name: string;
+    slug: string;
     color: string;
   };
 }
@@ -54,13 +61,6 @@ export default function GalleryTile({
   const [imageError, setImageError] = useState(false);
 
 
-  const formatCount = (count: number | undefined) => {
-    if (!count || count === 0) return "0";
-    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
-    if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
-    return count.toString();
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -76,6 +76,14 @@ export default function GalleryTile({
 
 
   const previewPhotos = showPreview ? gallery.photos.slice(0, 4) : [];
+  const previewUrl = gallery.coverPhoto ||
+    (gallery.photos?.length
+      ? typeof gallery.photos[0] === "string"
+      ? null
+      : gallery.photos[0].imageUrl || gallery.photos[0].thumbnailUrl
+      : null);
+  const fallback = "/placeholder.jpg";
+  const imageSrc = previewUrl;
 
   return (
     <Link href={`/galleries/${gallery.slug}`} className="group block">
@@ -91,7 +99,7 @@ export default function GalleryTile({
           {(gallery.coverPhoto || previewPhotos[0]) && !imageError ? (
             <div className="absolute inset-0">
               <Image
-                src={gallery.coverPhoto || previewPhotos[0]}
+                src={imageSrc?.startsWith("http") ? imageSrc : fallback}
                 alt={gallery.title}
                 fill
                 className={`object-cover group-hover:scale-110 transition-transform duration-500 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
@@ -113,20 +121,29 @@ export default function GalleryTile({
           {showPreview && previewPhotos.length > 1 && (
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300">
               <div className="absolute bottom-4 right-4 grid grid-cols-2 gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                {previewPhotos.slice(1, 4).map((photo, index) => (
+                {previewPhotos.slice(1, 4).map((photo, index) => {
+                  const src = typeof photo === "string" ? photo : photo?.thumbnailUrl || photo?.imageUrl || "";
+                  return (
                   <div
                     key={index}
                     className="w-8 h-8 rounded-sm overflow-hidden border border-white/50 relative"
                   >
-                    <Image
-                      src={photo}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="32px"
-                    />
+                    {src ? (
+                      <Image
+                        src={src}
+                        alt={`preview ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        sizes="32px"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-300 flex items-center justify-center text-[10px] text-gray-600">
+                        N/A
+                      </div>   
+                    )}
                   </div>
-                ))}
+                );
+              })}
                 {gallery.photoCount > 4 && (
                   <div className="w-8 h-8 rounded-sm bg-black/75 text-white text-xs flex items-center justify-center">
                     +{gallery.photoCount - 3}
@@ -143,11 +160,6 @@ export default function GalleryTile({
                 ⭐ Featured
               </div>
             )}
-            {gallery.metadata?.trending && (
-              <div className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                🔥 Trending
-              </div>
-            )}
             {gallery.isAdult && (
               <div className="bg-red-600 text-white text-xs px-2 py-1 rounded-full font-medium">
                 18+
@@ -157,26 +169,7 @@ export default function GalleryTile({
 
           {/* Photo Count Badge */}
           <div className="absolute top-3 right-3 bg-black/75 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
-            📸 {gallery.photoCount}
-          </div>
-
-          {/* Hover Stats Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="absolute bottom-4 left-4 right-4 text-white">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center gap-1">
-                    👁️ {formatCount(gallery.viewCount || 0)}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    ❤️ {formatCount(gallery.likeCount || 0)}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    ⬇️ {formatCount(gallery.downloadCount || 0)}
-                  </span>
-                </div>
-              </div>
-            </div>
+            📸 {gallery.photos.length}
           </div>
         </div>
 
@@ -254,14 +247,6 @@ export default function GalleryTile({
               )}
             </div>
           )}
-
-          {/* Stats Bar */}
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-3 border-t border-gray-100 dark:border-gray-700">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>Available</span>
-            </div>
-          </div>
         </div>
       </div>
     </Link>

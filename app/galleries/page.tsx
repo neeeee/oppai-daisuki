@@ -35,6 +35,7 @@ interface Gallery {
   genre?: {
     _id: string;
     name: string;
+    slug: string;
     color: string;
   };
 }
@@ -56,21 +57,6 @@ interface GalleriesResponse {
     trendingCount: number;
     totalPhotos: number;
   };
-}
-
-async function getVideoDuration(url: string): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement("video");
-    video.preload = "metadata";
-
-    video.onloadedmetadata = () => {
-      window.URL.revokeObjectURL(video.src);
-      resolve(video.duration); // duration in seconds (float)
-    };
-
-    video.onerror = () => reject(new Error("Failed to load video metadata"));
-    video.src = url;
-  });
 }
 
 export default function GalleriesPage() {
