@@ -1,5 +1,5 @@
 export async function deleteItems(
-  type: "galleries" | "photos" | "videos",
+  type: "gallery" | "photo" | "video",
   ids: string[],
 ): Promise<{ success: boolean; message: string }> {
   if (!ids.length) {
@@ -10,7 +10,7 @@ export async function deleteItems(
     return { success: false, message: "Cancelled." };
 
   try {
-    const res = await fetch(`/api/${type}?ids=${encodeURIComponent(ids.join(","))}`, {
+    const res = await fetch(`/api/${type}s?ids=${encodeURIComponent(ids.join(","))}`, {
       method: "DELETE",
     });
     const json = await res.json();
