@@ -1,11 +1,15 @@
 "use client";
 import { toSafeHtmlForReact } from "@/lib/utils/sanitize";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeSanitize from "rehype-sanitize";
+import type { PluggableList } from "unified";
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Calendar, User, Eye, Clock, Tag } from "lucide-react";
+import { Calendar, User, Clock, Tag } from "lucide-react";
 
 interface NewsArticle {
   _id: string;
@@ -54,6 +58,9 @@ interface NewsArticle {
   createdAt: string;
   updatedAt: string;
 }
+
+const remarkPlugins: PluggableList = [remarkGfm];
+const rehypePlugins: PluggableList = [rehypeSanitize];
 
 export default function NewsDetailPage() {
   const params = useParams();
@@ -265,12 +272,12 @@ export default function NewsDetailPage() {
           {/* Article Content */}
           <div className="p-6 pt-8">
             <div className="prose prose-lg dark:prose-invert max-w-none">
-              <div
-                className="text-gray-900 dark:text-gray-100 leading-relaxed"
-                dangerouslySetInnerHTML={toSafeHtmlForReact(article.content, {
-                  newlineToBr: true,
-                })}
-              />
+              <ReactMarkdown
+                remarkPlugins={remarkPlugins}
+                rehypePlugins={rehypePlugins}
+              >
+                {article.content || ""}
+              </ReactMarkdown>
             </div>
 
             {/* Additional Images */}
