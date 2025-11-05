@@ -38,8 +38,8 @@ function VideosPageContent() {
   // Search and filter states
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryInput, setCategoryInput] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [genreInput, setGenreInput] = useState("");
+  const [genreFilter, setGenreFilter] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tagFilter, setTagFilter] = useState("");
   const [sortBy, setSortBy] = useState("createdAt");
@@ -52,7 +52,7 @@ function VideosPageContent() {
 
   const isLoadingRef = useRef(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const categoryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const genreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tagTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debounce search input
@@ -74,20 +74,20 @@ function VideosPageContent() {
 
   // Debounce category input
   useEffect(() => {
-    if (categoryTimeoutRef.current) {
-      clearTimeout(categoryTimeoutRef.current);
+    if (genreTimeoutRef.current) {
+      clearTimeout(genreTimeoutRef.current);
     }
 
-    categoryTimeoutRef.current = setTimeout(() => {
-      setCategoryFilter(categoryInput);
+    genreTimeoutRef.current = setTimeout(() => {
+      setGenreFilter(genreInput);
     }, 500);
 
     return () => {
-      if (categoryTimeoutRef.current) {
-        clearTimeout(categoryTimeoutRef.current);
+      if (genreTimeoutRef.current) {
+        clearTimeout(genreTimeoutRef.current);
       }
     };
-  }, [categoryInput]);
+  }, [genreInput]);
 
   // Debounce tag input
   useEffect(() => {
@@ -111,7 +111,7 @@ function VideosPageContent() {
     if (currentPage !== 1) {
       router.push("/videos?page=1");
     }
-  }, [searchTerm, categoryFilter, tagFilter, sortBy, sortOrder, showAdult]);
+  }, [searchTerm, genreFilter, tagFilter, sortBy, sortOrder, showAdult, currentPage, router]);
 
   const fetchVideos = useCallback(
     async (page: number) => {
@@ -133,8 +133,8 @@ function VideosPageContent() {
           params.append("search", searchTerm);
         }
 
-        if (categoryFilter) {
-          params.append("category", categoryFilter);
+        if (genreFilter) {
+          params.append("genre", genreFilter);
         }
 
         if (tagFilter) {
@@ -162,7 +162,7 @@ function VideosPageContent() {
         isLoadingRef.current = false;
       }
     },
-    [searchTerm, categoryFilter, tagFilter, sortBy, sortOrder, showAdult]
+    [searchTerm, genreFilter, tagFilter, sortBy, sortOrder, showAdult]
   );
 
   useEffect(() => {
@@ -172,7 +172,7 @@ function VideosPageContent() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchTerm(searchInput);
-    setCategoryFilter(categoryInput);
+    setGenreFilter(genreInput);
     setTagFilter(tagInput);
     router.push("/videos?page=1");
   };
@@ -180,8 +180,8 @@ function VideosPageContent() {
   const handleClearFilters = () => {
     setSearchInput("");
     setSearchTerm("");
-    setCategoryInput("");
-    setCategoryFilter("");
+    setGenreInput("");
+    setGenreFilter("");
     setTagInput("");
     setTagFilter("");
     setSortBy("createdAt");
@@ -351,8 +351,8 @@ function VideosPageContent() {
             <input
               type="text"
               placeholder="Category"
-              value={categoryInput}
-              onChange={(e) => setCategoryInput(e.target.value)}
+              value={genreInput}
+              onChange={(e) => setGenreInput(e.target.value)}
               className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-36"
             />
             <input
@@ -401,7 +401,7 @@ function VideosPageContent() {
               <span className="text-sm">Show 18+ content</span>
             </label>
 
-            {(searchTerm || categoryFilter || tagFilter) && (
+            {(searchTerm || genreFilter || tagFilter) && (
               <button
                 onClick={handleClearFilters}
                 className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -440,11 +440,11 @@ function VideosPageContent() {
               No Videos Found
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              {searchTerm || categoryFilter || tagFilter
+              {searchTerm || genreFilter || tagFilter
                 ? "No videos match your search criteria."
                 : "There are no videos available at the moment."}
             </p>
-            {(searchTerm || categoryFilter || tagFilter) && (
+            {(searchTerm || genreFilter || tagFilter) && (
               <button
                 onClick={handleClearFilters}
                 className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"

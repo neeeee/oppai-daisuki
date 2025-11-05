@@ -724,7 +724,7 @@ export default function IdolProfilePage() {
 
             {/* Related Idols */}
             {relatedIdols.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-100 rounded-lg shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Related Idols</h2>
                 <div className="space-y-3">
                   {relatedIdols.map((relatedIdol) => (
