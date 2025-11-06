@@ -13,6 +13,25 @@ interface GenreReference {
   slug: string;
 }
 
+interface IdolWithCounts {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  slug: string;
+  stageName?: string;
+  profileImage?: string;
+  coverImage?: string;
+  description?: string;
+  birthDate?: string;
+  viewCount?: number;
+  genres?: GenreReference[];
+  isPublic?: boolean;
+  contentCounts?: {
+    photos: number;
+    galleries: number;
+    videos: number;
+  };
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -22,14 +41,14 @@ export async function GET(
 
     const { id } = await params;
 
-    // Check if id is a valid ObjectId, if not treat as slug
+    // Determine if ID or slug
     const isObjectId = mongoose.Types.ObjectId.isValid(id);
     const query = isObjectId ? { _id: id } : { slug: id };
 
-    // Find the idol and populate genres
-    const idol = await Idol.findOne({ ...query, isPublic: true })
+    // Retrieve idol
+    const idol = (await Idol.findOne({ ...query, isPublic: true })
       .populate("genres", "name slug color")
-      .lean();
+      .lean()) as IdolWithCounts | null;
 
     if (!idol) {
       return NextResponse.json(
@@ -38,28 +57,25 @@ export async function GET(
       );
     }
 
-    // Fetch related content in parallel
+    const idolId = idol._id;
+
+    // Fetch related content concurrently
     const [photos, galleries, videos] = await Promise.all([
-      // Get recent photos
-      Photo.find({ idol: (idol as { _id: unknown })._id, isPublic: true })
+      Photo.find({ idol: idolId, isPublic: true })
         .sort({ createdAt: -1 })
         .limit(12)
         .select(
           "title imageUrl thumbnailUrl slug viewCount likeCount createdAt",
         )
         .lean(),
-
-      // Get recent galleries
-      Gallery.find({ idol: (idol as { _id: unknown })._id, isPublic: true })
+      Gallery.find({ idol: idolId, isPublic: true })
         .sort({ createdAt: -1 })
         .limit(8)
         .select(
           "title coverPhoto slug photoCount viewCount likeCount createdAt description",
         )
         .lean(),
-
-      // Get recent videos for this idol
-      Video.find({ idol: (idol as { _id: unknown })._id, isPublic: true })
+      Video.find({ idol: idolId, isPublic: true })
         .sort({ createdAt: -1 })
         .limit(6)
         .select(
@@ -68,25 +84,39 @@ export async function GET(
         .lean(),
     ]);
 
-    // Calculate additional info
-    const totalContent = {
-      photos: photos.length,
-      galleries: galleries.length,
-      videos: videos.length,
-      totalViews:
-        photos.reduce((acc, photo) => acc + (photo.viewCount || 0), 0) +
-        galleries.reduce((acc, gallery) => acc + (gallery.viewCount || 0), 0) +
-        ((idol as { viewCount?: number }).viewCount || 0),
+    // Count totals dynamically
+    const [photoCount, galleryCount, videoCount] = await Promise.all([
+      Photo.countDocuments({ idol: idolId, isPublic: true }),
+      Gallery.countDocuments({ idol: idolId, isPublic: true }),
+      Video.countDocuments({ idol: idolId, isPublic: true }),
+    ]);
+
+    // Attach computed counts
+    idol.contentCounts = {
+      photos: photoCount,
+      galleries: galleryCount,
+      videos: videoCount,
     };
 
-    // Get related idols (same genres)
+    // Compute stats and age
+    const totalViews =
+      photos.reduce((sum, p) => sum + (p.viewCount || 0), 0) +
+      galleries.reduce((sum, g) => sum + (g.viewCount || 0), 0) +
+      videos.reduce((sum, v) => sum + (v.viewCount || 0), 0) +
+      (idol.viewCount || 0);
+
+    const totalContent = {
+      photos: photoCount,
+      galleries: galleryCount,
+      videos: videoCount,
+      totalViews,
+    };
+
+    // Related idols from same genres
     const relatedIdols = await Idol.find({
-      _id: { $ne: (idol as { _id: unknown })._id },
+      _id: { $ne: idolId },
       genres: {
-        $in:
-          (idol as { genres?: GenreReference[] }).genres?.map(
-            (g: GenreReference) => g._id,
-          ) || [],
+        $in: idol.genres?.map((g) => g._id) || [],
       },
       isPublic: true,
     })
@@ -99,11 +129,7 @@ export async function GET(
       data: {
         idol: {
           ...idol,
-          age: (idol as { birthDate?: string }).birthDate
-            ? calculateAge(
-                new Date((idol as { birthDate?: string }).birthDate!),
-              )
-            : null,
+          age: idol.birthDate ? calculateAge(new Date(idol.birthDate)) : null,
         },
         content: {
           photos,

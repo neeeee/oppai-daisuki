@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import dbConnect from "@/lib/mongodb";
 import Idol from "@/models/Idol";
 import Genre from "@/models/Genre";
+import Photo from "@/models/Photo";
+import Video from "@/models/Video";
+import Gallery from "@/models/Gallery";
 import { auth } from "@/lib/auth";
 import { isOriginAllowed } from "@/lib/utils/origin-validation";
 import logger from "@/lib/utils/logger";
 
 interface AuthenticatedUser {
   role?: string;
+}
+
+interface LeanIdol {
+  _id: mongoose.Types.ObjectId | string;
+  contentCounts?: { photos: number; galleries: number; videos: number };
+  [key: string]: unknown; // allow remaining fields
 }
 
 export async function GET(request: NextRequest) {
@@ -73,6 +83,38 @@ export async function GET(request: NextRequest) {
     ]);
 
     const totalPages = Math.ceil(total / limit);
+
+    const idolIds = idols.map((i) => i._id);
+    const [photoCounts, galleryCounts, videoCounts] = await Promise.all([
+      Photo.aggregate([
+        { $match: { idol: { $in: idolIds }, isPublic: true } },
+        { $group: { _id: "$idol", count: { $sum: 1 } } },
+      ]),
+      Gallery.aggregate([
+        { $match: { idol: { $in: idolIds }, isPublic: true } },
+        { $group: { _id: "$idol", count: { $sum: 1 } } },
+      ]),
+      Video.aggregate([
+        { $match: { idol: { $in: idolIds }, isPublic: true } },
+        { $group: { _id: "$idol", count: { $sum: 1 } } },
+      ]),
+    ]);
+
+// create quick lookup maps
+const photosMap = new Map(photoCounts.map((p) => [p._id.toString(), p.count]));
+const galleriesMap = new Map(
+  galleryCounts.map((g) => [g._id.toString(), g.count]),
+);
+const videosMap = new Map(videoCounts.map((v) => [v._id.toString(), v.count]));
+
+// attach to idols
+(idols as LeanIdol[]).forEach((i ) => {
+  i.contentCounts = {
+    photos: photosMap.get(i._id.toString()) || 0,
+    galleries: galleriesMap.get(i._id.toString()) || 0,
+    videos: videosMap.get(i._id.toString()) || 0,
+  };
+});
 
     return NextResponse.json({
       success: true,
