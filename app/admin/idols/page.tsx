@@ -470,7 +470,7 @@ export default function AdminIdolsPage() {
                   setForm((p) => ({ ...p, profileImage: e.target.value }))
                 }
                 required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 text-gray-700 dark:text-gray-300 shadow-sm"
                 placeholder="https://..."
               />
               {form.profileImage ? (
@@ -522,7 +522,7 @@ export default function AdminIdolsPage() {
                   setForm((p) => ({ ...p, coverImage: e.target.value }))
                 }
                 required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 text-gray-700 dark:text-gray-300 shadow-sm"
                 placeholder="https://..."
               />
               {form.coverImage ? (
@@ -574,7 +574,7 @@ export default function AdminIdolsPage() {
               value={form.bio || ""}
               onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
               rows={4}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
               placeholder="Brief biography"
             />
           </div>

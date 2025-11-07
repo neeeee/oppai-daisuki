@@ -251,11 +251,6 @@ export default function IdolContentTabs({
                           <h3 className="font-medium text-sm text-gray-900 dark:text-white line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 mb-1">
                             {video.title}
                           </h3>
-                          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 gap-2">
-                            <span>{formatNumber(video.viewCount)} views</span>
-                            <span>•</span>
-                            <span>{formatDate(video.createdAt)}</span>
-                          </div>
                         </Link>
                       ))}
                     </div>

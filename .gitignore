@@ -143,3 +143,7 @@ vite.config.ts.timestamp-*
 .DS_Store
 
 data/
+
+db.dump
+db.backup
+mongodb.dump
