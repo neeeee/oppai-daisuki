@@ -497,7 +497,7 @@ export default function AdminNewsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 dark:text-gray-300">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -512,7 +512,7 @@ export default function AdminNewsPage() {
           {editingId ? (
             <button
               onClick={resetForm}
-              className="px-4 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300"
+              className="px-4 py-2 rounded-md bg-gray-200 text-gray-800 dark:text-gray-300 hover:bg-gray-300"
             >
               New Article
             </button>
@@ -524,11 +524,11 @@ export default function AdminNewsPage() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
-            <span className="font-semibold">
+            <span className="font-semibold dark:text-gray-300">
               {editingId ? "Edit Article" : "Create Article"}
             </span>
             {editingId && (
-              <span className="text-xs text-gray-500">ID: {editingId}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-300">ID: {editingId}</span>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -562,7 +562,7 @@ export default function AdminNewsPage() {
                 setForm((p) => ({ ...p, title: e.target.value }))
               }
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-gray-300"
               placeholder="Enter article title"
             />
             {!!form.title.trim() && (
@@ -589,7 +589,7 @@ export default function AdminNewsPage() {
                 setForm((p) => ({ ...p, excerpt: e.target.value }))
               }
               rows={2}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-gray-300 "
               placeholder="Short summary up to ~500 characters"
             />
           </div>
@@ -653,7 +653,7 @@ export default function AdminNewsPage() {
                 }
                 rows={12}
                 required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm font-mono text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm font-mono text-sm dark:text-gray-300"
                 placeholder="# Heading
 
 Write your article in Markdown..."
@@ -662,7 +662,7 @@ Write your article in Markdown..."
 
             {showPreview && (
               <div
-                className="prose max-w-none mt-3 text-sm"
+                className="prose max-w-none mt-3 text-sm dark:text-gray-300"
                 dangerouslySetInnerHTML={renderMarkdown(form.content || "")}
               />
             )}
