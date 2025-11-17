@@ -1,5 +1,4 @@
 "use client";
-import { toSafeHtmlForReact } from "@/lib/utils/sanitize";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
@@ -94,12 +93,6 @@ export default function NewsDetailPage() {
   useEffect(() => {
     fetchArticle();
   }, [fetchArticle]);
-
-  const formatCount = (count: number) => {
-    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
-    if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
-    return count.toString();
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -271,7 +264,7 @@ export default function NewsDetailPage() {
 
           {/* Article Content */}
           <div className="p-6 pt-8">
-            <div className="prose prose-lg dark:prose-invert max-w-none">
+            <div className="prose prose-lg dark:text-white dark:prose-invert max-w-none">
               <ReactMarkdown
                 remarkPlugins={remarkPlugins}
                 rehypePlugins={rehypePlugins}

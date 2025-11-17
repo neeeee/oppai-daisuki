@@ -77,7 +77,7 @@ export async function GET(
         .lean(),
       Video.find({ idol: idolId, isPublic: true })
         .sort({ createdAt: -1 })
-        .limit(6)
+        // .limit(6)
         .select(
           "title thumbnailUrl duration viewCount channelName channelAvatar createdAt",
         )

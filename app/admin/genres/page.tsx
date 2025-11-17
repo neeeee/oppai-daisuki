@@ -925,7 +925,7 @@ export default function AdminGenresPage() {
             return (
               <div
                 key={g._id}
-                className="px-4 py-3 flex items-start gap-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="px-4 py-3 flex items-start gap-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors dark:text-gray-300"
               >
                 <input
                   type="checkbox"

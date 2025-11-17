@@ -132,6 +132,7 @@ export default function AdminVideosPage() {
   const [loadingIdols, setLoadingIdols] = useState(true);
   const [loadingGenres, setLoadingGenres] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingDuration, setIsLoadingDuration] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const [page, setPage] = useState(1);
@@ -168,6 +169,20 @@ export default function AdminVideosPage() {
   };
 
   const [form, setForm] = useState<VideoForm>(emptyForm);
+
+  const fetchVideoDuration = async (videoUrl: string) => {
+    if (!videoUrl) return;
+
+    setIsLoadingDuration(true);
+    try {
+      const duration = await getVideoDuration(videoUrl);
+      setForm((p) => ({ ...p, duration: formatDuration(duration) }));
+    } catch (error) {
+      logger.error("Failed to load video duration:", error);
+    } finally {
+      setIsLoadingDuration(false);
+    }
+  };
 
   const fetchIdols = useCallback(async () => {
     try {
@@ -248,6 +263,17 @@ export default function AdminVideosPage() {
   useEffect(() => {
     fetchVideos();
   }, [fetchVideos]);
+
+  useEffect(() => {
+  if (!form.videoSourceUrl) return;
+  if (!form.videoSourceUrl.startsWith("http")) return;
+
+  // Debounce the duration fetch
+  const timeoutId = setTimeout(() => {
+    fetchVideoDuration(form.videoSourceUrl);
+  }, 1000);
+  return () => clearTimeout(timeoutId);
+}, [form.videoSourceUrl]);
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(totalItems / limit)),
@@ -493,7 +519,7 @@ async function handleDelete(targetIds?: string[] | string) {
                       setForm((p) => ({ ...p, thumbnailUrl: e.target.value }))
                     }
                     required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:text-gray-300 shadow-sm"
                     placeholder="https://..."
                   />
                   {form.thumbnailUrl ? (
@@ -544,11 +570,18 @@ async function handleDelete(targetIds?: string[] | string) {
                   <input
                     type="url"
                     value={form.videoSourceUrl}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, videoSourceUrl: e.target.value }))
+                    onChange={(e) => {
+                      const url = e.target.value;
+                      setForm((p) => ({ ...p, videoSourceUrl: e.target.value }));
+                      if (url && url.startsWith("http")) {
+                        const timeoutId = setTimeout(() => {
+                          fetchVideoDuration(url);
+                        }, 500);
+                        return () => clearTimeout(timeoutId);
+                      }}
                     }
                     required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:text-gray-300 shadow-sm"
                     placeholder="https://..."
                   />
                   {form.videoSourceUrl ? (
@@ -588,6 +621,7 @@ async function handleDelete(targetIds?: string[] | string) {
                               ...p,
                               duration: formatDuration(duration),
                             }));
+                            fetchVideoDuration(videoUrl);
                           }
                         }}
                         onUploadError={(error: Error) => {
@@ -664,7 +698,7 @@ async function handleDelete(targetIds?: string[] | string) {
               {/* Duration - Optional */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Duration (Optional)
+                  Duration
                 </label>
                 <input
                   type="text"
