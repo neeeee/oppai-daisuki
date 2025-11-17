@@ -58,22 +58,6 @@ export async function GET(request: NextRequest) {
     const sort: Record<string, 1 | -1> = {};
     sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
-    // Execute
-    // const [galleries, total] = await Promise.all([
-    //   Gallery.find(query)
-    //     .populate("idol", "name stageName slug profileImage")
-    //     .populate("genres", "name slug color")
-    //     .populate({
-    //       path: "photos", 
-    //       select: "imageUrl thumbnailUrl uploadThingKey"
-    //     })
-    //     .sort(sort)
-    //     .skip(skip)
-    //     .limit(limit)
-    //     .lean(),
-    //   Gallery.countDocuments(query),
-    // ]);
-
     const [galleries, total] = await Promise.all([
       Gallery.aggregate([
         { $match: query },
@@ -167,14 +151,20 @@ export async function POST(req: Request) {
 
   // ✅ 2. Create Photo docs for each URL
   if (photos.length) {
-    const photoDocs = photos.map((url: string, i: number) => ({
+    const photoDocs = photos.map((url: string, i: number) => {
+      const filename = url.split("/").pop() ?? "";
+      const numericOrder =
+      parseInt(filename.match(/\d+/)?.[0] || String(i), 10) || i;
+      return {
       title: `${title} Photo ${i + 1}`,
       imageUrl: url,
       thumbnailUrl: url,
       uploadThingKey: url.split("/f/")[1]?.split("?")[0],
       gallery: gallery._id,
+      order: numericOrder,
       slug: `${gallery.slug}-photo-${i + 1}`,
-    }));
+    }
+  });
 
     const createdPhotos = await Photo.insertMany(photoDocs);
 

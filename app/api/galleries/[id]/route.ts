@@ -57,7 +57,7 @@ export async function GET(
       isPublic: true,
     })
       .select("_id title imageUrl thumbnailUrl altText dimensions fileSize")
-      .sort({ createdAt: 1 })
+      .sort({ order: 1 })
       .lean();
 
     // Update photo count if it doesn't match
