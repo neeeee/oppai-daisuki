@@ -28,6 +28,7 @@
     "mongoose": "^8.19.2",
     "next": "15.5.5",
     "next-auth": "^5.0.0-beta.29",
+    "next-plausible": "^3.12.5",
     "rate-limiter-flexible": "^8.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",

@@ -17,7 +17,7 @@ export const ourFileRouter = {
       return {};
     })
     .onUploadComplete(async ({ file }) => {
-      logger.info("[UPLOAD] video uploaded:", file.url);
+      logger.info("[UPLOAD] video uploaded:", file.ufsUrl);
       return { uploadedBy: "admin" };
     }),
 
@@ -32,11 +32,11 @@ export const ourFileRouter = {
       return {};
     })
     .onUploadComplete(async ({ file }) => {
-      logger.info("[UPLOAD] image uploaded:", file.url);
+      logger.info("[UPLOAD] image uploaded:", file.ufsUrl);
       return { uploadedBy: "admin" };
     }),
   albumUploader: f({
-    image: { maxFileSize: "16MB", maxFileCount: 50 },
+    image: { maxFileSize: "16MB", maxFileCount: 100 },
   })
     .middleware(async () => {
       const session = await auth();
@@ -46,7 +46,7 @@ export const ourFileRouter = {
       return {};
     })
     .onUploadComplete(async ({ file }) => {
-      logger.info("[UPLOAD] album uploaded:", file.url);
+      logger.info("[UPLOAD] album uploaded:", file.ufsUrl);
       return { uploadedBy: "admin" };
     }),
 } satisfies FileRouter;

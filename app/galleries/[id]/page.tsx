@@ -96,6 +96,20 @@ export default function GalleryDetailPage() {
     }
   }, [galleryId, fetchGallery]);
 
+  const sortedPhotos = gallery?.photos
+    ? [...gallery.photos].sort((a, b) => {
+        const numA = parseInt(
+        a.imageUrl?.split("/").pop()?.match(/\d+/)?.[0] || "0",
+        10,
+      );
+      const numB = parseInt(
+        b.imageUrl?.split("/").pop()?.match(/\d+/)?.[0] || "0",
+        10,
+      );
+      return numA - numB;
+    })
+    : [];
+
   const handleImageClick = (index: number) => {
     setCurrentImageIndex(index);
     setIsModalOpen(true);
@@ -192,9 +206,9 @@ export default function GalleryDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Gallery Grid */}
           <div className="lg:col-span-2">
-            {gallery.photos && gallery.photos.length > 0 ? (
+            {sortedPhotos.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {gallery.photos.map((photo, index) => (
+                {sortedPhotos.map((photo, index) => (
                   <div
                     key={photo._id}
                     className="group relative aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-transform hover:scale-105"
