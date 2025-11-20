@@ -604,7 +604,7 @@ export default function AdminGalleriesPage() {
                       if (res?.[0]) {
                         setForm((p) => ({
                           ...p,
-                          coverPhoto: res[0].url,
+                          coverPhoto: res[0].ufsUrl,
                         }));
                         alert("✅ Cover photo uploaded successfully!");
                       }
@@ -634,7 +634,7 @@ export default function AdminGalleriesPage() {
             <UploadDropzone
               endpoint="albumUploader"
               onClientUploadComplete={(files) => {
-                const urls = files.map((f) => f.url);
+                const urls = files.map((f) => f.ufsUrl);
                 setForm((p) => ({
                   ...p,
                   photos: [...(p.photos || []), ...urls],

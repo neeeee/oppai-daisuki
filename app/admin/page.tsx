@@ -264,16 +264,6 @@ export default function AdminDashboard() {
             ))}
           </div>
         </div>
-
-        {/* Recent Activity */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 transition-colors">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Recent Activity
-          </h2>
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            Activity tracking coming soon...
-          </div>
-        </div>
       </div>
     </div>
   );

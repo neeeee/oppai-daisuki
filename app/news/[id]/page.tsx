@@ -1,8 +1,6 @@
 "use client";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeSanitize from "rehype-sanitize";
-import type { PluggableList } from "unified";
+import { remark } from "remark";
+import html from "remark-html";
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
@@ -58,9 +56,6 @@ interface NewsArticle {
   updatedAt: string;
 }
 
-const remarkPlugins: PluggableList = [remarkGfm];
-const rehypePlugins: PluggableList = [rehypeSanitize];
-
 export default function NewsDetailPage() {
   const params = useParams();
   const newsId = params?.id as string;
@@ -68,6 +63,7 @@ export default function NewsDetailPage() {
   const [article, setArticle] = useState<NewsArticle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [htmlContent, setHtmlContent] = useState("");
 
   const fetchArticle = useCallback(async () => {
     if (!newsId) return;
@@ -104,6 +100,21 @@ export default function NewsDetailPage() {
       minute: "2-digit",
     });
   };
+
+  useEffect(() => {
+    if (!article?.content) return;
+
+    const processContent = async () => {
+      try {
+        const file = await remark().use(html).process(article.content);
+        setHtmlContent(file.toString());
+      } catch (e) {
+        console.error("Markdown error", e);
+      }
+    };
+
+    processContent();
+  }, [article]);
 
   const getCategoryColor = (category: string) => {
     const colors = {
@@ -264,14 +275,11 @@ export default function NewsDetailPage() {
 
           {/* Article Content */}
           <div className="p-6 pt-8">
-            <div className="prose prose-lg dark:text-white dark:prose-invert max-w-none">
-              <ReactMarkdown
-                remarkPlugins={remarkPlugins}
-                rehypePlugins={rehypePlugins}
-              >
-                {article.content || ""}
-              </ReactMarkdown>
-            </div>
+            <div
+              className="prose prose-lg dark:text-white dark:prose-invert max-w-none"
+              // This tells React to render the raw HTML string
+              dangerouslySetInnerHTML={{ __html: htmlContent }}
+            />
 
             {/* Additional Images */}
             {article.images && article.images.length > 0 && (

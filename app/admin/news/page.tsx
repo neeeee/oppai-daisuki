@@ -1,6 +1,8 @@
 "use client";
-import { sanitizeHtmlSimple } from "@/lib/utils/sanitize";
+// import { sanitizeHtmlSimple } from "@/lib/utils/sanitize";
 import logger from "@/lib/utils/logger";
+import { remark } from "remark";
+import html from "remark-html";
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
@@ -127,6 +129,7 @@ export default function AdminNewsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showEditor, setShowEditor] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
 
   const authorDefaultName = useMemo(() => {
     // Use email as fallback if present, otherwise "Admin"
@@ -253,6 +256,25 @@ export default function AdminNewsPage() {
     setShowPreview(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  useEffect(() => {
+    const parseMarkdown = async () => {
+      if (!showPreview || !form.content) return;
+
+      try {
+        // Process the markdown
+        const file = await remark().use(html).process(form.content);
+
+        setPreviewHtml(file.toString());
+      } catch (err) {
+        console.error("Markdown parsing error", err);
+      }
+    };
+
+    // Debounce slightly to avoid heavy processing on every keystroke
+    const timeoutId = setTimeout(parseMarkdown, 500);
+    return () => clearTimeout(timeoutId);
+  }, [form.content, showPreview]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this article? This action cannot be undone.")) return;
@@ -409,92 +431,92 @@ export default function AdminNewsPage() {
   };
 
   // Minimal markdown to HTML for preview (admin-only use)
-  const renderMarkdown = (md: string) => {
-    // Escape HTML
-    let html = md
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-
-    // Code blocks ```
-    html = html.replace(/```([\s\S]*?)```/g, (_m, code) => {
-      return `<pre class="bg-gray-900 text-gray-100 p-3 rounded"><code>${code
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")}</code></pre>`;
-    });
-
-    // Inline code
-    html = html.replace(
-      /`([^`]+)`/g,
-      "<code class='bg-gray-100 px-1 rounded'>$1</code>",
-    );
-
-    // Headings
-    html = html
-      .replace(
-        /^###### (.*)$/gm,
-        "<h6 class='text-sm font-semibold mt-4'>$1</h6>",
-      )
-      .replace(
-        /^##### (.*)$/gm,
-        "<h5 class='text-base font-semibold mt-4'>$1</h5>",
-      )
-      .replace(
-        /^#### (.*)$/gm,
-        "<h4 class='text-lg font-semibold mt-4'>$1</h4>",
-      )
-      .replace(/^### (.*)$/gm, "<h3 class='text-xl font-bold mt-4'>$1</h3>")
-      .replace(/^## (.*)$/gm, "<h2 class='text-2xl font-bold mt-4'>$1</h2>")
-      .replace(/^# (.*)$/gm, "<h1 class='text-3xl font-bold mt-4'>$1</h1>");
-
-    // Bold, Italic
-    html = html
-      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-      .replace(/__([^_]+)__/g, "<strong>$1</strong>")
-      .replace(/_([^_]+)_/g, "<em>$1</em>");
-
-    // Links [text](url)
-    html = html.replace(
-      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-      `<a class="text-indigo-600 underline" target="_blank" rel="noopener noreferrer" href="$2">$1</a>`,
-    );
-
-    // Unordered lists
-    html = html.replace(
-      /(^|\n)\s*[-*]\s+(.+)/g,
-      (_m, p1, p2) => `${p1}<li>${p2}</li>`,
-    );
-    html = html.replace(
-      /(<li>[\s\S]*?<\/li>)/g,
-      "<ul class='list-disc ml-6 my-2'>$1</ul>",
-    );
-
-    // Paragraphs
-    html = html
-      .split(/\n{2,}/)
-      .map((block) => {
-        if (
-          /^<(h\d|ul|pre|blockquote)/.test(block.trim()) ||
-          /<\/(ul|pre)>$/.test(block.trim())
-        ) {
-          return block;
-        }
-        if (block.trim().startsWith("<li>")) return block;
-        return `<p class="my-3">${block.replace(/\n/g, "<br/>")}</p>`;
-      })
-      .join("");
-
-    // Defense-in-depth: production-only sanitization of generated HTML
-    if (process.env.NODE_ENV === "production") {
-      html = html
-        .replace(/<\s*script\b[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, "")
-        .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
-        .replace(/(href|src)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi, '$1="#"');
-    }
-
-    return { __html: sanitizeHtmlSimple(html) };
-  };
+  // const renderMarkdown = (md: string) => {
+  //   // Escape HTML
+  //   let html = md
+  //     .replace(/&/g, "&amp;")
+  //     .replace(/</g, "&lt;")
+  //     .replace(/>/g, "&gt;");
+  //
+  //   // Code blocks ```
+  //   html = html.replace(/```([\s\S]*?)```/g, (_m, code) => {
+  //     return `<pre class="bg-gray-900 text-gray-100 p-3 rounded"><code>${code
+  //       .replace(/&/g, "&amp;")
+  //       .replace(/</g, "&lt;")}</code></pre>`;
+  //   });
+  //
+  //   // Inline code
+  //   html = html.replace(
+  //     /`([^`]+)`/g,
+  //     "<code class='bg-gray-100 px-1 rounded'>$1</code>",
+  //   );
+  //
+  //   // Headings
+  //   html = html
+  //     .replace(
+  //       /^###### (.*)$/gm,
+  //       "<h6 class='text-sm font-semibold mt-4'>$1</h6>",
+  //     )
+  //     .replace(
+  //       /^##### (.*)$/gm,
+  //       "<h5 class='text-base font-semibold mt-4'>$1</h5>",
+  //     )
+  //     .replace(
+  //       /^#### (.*)$/gm,
+  //       "<h4 class='text-lg font-semibold mt-4'>$1</h4>",
+  //     )
+  //     .replace(/^### (.*)$/gm, "<h3 class='text-xl font-bold mt-4'>$1</h3>")
+  //     .replace(/^## (.*)$/gm, "<h2 class='text-2xl font-bold mt-4'>$1</h2>")
+  //     .replace(/^# (.*)$/gm, "<h1 class='text-3xl font-bold mt-4'>$1</h1>");
+  //
+  //   // Bold, Italic
+  //   html = html
+  //     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+  //     .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+  //     .replace(/__([^_]+)__/g, "<strong>$1</strong>")
+  //     .replace(/_([^_]+)_/g, "<em>$1</em>");
+  //
+  //   // Links [text](url)
+  //   html = html.replace(
+  //     /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+  //     `<a class="text-indigo-600 underline" target="_blank" rel="noopener noreferrer" href="$2">$1</a>`,
+  //   );
+  //
+  //   // Unordered lists
+  //   html = html.replace(
+  //     /(^|\n)\s*[-*]\s+(.+)/g,
+  //     (_m, p1, p2) => `${p1}<li>${p2}</li>`,
+  //   );
+  //   html = html.replace(
+  //     /(<li>[\s\S]*?<\/li>)/g,
+  //     "<ul class='list-disc ml-6 my-2'>$1</ul>",
+  //   );
+  //
+  //   // Paragraphs
+  //   html = html
+  //     .split(/\n{2,}/)
+  //     .map((block) => {
+  //       if (
+  //         /^<(h\d|ul|pre|blockquote)/.test(block.trim()) ||
+  //         /<\/(ul|pre)>$/.test(block.trim())
+  //       ) {
+  //         return block;
+  //       }
+  //       if (block.trim().startsWith("<li>")) return block;
+  //       return `<p class="my-3">${block.replace(/\n/g, "<br/>")}</p>`;
+  //     })
+  //     .join("");
+  //
+  //   // Defense-in-depth: production-only sanitization of generated HTML
+  //   if (process.env.NODE_ENV === "production") {
+  //     html = html
+  //       .replace(/<\s*script\b[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, "")
+  //       .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
+  //       .replace(/(href|src)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi, '$1="#"');
+  //   }
+  //
+  //   return { __html: sanitizeHtmlSimple(html) };
+  // };
 
   return (
     <div className="space-y-8 dark:text-gray-300">
@@ -528,7 +550,9 @@ export default function AdminNewsPage() {
               {editingId ? "Edit Article" : "Create Article"}
             </span>
             {editingId && (
-              <span className="text-xs text-gray-500 dark:text-gray-300">ID: {editingId}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-300">
+                ID: {editingId}
+              </span>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -562,7 +586,7 @@ export default function AdminNewsPage() {
                 setForm((p) => ({ ...p, title: e.target.value }))
               }
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-gray-300"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-white"
               placeholder="Enter article title"
             />
             {!!form.title.trim() && (
@@ -622,7 +646,7 @@ export default function AdminNewsPage() {
                     if (res?.[0]) {
                       setForm((p) => ({
                         ...p,
-                        featuredImage: res[0].url,
+                        featuredImage: res[0].ufsUrl,
                       }));
                     }
                   }}
@@ -661,10 +685,12 @@ Write your article in Markdown..."
             )}
 
             {showPreview && (
-              <div
-                className="prose max-w-none mt-3 text-sm dark:text-gray-300"
-                dangerouslySetInnerHTML={renderMarkdown(form.content || "")}
-              />
+              <div className="max-w-none max-h-64 overflow-scroll mt-3 p-4 border rounded bg-gray-50 dark:bg-gray-900">
+                <div
+                  className="prose dark:prose-invert max-w-none text-sm"
+                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                />
+              </div>
             )}
           </div>
 

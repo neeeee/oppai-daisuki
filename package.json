@@ -2,7 +2,6 @@
   "name": "oppai-daisuki",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -32,9 +31,10 @@
     "rate-limiter-flexible": "^8.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-markdown": "^10.1.0",
     "rehype-sanitize": "^6.0.0",
+    "remark": "^15.0.1",
     "remark-gfm": "^4.0.1",
+    "remark-html": "^16.0.1",
     "tsx": "^4.20.6",
     "uploadthing": "^7.7.4"
   },

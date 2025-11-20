@@ -48,7 +48,8 @@ function VideosPageContent() {
 
   const searchParams = useSearchParams();
   const router = useRouter();
-  const currentPage = parseInt(searchParams.get("page") || "1", 10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const isLoadingRef = useRef(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -111,63 +112,77 @@ function VideosPageContent() {
     if (currentPage !== 1) {
       router.push("/videos?page=1");
     }
-  }, [searchTerm, genreFilter, tagFilter, sortBy, sortOrder, showAdult, currentPage, router]);
+  }, [
+    searchTerm,
+    genreFilter,
+    tagFilter,
+    sortBy,
+    sortOrder,
+    showAdult,
+    currentPage,
+    router,
+  ]);
 
-  const fetchVideos = useCallback(
-    async (page: number) => {
-      if (isLoadingRef.current) return;
+  const fetchVideos = useCallback(async () => {
+    if (isLoadingRef.current) return;
 
-      try {
-        isLoadingRef.current = true;
-        setLoading(true);
-        setError(null);
+    try {
+      isLoadingRef.current = true;
+      setLoading(true);
+      setError(null);
 
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: "24",
-          sortBy,
-          sortOrder,
-        });
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: "5",
+        sortBy,
+        sortOrder,
+      });
 
-        if (searchTerm) {
-          params.append("search", searchTerm);
-        }
-
-        if (genreFilter) {
-          params.append("genre", genreFilter);
-        }
-
-        if (tagFilter) {
-          params.append("tags", tagFilter);
-        }
-
-        if (!showAdult) {
-          params.append("isAdult", "false");
-        }
-
-        const response = await fetch(`/api/videos?${params}`);
-        const data = await response.json();
-
-        if (data.success) {
-          setVideos(data.data);
-          setPagination(data.pagination);
-        } else {
-          setError("Failed to load videos");
-        }
-      } catch (err) {
-        console.error("Error fetching videos:", err);
-        setError("Failed to load videos");
-      } finally {
-        setLoading(false);
-        isLoadingRef.current = false;
+      if (searchTerm) {
+        params.append("search", searchTerm);
       }
-    },
-    [searchTerm, genreFilter, tagFilter, sortBy, sortOrder, showAdult]
-  );
+
+      if (genreFilter) {
+        params.append("genre", genreFilter);
+      }
+
+      if (tagFilter) {
+        params.append("tags", tagFilter);
+      }
+
+      if (!showAdult) {
+        params.append("isAdult", "false");
+      }
+      const response = await fetch(`/api/videos?${params}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setVideos(data.data);
+        setTotalPages(data.pagination.totalPages);
+      } else {
+        setError("Failed to load videos");
+      }
+    } catch (err) {
+      console.error("Error fetching videos:", err);
+      setError("Failed to load videos");
+    } finally {
+      setLoading(false);
+      isLoadingRef.current = false;
+    }
+  }, [
+    currentPage,
+    searchTerm,
+    genreFilter,
+    tagFilter,
+    sortBy,
+    sortOrder,
+    showAdult,
+  ]);
 
   useEffect(() => {
-    fetchVideos(currentPage);
-  }, [fetchVideos, currentPage]);
+    fetchVideos();
+    setCurrentPage(1);
+  }, [fetchVideos]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,7 +231,7 @@ function VideosPageContent() {
           className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-l-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white transition-colors"
         >
           Previous
-        </button>
+        </button>,
       );
     }
 
@@ -232,7 +247,7 @@ function VideosPageContent() {
           } transition-colors`}
         >
           {i}
-        </button>
+        </button>,
       );
     }
 
@@ -244,7 +259,7 @@ function VideosPageContent() {
           className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-r-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white transition-colors"
         >
           Next
-        </button>
+        </button>,
       );
     }
 
@@ -500,3 +515,4 @@ export default function VideosPage() {
     </Suspense>
   );
 }
+

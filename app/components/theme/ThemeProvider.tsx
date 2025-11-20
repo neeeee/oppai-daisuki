@@ -8,12 +8,12 @@ import {
   useCallback,
 } from "react";
 
-type Theme = "dark" | "light" | "system";
+type Theme = "light" | "dark" | "system";
 
 type ThemeProviderContextType = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  actualTheme: "dark" | "light";
+  actualTheme: Theme;
 };
 
 const ThemeProviderContext = createContext<
@@ -52,15 +52,18 @@ export function ThemeProvider({
   }, []);
 
   // Apply theme to DOM
-  const applyTheme = useCallback((resolvedTheme: "dark" | "light") => {
-    const root = document.documentElement;
+  const applyTheme = useCallback(
+    (resolvedTheme: "light" | "dark" | "system") => {
+      const root = document.documentElement;
 
-    // Remove all theme classes
-    root.classList.remove("light", "dark");
+      // Remove all theme classes
+      root.classList.remove("light", "dark");
 
-    // Add new theme class
-    root.classList.add(resolvedTheme);
-  }, []);
+      // Add new theme class
+      root.classList.add(resolvedTheme);
+    },
+    [],
+  );
 
   // Initialize theme from localStorage or default
   useEffect(() => {

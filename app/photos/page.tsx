@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import Pagination from "@/components/Pagination";
 import PhotoTile from "@/components/tiles/PhotoTile";
 
 interface Photo {
@@ -74,6 +75,7 @@ export default function PhotosPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showAdult, setShowAdult] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [stats, setStats] = useState<PhotosResponse["stats"] | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "masonry">("masonry");
 
@@ -145,10 +147,9 @@ export default function PhotosPage() {
       const data: PhotosResponse = await response.json();
 
       if (data.success) {
-        setPhotos((prevPhotos) =>
-          currentPage === 1 ? data.data : [...prevPhotos, ...data.data],
-        );
-        setStats(data.stats);
+        setPhotos(data.data);
+        setTotalPages(data.pagination.totalPages);
+        setStats(data.stats || null);
       } else {
         setError("Failed to load photos");
       }
@@ -186,8 +187,10 @@ export default function PhotosPage() {
     setFilterTag("");
   };
 
-  const loadMorePhotos = () => {
-    setCurrentPage((prev) => prev + 1);
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const featuredPhotos = photos.filter((photo) => photo.metadata?.featured);
@@ -379,21 +382,30 @@ export default function PhotosPage() {
 
           {photoCategories.regularPhotos &&
           photoCategories.regularPhotos.length > 0 ? (
-            <div
-              className={`grid gap-4 ${
-                viewMode === "masonry"
-                  ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-                  : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
-              }`}
-            >
-              {photoCategories.regularPhotos.map((photo) => (
-                <PhotoTile
-                  key={photo._id}
-                  photo={photo}
-                  showStats={viewMode === "masonry"}
+            <>
+              <div
+                className={`grid gap-4 ${
+                  viewMode === "masonry"
+                    ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                    : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+                }`}
+              >
+                {photoCategories.regularPhotos.map((photo) => (
+                  <PhotoTile
+                    key={photo._id}
+                    photo={photo}
+                    showStats={viewMode === "masonry"}
+                  />
+                ))}
+              </div>
+              <div className="mt-12">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
                 />
-              ))}
-            </div>
+              </div>
+            </>
           ) : (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📷</div>
@@ -413,19 +425,6 @@ export default function PhotosPage() {
             </div>
           )}
         </div>
-
-        {/* Load More Button */}
-        {photos.length > 0 && photos.length >= 30 && (
-          <div className="text-center py-8">
-            <button
-              onClick={loadMorePhotos}
-              disabled={loading}
-              className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? "Loading..." : "Load More Photos"}
-            </button>
-          </div>
-        )}
 
         {/* Loading indicator */}
         {loading && photos.length > 0 && (

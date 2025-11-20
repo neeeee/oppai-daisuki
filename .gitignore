@@ -147,3 +147,5 @@ data/
 db.dump
 db.backup
 mongodb.dump
+backup*
+mongo*
