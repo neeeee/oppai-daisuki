@@ -149,3 +149,5 @@ db.backup
 mongodb.dump
 backup*
 mongo*
+
+tailscale-serve/

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
 import VideoTile from "@/components/tiles/VideoTile";
 import Pagination from "@/components/Pagination";
 import Link from "next/link";
@@ -28,106 +27,90 @@ interface VideosResponse {
     currentPage: number;
     totalPages: number;
     totalItems: number;
+    itemsPerPage: number;
     hasNextPage: boolean;
     hasPrevPage: boolean;
-    itemsPerPage: number;
-  }
+  };
+  stats?: {
+    totalVideos: number;
+    featuredCount: number;
+    trendingCount: number;
+  };
 }
 
 function VideosPageContent() {
   const [videos, setVideos] = useState<Video[]>([]);
-  const [pagination, setPagination] = useState<VideosResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Search and filter states
-  const [searchInput, setSearchInput] = useState("");
+  // Filter States
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [filterTag, setFilterTag] = useState("");
   const [genreInput, setGenreInput] = useState("");
   const [genreFilter, setGenreFilter] = useState("");
-  const [tagInput, setTagInput] = useState("");
-  const [tagFilter, setTagFilter] = useState("");
+
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showAdult, setShowAdult] = useState(false);
 
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0); // Add this for the "Showing X videos" text
+
+  // Stats State
+  const [stats, setStats] = useState<VideosResponse["stats"] | null>(null);
 
   const isLoadingRef = useRef(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const genreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tagTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // --- Debounce Effects ---
+
   // Debounce search input
   useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(() => {
       setSearchTerm(searchInput);
     }, 500);
-
     return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
   }, [searchInput]);
 
   // Debounce category input
   useEffect(() => {
-    if (genreTimeoutRef.current) {
-      clearTimeout(genreTimeoutRef.current);
-    }
-
+    if (genreTimeoutRef.current) clearTimeout(genreTimeoutRef.current);
     genreTimeoutRef.current = setTimeout(() => {
       setGenreFilter(genreInput);
     }, 500);
-
     return () => {
-      if (genreTimeoutRef.current) {
-        clearTimeout(genreTimeoutRef.current);
-      }
+      if (genreTimeoutRef.current) clearTimeout(genreTimeoutRef.current);
     };
   }, [genreInput]);
 
   // Debounce tag input
   useEffect(() => {
-    if (tagTimeoutRef.current) {
-      clearTimeout(tagTimeoutRef.current);
-    }
-
+    if (tagTimeoutRef.current) clearTimeout(tagTimeoutRef.current);
     tagTimeoutRef.current = setTimeout(() => {
-      setTagFilter(tagInput);
+      setFilterTag(tagInput);
     }, 500);
-
     return () => {
-      if (tagTimeoutRef.current) {
-        clearTimeout(tagTimeoutRef.current);
-      }
+      if (tagTimeoutRef.current) clearTimeout(tagTimeoutRef.current);
     };
   }, [tagInput]);
 
-  // Reset to page 1 when filters change
+  // --- Reset Page on Filter Change ---
+  // We simply reset currentPage to 1 whenever a filter changes.
+  // This change in 'currentPage' will trigger the main fetch effect below.
   useEffect(() => {
-    if (currentPage !== 1) {
-      router.push("/videos?page=1");
-    }
-  }, [
-    searchTerm,
-    genreFilter,
-    tagFilter,
-    sortBy,
-    sortOrder,
-    showAdult,
-    currentPage,
-    router,
-  ]);
+    setCurrentPage(1);
+  }, [searchTerm, genreFilter, filterTag, sortBy, sortOrder, showAdult]);
 
+  // --- Main Fetch Function ---
   const fetchVideos = useCallback(async () => {
     if (isLoadingRef.current) return;
 
@@ -138,37 +121,28 @@ function VideosPageContent() {
 
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: "5",
+        limit: "12", // Increased limit for better grid view
         sortBy,
         sortOrder,
       });
 
-      if (searchTerm) {
-        params.append("search", searchTerm);
-      }
+      if (searchTerm) params.append("search", searchTerm);
+      if (genreFilter) params.append("genre", genreFilter);
+      if (filterTag) params.append("tags", filterTag);
+      if (!showAdult) params.append("isAdult", "false");
 
-      if (genreFilter) {
-        params.append("genre", genreFilter);
-      }
-
-      if (tagFilter) {
-        params.append("tags", tagFilter);
-      }
-
-      if (!showAdult) {
-        params.append("isAdult", "false");
-      }
       const response = await fetch(`/api/videos?${params}`);
       const data: VideosResponse = await response.json();
 
       if (data.success) {
         setVideos(data.data);
         setTotalPages(data.pagination.totalPages);
+        setTotalItems(data.pagination.totalItems);
+        setStats(data.stats || null);
       } else {
         setError("Failed to load videos");
       }
-    } catch (err) {
-      console.error("Error fetching videos:", err);
+    } catch {
       setError("Failed to load videos");
     } finally {
       setLoading(false);
@@ -178,23 +152,26 @@ function VideosPageContent() {
     currentPage,
     searchTerm,
     genreFilter,
-    tagFilter,
+    filterTag,
     sortBy,
     sortOrder,
     showAdult,
   ]);
 
+  // Trigger fetch whenever dependencies change (including currentPage)
   useEffect(() => {
     fetchVideos();
-    setCurrentPage(1);
   }, [fetchVideos]);
+
+  // --- Event Handlers ---
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    // Force immediate update bypassing debounce if user hits enter
     setSearchTerm(searchInput);
     setGenreFilter(genreInput);
-    setTagFilter(tagInput);
-    router.push("/videos?page=1");
+    setFilterTag(tagInput);
+    // Page reset is handled by the useEffect listening to these states
   };
 
   const handleClearFilters = () => {
@@ -203,10 +180,10 @@ function VideosPageContent() {
     setGenreInput("");
     setGenreFilter("");
     setTagInput("");
-    setTagFilter("");
+    setFilterTag("");
     setSortBy("createdAt");
     setSortOrder("desc");
-    router.push("/videos?page=1");
+    // Page reset is handled by the useEffect listening to these states
   };
 
   const handlePageChange = (page: number) => {
@@ -215,9 +192,11 @@ function VideosPageContent() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // --- Render Helpers ---
+
   const renderLoadingSkeleton = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {Array.from({ length: 24 }, (_, index) => (
+      {Array.from({ length: 12 }, (_, index) => (
         <div
           key={index}
           className="bg-white dark:bg-neutral-800 rounded-xl overflow-hidden shadow-sm animate-pulse"
@@ -230,10 +209,6 @@ function VideosPageContent() {
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
                 <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
               </div>
-            </div>
-            <div className="flex justify-between">
-              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
-              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
             </div>
           </div>
         </div>
@@ -251,9 +226,9 @@ function VideosPageContent() {
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 All Videos
               </h1>
-              {pagination && !loading && (
+              {stats && !loading && (
                 <p className="text-gray-600 dark:text-gray-300">
-                  {pagination.pagination.totalItems.toLocaleString()} videos available
+                  {stats.totalVideos?.toLocaleString()} videos available
                 </p>
               )}
             </div>
@@ -278,12 +253,12 @@ function VideosPageContent() {
             </nav>
           </div>
 
-          {pagination && !loading && (
+          {!loading && (
             <div className="mt-6 flex items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 <span>
-                  Page {pagination.pagination.currentPage} of {pagination.pagination.totalPages}
+                  Page {currentPage} of {totalPages}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -359,7 +334,7 @@ function VideosPageContent() {
               <span className="text-sm">Show 18+ content</span>
             </label>
 
-            {(searchTerm || genreFilter || tagFilter) && (
+            {(searchTerm || genreFilter || filterTag) && (
               <button
                 onClick={handleClearFilters}
                 className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -398,11 +373,11 @@ function VideosPageContent() {
               No Videos Found
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              {searchTerm || genreFilter || tagFilter
+              {searchTerm || genreFilter || filterTag
                 ? "No videos match your search criteria."
                 : "There are no videos available at the moment."}
             </p>
-            {(searchTerm || genreFilter || tagFilter) && (
+            {(searchTerm || genreFilter || filterTag) && (
               <button
                 onClick={handleClearFilters}
                 className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
@@ -430,14 +405,6 @@ function VideosPageContent() {
             </div>
           </>
         )}
-
-        {/* Page Info */}
-        {pagination && !loading && videos.length > 0 && (
-          <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            Showing page {pagination.pagination.currentPage} of {pagination.pagination.totalPages} (
-            {pagination.pagination.totalItems.toLocaleString()} total videos)
-          </div>
-        )}
       </div>
     </div>
   );
@@ -463,4 +430,3 @@ export default function VideosPage() {
     </Suspense>
   );
 }
-

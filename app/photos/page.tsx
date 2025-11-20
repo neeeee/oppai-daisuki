@@ -161,13 +161,11 @@ export default function PhotosPage() {
     }
   }, [currentPage, sortBy, sortOrder, searchTerm, filterTag, showAdult]);
 
-  // Reset when filters change
   useEffect(() => {
     setPhotos([]);
     setCurrentPage(1);
   }, [sortBy, sortOrder, searchTerm, filterTag, showAdult]);
 
-  // Fetch photos when dependencies change
   useEffect(() => {
     fetchPhotos();
   }, [fetchPhotos]);
@@ -194,6 +192,7 @@ export default function PhotosPage() {
   };
 
   const featuredPhotos = photos.filter((photo) => photo.metadata?.featured);
+
   const regularPhotos = photos.filter((photo) => !photo.metadata?.featured);
 
   // Group photos by different criteria for masonry layout

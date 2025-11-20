@@ -41,11 +41,9 @@ export async function GET(
 
     const { id } = await params;
 
-    // Determine if ID or slug
     const isObjectId = mongoose.Types.ObjectId.isValid(id);
     const query = isObjectId ? { _id: id } : { slug: id };
 
-    // Retrieve idol
     const idol = (await Idol.findOne({ ...query, isPublic: true })
       .populate("genres", "name slug color")
       .lean()) as IdolWithCounts | null;
@@ -59,7 +57,6 @@ export async function GET(
 
     const idolId = idol._id;
 
-    // Fetch related content concurrently
     const [photos, galleries, videos] = await Promise.all([
       Photo.find({ idol: idolId, isPublic: true })
         .sort({ createdAt: -1 })
@@ -84,21 +81,18 @@ export async function GET(
         .lean(),
     ]);
 
-    // Count totals dynamically
     const [photoCount, galleryCount, videoCount] = await Promise.all([
       Photo.countDocuments({ idol: idolId, isPublic: true }),
       Gallery.countDocuments({ idol: idolId, isPublic: true }),
       Video.countDocuments({ idol: idolId, isPublic: true }),
     ]);
 
-    // Attach computed counts
     idol.contentCounts = {
       photos: photoCount,
       galleries: galleryCount,
       videos: videoCount,
     };
 
-    // Compute stats and age
     const totalViews =
       photos.reduce((sum, p) => sum + (p.viewCount || 0), 0) +
       galleries.reduce((sum, g) => sum + (g.viewCount || 0), 0) +
@@ -112,7 +106,6 @@ export async function GET(
       totalViews,
     };
 
-    // Related idols from same genres
     const relatedIdols = await Idol.find({
       _id: { $ne: idolId },
       genres: {

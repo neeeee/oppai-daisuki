@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import GalleryTile from "../components/tiles/GalleryTile";
+import Pagination from "@/components/Pagination";
 
 interface Gallery {
   _id: string;
@@ -73,9 +74,9 @@ export default function GalleriesPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showAdult, setShowAdult] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [stats, setStats] = useState<GalleriesResponse["stats"] | null>(null);
 
-  // Prevent duplicate requests
   const isLoadingRef = useRef(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>(null);
   const tagTimeoutRef = useRef<null | NodeJS.Timeout>(null);
@@ -144,10 +145,9 @@ export default function GalleriesPage() {
       const data: GalleriesResponse = await response.json();
 
       if (data.success) {
-        setGalleries((prevGalleries) =>
-          currentPage === 1 ? data.data : [...prevGalleries, ...data.data],
-        );
+        setGalleries(data.data);
         setStats(data.stats);
+        setTotalPages(data.pagination.totalPages);
       } else {
         setError("Failed to load galleries");
       }
@@ -159,13 +159,11 @@ export default function GalleriesPage() {
     }
   }, [currentPage, sortBy, sortOrder, searchTerm, filterTag, showAdult]);
 
-  // Reset when filters change
   useEffect(() => {
     setGalleries([]);
     setCurrentPage(1);
   }, [sortBy, sortOrder, searchTerm, filterTag, showAdult]);
 
-  // Fetch galleries when dependencies change
   useEffect(() => {
     fetchGalleries();
   }, [fetchGalleries]);
@@ -184,8 +182,10 @@ export default function GalleriesPage() {
     setFilterTag("");
   };
 
-  const loadMoreGalleries = () => {
-    setCurrentPage((prev) => prev + 1);
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const featuredGalleries = galleries.filter(
@@ -348,15 +348,24 @@ export default function GalleriesPage() {
 
           {galleryCategories.regularGalleries &&
           galleryCategories.regularGalleries.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {galleryCategories.regularGalleries.map((gallery) => (
-                <GalleryTile
-                  key={gallery._id}
-                  gallery={gallery}
-                  showPreview={true}
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {galleryCategories.regularGalleries.map((gallery) => (
+                  <GalleryTile
+                    key={gallery._id}
+                    gallery={gallery}
+                    showPreview={true}
+                  />
+                ))}
+              </div>
+              <div className="mt-12">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
                 />
-              ))}
-            </div>
+              </div>
+            </>
           ) : (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🖼️</div>
@@ -376,19 +385,6 @@ export default function GalleriesPage() {
             </div>
           )}
         </div>
-
-        {/* Load More Button */}
-        {galleries.length > 0 && galleries.length >= 24 && (
-          <div className="text-center py-8">
-            <button
-              onClick={loadMoreGalleries}
-              disabled={loading}
-              className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? "Loading..." : "Load More Galleries"}
-            </button>
-          </div>
-        )}
 
         {/* Loading indicator */}
         {loading && galleries.length > 0 && (
