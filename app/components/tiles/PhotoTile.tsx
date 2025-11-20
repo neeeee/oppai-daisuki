@@ -150,25 +150,6 @@ export default function PhotoTile({ photo, showStats = true }: PhotoTileProps) {
               )}
             </div>
           )}
-
-          {/* Hover overlay with stats */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 opacity-0 group-hover:opacity-100">
-            <div className="absolute bottom-4 left-4 right-4 text-white">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center gap-1">
-                    👁️ {formatCount(photo.viewCount || 0)}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    ❤️ {formatCount(photo.likeCount || 0)}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    ⬇️ {formatCount(photo.downloadCount || 0)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Photo Info */}

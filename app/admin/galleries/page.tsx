@@ -660,7 +660,7 @@ export default function AdminGalleriesPage() {
                       src={url}
                       alt="Photo"
                       fill
-                      className="object-cover"
+                      className="object-cover border"
                     />
                   </div>
                 ))}

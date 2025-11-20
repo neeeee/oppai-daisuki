@@ -289,11 +289,7 @@ export default function PhotosPage() {
               className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
             >
               <option value="uploadDate">Sort by Upload Date</option>
-              <option value="captureDate">Sort by Capture Date</option>
               <option value="title">Sort by Title</option>
-              <option value="likeCount">Sort by Likes</option>
-              <option value="downloadCount">Sort by Downloads</option>
-              <option value="qualityScore">Sort by Quality</option>
             </select>
 
             <select

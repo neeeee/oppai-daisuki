@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import VideoTile from "@/components/tiles/VideoTile";
+import Pagination from "@/components/Pagination";
 import Link from "next/link";
 
 interface Video {
@@ -20,18 +21,22 @@ interface Video {
   isAdult?: boolean;
 }
 
-interface PaginationData {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-  itemsPerPage: number;
+interface VideosResponse {
+  success: boolean;
+  data: Video[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+    itemsPerPage: number;
+  }
 }
 
 function VideosPageContent() {
   const [videos, setVideos] = useState<Video[]>([]);
-  const [pagination, setPagination] = useState<PaginationData | null>(null);
+  const [pagination, setPagination] = useState<VideosResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -154,7 +159,7 @@ function VideosPageContent() {
         params.append("isAdult", "false");
       }
       const response = await fetch(`/api/videos?${params}`);
-      const data = await response.json();
+      const data: VideosResponse = await response.json();
 
       if (data.success) {
         setVideos(data.data);
@@ -205,71 +210,9 @@ function VideosPageContent() {
   };
 
   const handlePageChange = (page: number) => {
-    router.push(`/videos?page=${page}`);
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const renderPagination = () => {
-    if (!pagination || pagination.totalPages <= 1) return null;
-
-    const pages = [];
-    const maxVisiblePages = 7;
-    const { currentPage, totalPages } = pagination;
-
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage < maxVisiblePages - 1) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    if (pagination.hasPrevPage) {
-      pages.push(
-        <button
-          key="prev"
-          onClick={() => handlePageChange(currentPage - 1)}
-          className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-l-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white transition-colors"
-        >
-          Previous
-        </button>,
-      );
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(
-        <button
-          key={i}
-          onClick={() => handlePageChange(i)}
-          className={`px-3 py-2 text-sm font-medium border-t border-b ${
-            i === currentPage
-              ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/50 border-indigo-300 dark:border-indigo-600"
-              : "text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white"
-          } transition-colors`}
-        >
-          {i}
-        </button>,
-      );
-    }
-
-    if (pagination.hasNextPage) {
-      pages.push(
-        <button
-          key="next"
-          onClick={() => handlePageChange(currentPage + 1)}
-          className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-r-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white transition-colors"
-        >
-          Next
-        </button>,
-      );
-    }
-
-    return (
-      <div className="flex justify-center mt-12">
-        <nav className="inline-flex shadow-sm" aria-label="Pagination">
-          {pages}
-        </nav>
-      </div>
-    );
   };
 
   const renderLoadingSkeleton = () => (
@@ -310,7 +253,7 @@ function VideosPageContent() {
               </h1>
               {pagination && !loading && (
                 <p className="text-gray-600 dark:text-gray-300">
-                  {pagination.totalItems.toLocaleString()} videos available
+                  {pagination.pagination.totalItems.toLocaleString()} videos available
                 </p>
               )}
             </div>
@@ -340,7 +283,7 @@ function VideosPageContent() {
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 <span>
-                  Page {pagination.currentPage} of {pagination.totalPages}
+                  Page {pagination.pagination.currentPage} of {pagination.pagination.totalPages}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -436,7 +379,7 @@ function VideosPageContent() {
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mb-4">{error}</p>
             <button
-              onClick={() => fetchVideos(currentPage)}
+              onClick={() => fetchVideos()}
               className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
             >
               Try Again
@@ -478,16 +421,21 @@ function VideosPageContent() {
                 <VideoTile key={video._id} video={video} />
               ))}
             </div>
-
-            {renderPagination()}
+            <div className="mt-12">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
           </>
         )}
 
         {/* Page Info */}
         {pagination && !loading && videos.length > 0 && (
           <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            Showing page {pagination.currentPage} of {pagination.totalPages} (
-            {pagination.totalItems.toLocaleString()} total videos)
+            Showing page {pagination.pagination.currentPage} of {pagination.pagination.totalPages} (
+            {pagination.pagination.totalItems.toLocaleString()} total videos)
           </div>
         )}
       </div>
