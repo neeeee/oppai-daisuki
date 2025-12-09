@@ -216,12 +216,15 @@ export default function AdminGalleriesPage() {
   };
 
   const handleEdit = (g: Gallery) => {
+    const photoUrls = Array.isArray(g.photos) 
+    ? g.photos.map((p: any) => (typeof p === 'object' && p !== null && 'imageUrl' in p) ? p.imageUrl : p)
+    : [];
     setEditingId(g._id);
     setForm({
       title: g.title || "",
       description: g.description || "",
       coverPhoto: g.coverPhoto || "",
-      photos: g.photos || [],
+      photos: photoUrls,
       isPublic: !!g.isPublic,
       tags: g.tags || [],
       category: g.category || "",
@@ -533,15 +536,9 @@ export default function AdminGalleriesPage() {
                   className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   placeholder="Gallery title"
                 />
-                {!!form.title.trim() && (
+                {editingId && (
                   <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Slug preview:{" "}
-                    {form.title
-                      .toLowerCase()
-                      .replace(/[^a-z0-9\s-]/g, "")
-                      .replace(/\s+/g, "-")
-                      .replace(/-+/g, "-")
-                      .replace(/^-|-$/g, "")}
+                    Gallery ID: <span className="font-mono">{editingId}</span>
                   </div>
                 )}
               </div>
@@ -661,6 +658,7 @@ export default function AdminGalleriesPage() {
                       alt="Photo"
                       fill
                       className="object-cover border"
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, 16vw"
                     />
                   </div>
                 ))}

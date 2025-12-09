@@ -5,8 +5,8 @@ export interface GalleryDocument extends Document {
   description?: string;
   slug: string;
   coverPhoto?: string;
-  coverPhotoKey?: string; // UploadThing key for deletion
-  photos: mongoose.Types.ObjectId[]; // reference actual Photo docs
+  coverPhotoKey?: string;
+  photos: mongoose.Types.ObjectId[];
   isPublic: boolean;
   photoCount: number;
   tags: string[];
@@ -26,9 +26,9 @@ const GallerySchema = new Schema<GalleryDocument>(
   {
     title: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
-    slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    slug: { type: String, unique: true, trim: true },
     coverPhoto: { type: String },
-    coverPhotoKey: { type: String }, // UploadThing file key
+    coverPhotoKey: { type: String },
     photos: [{ type: Schema.Types.ObjectId, ref: "Photo" }],
     isPublic: { type: Boolean, default: true },
     isAdult: { type: Boolean, default: false },
@@ -45,13 +45,11 @@ const GallerySchema = new Schema<GalleryDocument>(
   { timestamps: true },
 );
 
-function genSlug(title: string) {
-  return title.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
-}
-
+// REPLACED: Logic to use _id as slug
 GallerySchema.pre("validate", function (next) {
-  if (this.title && (!this.slug || this.isModified("title"))) {
-    this.slug = genSlug(this.title);
+  // If slug is not set, use the _id
+  if (!this.slug && this._id) {
+    this.slug = this._id.toString();
   }
   next();
 });
