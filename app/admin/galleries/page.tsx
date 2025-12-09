@@ -216,9 +216,11 @@ export default function AdminGalleriesPage() {
   };
 
   const handleEdit = (g: Gallery) => {
-    const photoUrls = Array.isArray(g.photos) 
-    ? g.photos.map((p: any) => (typeof p === 'object' && p !== null && 'imageUrl' in p) ? p.imageUrl : p)
-    : [];
+    const photoUrls = Array.isArray(g.photos)
+      ? (g.photos as (string | { imageUrl: string })[]).map((p) =>
+          typeof p === "string" ? p : p.imageUrl
+        )
+      : [];
     setEditingId(g._id);
     setForm({
       title: g.title || "",
