@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import {
-  X,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 
 interface GalleryImage {
@@ -42,7 +38,6 @@ export default function ImageModal({
   onPrevious,
 }: ImageModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
   const currentImage = images[currentIndex];
 
   // Keyboard handlers
@@ -85,104 +80,123 @@ export default function ImageModal({
   return (
     <div
       ref={modalRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
-      onClick={(e) => e.target === modalRef.current && onClose()}
+      className="fixed inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-sm"
     >
-      {/* Close Button */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 z-50 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white"
-        aria-label="Close modal"
-      >
-        <X size={24} />
-      </button>
-
-      {/* Navigation Arrows */}
-      {currentIndex > 0 && (
+      {/* Top Bar (Close Button) */}
+      <div className="absolute top-0 right-0 z-50 p-4">
         <button
-          onClick={onPrevious}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-50 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white"
-          aria-label="Previous image"
+          onClick={onClose}
+          className="p-2 bg-black/50 hover:bg-white/20 rounded-full transition-colors text-white"
+          aria-label="Close modal"
         >
-          <ChevronLeft size={24} />
+          <X size={24} />
         </button>
-      )}
-      {currentIndex < images.length - 1 && (
-        <button
-          onClick={onNext}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-50 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white"
-          aria-label="Next image"
-        >
-          <ChevronRight size={24} />
-        </button>
-      )}
+      </div>
 
-      {/* Full Image */}
-      <div className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center">
-        <div className="relative w-full h-auto" style={{ aspectRatio: "1 / 1" }}>
-          <Image
-            ref={imageRef}
-            src={currentImage.imageUrl}
-            alt={currentImage.altText || currentImage.title || "Gallery image"}
-            width={currentImage.dimensions?.width || 1280}
-            height={currentImage.dimensions?.height || 720}
-            className="object-contain max-w-full max-h-full"
-            sizes="90vw"
-            priority
+      {/* Main Content Area */}
+      <div className="flex-1 relative flex flex-col justify-center w-full h-full overflow-hidden">
+        {/* Navigation Arrows (Hidden on very small screens, tappable zones otherwise) */}
+        {currentIndex > 0 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onPrevious();
+            }}
+            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-40 p-2 md:p-3 bg-black/20 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-all"
+          >
+            <ChevronLeft size={24} className="md:w-8 md:h-8" />
+          </button>
+        )}
+        {currentIndex < images.length - 1 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onNext();
+            }}
+            className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-40 p-2 md:p-3 bg-black/20 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-all"
+          >
+            <ChevronRight size={24} className="md:w-8 md:h-8" />
+          </button>
+        )}
+
+        {/* Image Container */}
+        {/* We use flex-1 to make this take up all available vertical space remaining */}
+        <div
+          className="flex-1 relative flex items-center justify-center p-2 md:p-8"
+          onClick={(e) => e.target === e.currentTarget && onClose()}
+        >
+          <div className="relative w-full h-full max-w-7xl mx-auto">
+            <Image
+              src={currentImage.imageUrl}
+              alt={
+                currentImage.altText || currentImage.title || "Gallery image"
+              }
+              fill
+              className="object-contain"
+              sizes="100vw"
+              priority
             />
+          </div>
         </div>
 
-        {/* Overlay Info */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
-          <div className="flex items-end justify-between text-white">
-            <div className="flex-1 min-w-0">
-              {currentImage.title && (
-                <h3 className="text-lg font-semibold mb-1 truncate">
-                  {currentImage.title}
-                </h3>
-              )}
-              <div className="flex items-center gap-4 text-sm text-white/80">
-                <span>
-                  Image {currentIndex + 1} / {images.length}
-                </span>
-                {currentImage.dimensions && (
-                  <span>
-                    {currentImage.dimensions.width}×
-                    {currentImage.dimensions.height}
+        {/* Image Info - Mobile Friendly Layout */}
+        <div className="flex-shrink-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-4 pb-2 md:absolute md:bottom-20 md:left-0 md:right-0 md:bg-none md:pointer-events-none">
+          <div className="container mx-auto px-4 md:pointer-events-auto">
+            <div className="flex flex-col md:flex-row md:items-end justify-between text-white/90">
+              <div className="mb-2 md:mb-0">
+                {currentImage.title && (
+                  <h3 className="text-base md:text-xl font-medium truncate mb-1">
+                    {currentImage.title}
+                  </h3>
+                )}
+                <div className="flex items-center gap-3 text-xs md:text-sm text-white/60">
+                  <span className="font-mono">
+                    {currentIndex + 1} / {images.length}
                   </span>
-                )}
-                {currentImage.fileSize && (
-                  <span>{formatFileSize(currentImage.fileSize)}</span>
-                )}
+                  {currentImage.dimensions && (
+                    <span>
+                      {currentImage.dimensions.width} ×{" "}
+                      {currentImage.dimensions.height}
+                    </span>
+                  )}
+                  {currentImage.fileSize && (
+                    <span>{formatFileSize(currentImage.fileSize)}</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Thumbnails */}
+      {/* Thumbnails Footer */}
       {images.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 max-w-[80vw]">
-          <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-lg p-2 overflow-x-auto">
-            {images.map((img, i) => (
-              <button
-                key={img._id}
-                onClick={() => i !== currentIndex && (i < currentIndex ? onPrevious() : onNext())}
-                className={`relative w-12 h-12 rounded-md overflow-hidden flex-shrink-0 transition-all ${
-                  i === currentIndex
-                    ? "ring-2 ring-white scale-110"
-                    : "opacity-60 hover:opacity-100"
-                }`}
-              >
-                <Image
-                  src={img.thumbnailUrl || img.imageUrl}
-                  alt={img.altText || `Thumbnail ${i + 1}`}
-                  width={64}
-                  height={64}
-                  className="object-cover w-full h-full"
-                />
-              </button>
-            ))}
+        <div className="flex-shrink-0 w-full h-16 md:h-20 bg-black/80 border-t border-white/10">
+          <div className="w-full h-full flex items-center justify-center px-4">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar w-full max-w-5xl justify-start md:justify-center px-2 py-2">
+              {images.map((img, i) => (
+                <button
+                  key={img._id}
+                  onClick={() =>
+                    i !== currentIndex &&
+                    (i < currentIndex ? onPrevious() : onNext())
+                  }
+                  className={`relative flex-shrink-0 transition-all duration-200 rounded-md overflow-hidden ${
+                    i === currentIndex
+                      ? "w-10 h-10 md:w-14 md:h-14 ring-2 ring-white opacity-100"
+                      : "w-10 h-10 md:w-14 md:h-14 opacity-40 hover:opacity-100"
+                  }`}
+                >
+                  <Image
+                    src={img.thumbnailUrl || img.imageUrl}
+                    alt={img.altText || `Thumbnail ${i + 1}`}
+                    fill
+                    sizes="(max-width: 768px) 40px, 56px"
+                    className="object-cover"
+                  />
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
