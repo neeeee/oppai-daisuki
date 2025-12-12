@@ -1,7 +1,6 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 import { auth } from "@/lib/auth";
-import logger from "@/lib/utils/logger";
 
 const f = createUploadthing();
 
@@ -17,7 +16,6 @@ export const ourFileRouter = {
       return {};
     })
     .onUploadComplete(async ({ file }) => {
-      logger.info("[UPLOAD] video uploaded:", file.ufsUrl);
       return { uploadedBy: "admin" };
     }),
 
@@ -32,11 +30,10 @@ export const ourFileRouter = {
       return {};
     })
     .onUploadComplete(async ({ file }) => {
-      logger.info("[UPLOAD] image uploaded:", file.ufsUrl);
       return { uploadedBy: "admin" };
     }),
   albumUploader: f({
-    image: { maxFileSize: "16MB", maxFileCount: 100 },
+    image: { maxFileSize: "16MB", maxFileCount: 300 },
   })
     .middleware(async () => {
       const session = await auth();
@@ -46,7 +43,6 @@ export const ourFileRouter = {
       return {};
     })
     .onUploadComplete(async ({ file }) => {
-      logger.info("[UPLOAD] album uploaded:", file.ufsUrl);
       return { uploadedBy: "admin" };
     }),
 } satisfies FileRouter;
