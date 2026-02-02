@@ -409,45 +409,44 @@ export default function HomePage() {
             </section>
           )}
 
-          {/* Latest Photos */}
-          {(activeSection === 'all' || activeSection === 'photos') && data.photos.length > 0 && (
-            <section>
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl">📷</div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    Latest Photos
-                  </h2>
-                  <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-sm px-2 py-1 rounded-full">
-                    {data.photos.filter(p => p.metadata.featured).length > 0 && '⭐ '}
-                    {data.photos.length} new
-                  </span>
-                </div>
-                <Link
-                  href="/photos"
-                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 font-medium"
-                >
-                  View all →
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {data.photos.map((photo) => (
-                  <PhotoTile key={photo._id} photo={photo} />
-                ))}
-              </div>
-            </section>
-          )}
+          {/* Latest Photos */} 
+          {/* {(activeSection === 'all' || activeSection === 'photos') && data.photos.length > 0 && ( */}
+          {/*   <section> */}
+          {/*     <div className="flex items-center justify-between mb-6"> */}
+          {/*       <div className="flex items-center gap-3"> */}
+          {/*         <div className="text-2xl">📷</div> */}
+          {/*         <h2 className="text-2xl font-bold text-gray-900 dark:text-white"> */}
+          {/*           Latest Photos */}
+          {/*         </h2> */}
+          {/*         <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-sm px-2 py-1 rounded-full"> */}
+          {/*           {data.photos.filter(p => p.metadata.featured).length > 0 && '⭐ '} */}
+          {/*           {data.photos.length} new */}
+          {/*         </span> */}
+          {/*       </div> */}
+          {/*       <Link */}
+          {/*         href="/photos" */}
+          {/*         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 font-medium" */}
+          {/*       > */}
+          {/*         View all → */}
+          {/*       </Link> */}
+          {/*     </div> */}
+          {/*     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"> */}
+          {/*       {data.photos.map((photo) => ( */}
+          {/*         <PhotoTile key={photo._id} photo={photo} /> */}
+          {/*       ))} */}
+          {/*     </div> */}
+          {/*   </section> */}
+          {/* )} */}
         </div>
 
         {/* Empty State */}
         {((activeSection === 'videos' && data.videos.length === 0) ||
-          (activeSection === 'photos' && data.photos.length === 0) ||
           (activeSection === 'galleries' && data.galleries.length === 0) ||
           (activeSection === 'news' && data.news.length === 0)) && (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">
               {activeSection === 'videos' && '📹'}
-              {activeSection === 'photos' && '📷'}
+              {/* {activeSection === 'photos' && '📷'} */}
               {activeSection === 'galleries' && '🖼️'}
               {activeSection === 'news' && '📰'}
             </div>
