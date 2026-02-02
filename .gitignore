@@ -149,5 +149,6 @@ db.backup
 mongodb.dump
 backup*
 mongo*
+plan.md
 
 tailscale-serve/
