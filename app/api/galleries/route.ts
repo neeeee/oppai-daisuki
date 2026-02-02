@@ -44,8 +44,12 @@ export async function GET(request: NextRequest) {
       query.isPublic = true;
     }
     if (category) query.category = category;
-    if (idol) query.idol = idol;
-    if (genre) query.genre = genre;
+    if (idol && mongoose.Types.ObjectId.isValid(idol)) {
+      query.idol = new mongoose.Types.ObjectId(idol);
+    }
+    if (genre && mongoose.Types.ObjectId.isValid(genre)) {
+      query.genres = new mongoose.Types.ObjectId(genre);
+    }
     if (tags) {
       const tagArray = tags.split(",").map((t) => t.trim());
       query.tags = { $in: tagArray };
@@ -218,6 +222,10 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
 
+    // Exclude photos from direct update - photos are managed as separate Photo documents
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { photos, ...updateData } = body;
+
     // Get current gallery to compare references
     const current = await Gallery.findById(id);
     if (!current) {
@@ -230,7 +238,7 @@ export async function PUT(request: NextRequest) {
     const oldGenres = (current.genres || []).map((g: mongoose.Types.ObjectId) => g.toString());
 
     // Update gallery
-    const updated = await Gallery.findByIdAndUpdate(id, body, {
+    const updated = await Gallery.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     })

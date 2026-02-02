@@ -20,7 +20,7 @@ interface Photo {
   };
   fileSize?: number;
   captureDate?: string;
-  uploadDate: string;
+  createdAt: string;
   viewCount: number;
   likeCount: number;
   downloadCount: number;
@@ -71,7 +71,7 @@ export default function PhotosPage() {
   const [tagInput, setTagInput] = useState("");
   const [filterTag, setFilterTag] = useState("");
 
-  const [sortBy, setSortBy] = useState("uploadDate");
+  const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showAdult, setShowAdult] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -287,7 +287,7 @@ export default function PhotosPage() {
               onChange={(e) => setSortBy(e.target.value)}
               className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
             >
-              <option value="uploadDate">Sort by Upload Date</option>
+              <option value="createdAt">Sort by Upload Date</option>
               <option value="title">Sort by Title</option>
             </select>
 

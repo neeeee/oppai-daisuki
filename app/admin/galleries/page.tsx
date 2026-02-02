@@ -38,7 +38,7 @@ type Gallery = {
   viewCount?: number;
   likeCount?: number;
   idol?: IdolOption | string | null;
-  genre?: GenreOption | string | null;
+  genres?: GenreOption[] | string[] | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -55,7 +55,7 @@ type GalleryForm = {
   location?: string;
   dateTaken?: string; // yyyy-MM-dd
   idol?: string | null;
-  genre?: string | null;
+  genres?: string[];
 };
 
 type GalleryPayload = {
@@ -70,7 +70,7 @@ type GalleryPayload = {
   location?: string;
   dateTaken?: Date;
   idol?: string | null;
-  genre?: string | null;
+  genres?: string[];
 };
 
 export default function AdminGalleriesPage() {
@@ -113,7 +113,7 @@ export default function AdminGalleriesPage() {
     location: "",
     dateTaken: "",
     idol: null,
-    genre: null,
+    genres: [],
   };
   const [form, setForm] = useState<GalleryForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -221,6 +221,10 @@ export default function AdminGalleriesPage() {
           typeof p === "string" ? p : p.imageUrl
         )
       : [];
+    // Extract genre IDs from genres array
+    const genreIds = Array.isArray(g.genres)
+      ? g.genres.map((genre) => typeof genre === "string" ? genre : genre._id)
+      : [];
     setEditingId(g._id);
     setForm({
       title: g.title || "",
@@ -234,7 +238,7 @@ export default function AdminGalleriesPage() {
       location: g.location || "",
       dateTaken: g.dateTaken ? formatDateInput(g.dateTaken) : "",
       idol: (typeof g.idol === "string" ? g.idol : g.idol?._id) || null,
-      genre: (typeof g.genre === "string" ? g.genre : g.genre?._id) || null,
+      genres: genreIds,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -405,7 +409,7 @@ export default function AdminGalleriesPage() {
       location: form.location?.trim() || "",
       dateTaken: form.dateTaken ? new Date(form.dateTaken) : undefined,
       idol: form.idol || undefined,
-      genre: form.genre || undefined,
+      genres: form.genres?.length ? form.genres : undefined,
     };
 
     const saved = await upsertGallery(payload);
@@ -464,13 +468,15 @@ export default function AdminGalleriesPage() {
     }
     return idol.stageName || idol.name || "—";
   };
-  const genreName = (genre?: GenreOption | string | null) => {
-    if (!genre) return "—";
-    if (typeof genre === "string") {
-      const found = genres.find((g) => g._id === genre);
-      return found ? found.name : "—";
-    }
-    return genre.name || "—";
+  const genreNames = (genreList?: GenreOption[] | string[] | null) => {
+    if (!genreList || genreList.length === 0) return "—";
+    return genreList.map((genre) => {
+      if (typeof genre === "string") {
+        const found = genres.find((g) => g._id === genre);
+        return found ? found.name : genre;
+      }
+      return genre.name;
+    }).join(", ") || "—";
   };
 
   return (
@@ -780,9 +786,9 @@ export default function AdminGalleriesPage() {
                 Genre
               </label>
               <select
-                value={form.genre || ""}
+                value={form.genres?.[0] || ""}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, genre: e.target.value || null }))
+                  setForm((p) => ({ ...p, genres: e.target.value ? [e.target.value] : [] }))
                 }
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               >
@@ -1044,7 +1050,7 @@ export default function AdminGalleriesPage() {
 
                 <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
                   <div>Idol: {idolName(String(g.idol))}</div>
-                  <div>Genre: {genreName(String(g.genre))}</div>
+                  <div>Genre: {genreNames(g.genres)}</div>
                   <div>Category: {g.category || "—"}</div>
                   <div>Photographer: {g.photographer || "—"}</div>
                   <div>Location: {g.location || "—"}</div>

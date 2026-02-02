@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const tags = searchParams.get("tags");
     const tag = searchParams.get("tag");
     const search = searchParams.get("search");
-    const sortBy = searchParams.get("sortBy") || "uploadDate";
+    const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
     const isAdult = searchParams.get("isAdult");
     const includeStats = searchParams.get("includeStats") === "true";

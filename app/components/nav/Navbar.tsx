@@ -6,7 +6,6 @@ import ThemeToggle  from "../theme/ThemeToggle";
 
 const pages = [
   { title: "Videos", href: "/videos" },
-  { title: "Photos", href: "/photos" },
   { title: "Galleries", href: "/galleries" },
   { title: "Idols", href: "/idols" },
   { title: "Genres", href: "/genres" },

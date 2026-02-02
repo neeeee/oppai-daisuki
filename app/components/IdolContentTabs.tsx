@@ -15,19 +15,19 @@ interface Video {
   createdAt: string;
 }
 
-interface Photo {
-  _id: string;
-  title: string;
-  imageUrl: string;
-  viewCount: number;
-  createdAt: string;
-}
+// interface Photo {
+//   _id: string;
+//   title: string;
+//   imageUrl: string;
+//   viewCount: number;
+//   createdAt: string;
+// }
 
 interface Gallery {
   _id: string;
   title: string;
   description?: string;
-  coverImage: string;
+  coverPhoto?: string;
   photoCount: number;
   viewCount: number;
   createdAt: string;
@@ -35,10 +35,10 @@ interface Gallery {
 
 interface IdolContentTabsProps {
   idolId: string;
-  initialTab?: "videos" | "photos" | "galleries";
+  initialTab?: "videos" | "galleries";
 }
 
-type Tab = "videos" | "photos" | "galleries";
+type Tab = "videos" | "galleries";
 
 export default function IdolContentTabs({
   idolId,
@@ -53,9 +53,9 @@ export default function IdolContentTabs({
   const [videosTotalPages, setVideosTotalPages] = useState(1);
 
   // Photos state
-  const [photos, setPhotos] = useState<Photo[]>([]);
-  const [photosPage, setPhotosPage] = useState(1);
-  const [photosTotalPages, setPhotosTotalPages] = useState(1);
+  // const [photos, setPhotos] = useState<Photo[]>([]);
+  // const [photosPage, setPhotosPage] = useState(1);
+  // const [photosTotalPages, setPhotosTotalPages] = useState(1);
 
   // Galleries state
   const [galleries, setGalleries] = useState<Gallery[]>([]);
@@ -91,30 +91,30 @@ export default function IdolContentTabs({
   }, [idolId, videosPage]);
 
   // Fetch photos
-  const fetchPhotos = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: photosPage.toString(),
-        limit: ITEMS_PER_PAGE.toString(),
-        idol: idolId,
-        sortBy: "createdAt",
-        sortOrder: "desc",
-      });
-
-      const response = await fetch(`/api/photos?${params.toString()}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setPhotos(data.data || []);
-        setPhotosTotalPages(data.pagination?.totalPages || 1);
-      }
-    } catch (error) {
-      logger.error("Error fetching photos:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [idolId, photosPage]);
+  // const fetchPhotos = useCallback(async () => {
+  //   setLoading(true);
+  //   try {
+  //     const params = new URLSearchParams({
+  //       page: photosPage.toString(),
+  //       limit: ITEMS_PER_PAGE.toString(),
+  //       idol: idolId,
+  //       sortBy: "createdAt",
+  //       sortOrder: "desc",
+  //     });
+  //
+  //     const response = await fetch(`/api/photos?${params.toString()}`);
+  //     const data = await response.json();
+  //
+  //     if (data.success) {
+  //       setPhotos(data.data || []);
+  //       setPhotosTotalPages(data.pagination?.totalPages || 1);
+  //     }
+  //   } catch (error) {
+  //     logger.error("Error fetching photos:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, [idolId, photosPage]);
 
   // Fetch galleries
   const fetchGalleries = useCallback(async () => {
@@ -146,12 +146,13 @@ export default function IdolContentTabs({
   useEffect(() => {
     if (activeTab === "videos") {
       fetchVideos();
-    } else if (activeTab === "photos") {
-      fetchPhotos();
-    } else if (activeTab === "galleries") {
+    } 
+    // else if (activeTab === "photos") {
+    //   fetchPhotos(); }
+    else if (activeTab === "galleries") {
       fetchGalleries();
     }
-  }, [activeTab, fetchVideos, fetchPhotos, fetchGalleries]);
+  }, [activeTab, fetchVideos, fetchGalleries]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -162,7 +163,8 @@ export default function IdolContentTabs({
     });
   };
 
-  const formatNumber = (num: number) => {
+  const formatNumber = (num?: number) => {
+    if (num == null) return "0";
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
     return num.toString();
@@ -182,16 +184,6 @@ export default function IdolContentTabs({
             }`}
           >
             Videos
-          </button>
-          <button
-            onClick={() => setActiveTab("photos")}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === "photos"
-                ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-            }`}
-          >
-            Photos
           </button>
           <button
             onClick={() => setActiveTab("galleries")}
@@ -264,51 +256,6 @@ export default function IdolContentTabs({
                 )}
               </>
             )}
-
-            {/* Photos Tab */}
-            {activeTab === "photos" && (
-              <>
-                {photos.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                    No photos found
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
-                      {photos.map((photo) => (
-                        <Link
-                          key={photo._id}
-                          href={`/photos/${photo._id}`}
-                          className="group"
-                        >
-                          <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                            <Image
-                              src={photo.imageUrl}
-                              alt={photo.title}
-                              fill
-                              className="object-cover group-hover:scale-110 transition-transform duration-200"
-                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 16vw"
-                            />
-                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center">
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs">
-                                {formatNumber(photo.viewCount)} views
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                    <Pagination
-                      currentPage={photosPage}
-                      totalPages={photosTotalPages}
-                      onPageChange={setPhotosPage}
-                      className="mt-8"
-                    />
-                  </>
-                )}
-              </>
-            )}
-
             {/* Galleries Tab */}
             {activeTab === "galleries" && (
               <>
@@ -326,13 +273,19 @@ export default function IdolContentTabs({
                           className="group"
                         >
                           <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 mb-3">
-                            <Image
-                              src={gallery.coverImage}
-                              alt={gallery.title}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-200"
-                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                            />
+                            {gallery.coverPhoto ? (
+                              <Image
+                                src={gallery.coverPhoto}
+                                alt={gallery.title}
+                                fill
+                                className="object-cover group-hover:scale-105 transition-transform duration-200"
+                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                No cover
+                              </div>
+                            )}
                             <div className="absolute top-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
                               {gallery.photoCount} photos
                             </div>
