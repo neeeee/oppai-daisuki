@@ -219,8 +219,9 @@ export default function GalleryDetailPage() {
                       alt={photo.altText || photo.title || `Photo ${index + 1}`}
                       fill
                       className="w-full h-full object-cover transition-opacity group-hover:opacity-90"
-                      sizes="90vw"
-                      priority
+                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                      priority={index < 6}
+                      loading={index < 6 ? "eager" : "lazy"}
                     />
 
                     {/* Hover overlay */}

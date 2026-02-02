@@ -1,6 +1,7 @@
 // src/app/api/galleries/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import dbConnect from "@/lib/mongodb";
 import Gallery from "@/models/Gallery";
 import Idol from "@/models/Idol";
@@ -226,7 +227,7 @@ export async function PUT(request: NextRequest) {
       );
     }
     const oldIdol = current.idol?.toString() || null;
-    const oldGenre = current.genre?.toString() || null;
+    const oldGenres = (current.genres || []).map((g: mongoose.Types.ObjectId) => g.toString());
 
     // Update gallery
     const updated = await Gallery.findByIdAndUpdate(id, body, {
@@ -234,7 +235,7 @@ export async function PUT(request: NextRequest) {
       runValidators: true,
     })
       .populate("idol", "name stageName slug profileImage")
-      .populate("genre", "name slug color");
+      .populate("genres", "name slug color");
 
     if (!updated) {
       return NextResponse.json(
@@ -246,8 +247,10 @@ export async function PUT(request: NextRequest) {
     // Adjust related counters if references changed
     const newIdol =
       typeof body.idol !== "undefined" ? (body.idol ?? null) : oldIdol;
-    const newGenre =
-      typeof body.genre !== "undefined" ? (body.genre ?? null) : oldGenre;
+    const newGenres: string[] =
+      typeof body.genres !== "undefined" 
+        ? (body.genres || []).map((g: string) => g.toString()) 
+        : oldGenres;
 
     const ops: Promise<unknown>[] = [];
 
@@ -264,21 +267,23 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    if (oldGenre !== newGenre) {
-      if (oldGenre) {
-        ops.push(
-          Genre.findByIdAndUpdate(oldGenre, {
-            $inc: { "contentCounts.galleries": -1 },
-          }),
-        );
-      }
-      if (newGenre) {
-        ops.push(
-          Genre.findByIdAndUpdate(newGenre, {
-            $inc: { "contentCounts.galleries": 1 },
-          }),
-        );
-      }
+    // Handle genres array changes
+    const removedGenres = oldGenres.filter((g: string) => !newGenres.includes(g));
+    const addedGenres = newGenres.filter((g: string) => !oldGenres.includes(g));
+
+    for (const genreId of removedGenres) {
+      ops.push(
+        Genre.findByIdAndUpdate(genreId, {
+          $inc: { "contentCounts.galleries": -1 },
+        }),
+      );
+    }
+    for (const genreId of addedGenres) {
+      ops.push(
+        Genre.findByIdAndUpdate(genreId, {
+          $inc: { "contentCounts.galleries": 1 },
+        }),
+      );
     }
 
     if (ops.length > 0) {

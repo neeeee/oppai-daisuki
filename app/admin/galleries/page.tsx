@@ -478,8 +478,8 @@ export default function AdminGalleriesPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Galleries CMS</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Galleries CMS</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">
             Create, edit, and manage photo galleries (linked to idols and
             genres)
           </p>
@@ -495,7 +495,7 @@ export default function AdminGalleriesPage() {
               </button>
               <button
                 onClick={clearSelection}
-                className="px-4 py-2 rounded-md border hover:bg-gray-50"
+                className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
               >
                 Clear Selection
               </button>
@@ -505,15 +505,15 @@ export default function AdminGalleriesPage() {
       </div>
 
       {/* Editor */}
-      <div className="bg-white rounded-lg shadow border">
-        <div className="px-4 py-3 border-b flex items-center justify-between">
-          <div className="font-semibold">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="font-semibold text-gray-900 dark:text-white">
             {editingId ? "Edit Gallery" : "Create Gallery"}
           </div>
           {editingId && (
             <button
               onClick={resetForm}
-              className="text-sm text-gray-600 hover:underline"
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:underline"
             >
               New gallery
             </button>
@@ -649,21 +649,29 @@ export default function AdminGalleriesPage() {
             />
 
             {!!form.photos?.length && (
-              <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                {form.photos.map((url) => (
-                  <div
-                    key={url}
-                    className="relative w-full aspect-square border rounded overflow-hidden"
-                  >
-                    <Image
-                      src={url}
-                      alt="Photo"
-                      fill
-                      className="object-cover border"
-                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, 16vw"
-                    />
-                  </div>
-                ))}
+              <div className="mt-3 max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                  {form.photos.map((url, idx) => (
+                    <div
+                      key={url}
+                      className="relative w-full aspect-square border border-gray-300 dark:border-gray-600 rounded overflow-hidden bg-gray-100 dark:bg-gray-700"
+                    >
+                      <Image
+                        src={url}
+                        alt="Photo"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, 16vw"
+                        loading={idx < 12 ? "eager" : "lazy"}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = "none";
+                          target.parentElement?.classList.add("image-error");
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -768,7 +776,7 @@ export default function AdminGalleriesPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Genre
               </label>
               <select
@@ -776,7 +784,7 @@ export default function AdminGalleriesPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, genre: e.target.value || null }))
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               >
                 <option value="">Unassigned</option>
                 {loadingTaxonomies ? (
@@ -827,10 +835,10 @@ export default function AdminGalleriesPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 border">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
           <div className="md:col-span-2">
-            <label className="text-sm text-gray-700">Search</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">Search</label>
             <input
               type="text"
               value={search}
@@ -839,19 +847,19 @@ export default function AdminGalleriesPage() {
                 setPage(1);
               }}
               placeholder="Search title/description/tags..."
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Idol</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">Idol</label>
             <select
               value={idolFilter}
               onChange={(e) => {
                 setIdolFilter(e.target.value);
                 setPage(1);
               }}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="all">All</option>
               {idols.map((i) => (
@@ -863,14 +871,14 @@ export default function AdminGalleriesPage() {
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Genre</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">Genre</label>
             <select
               value={genreFilter}
               onChange={(e) => {
                 setGenreFilter(e.target.value);
                 setPage(1);
               }}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="all">All</option>
               {genres.map((g) => (
@@ -882,14 +890,14 @@ export default function AdminGalleriesPage() {
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Category</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">Category</label>
             <select
               value={categoryFilter}
               onChange={(e) => {
                 setCategoryFilter(e.target.value);
                 setPage(1);
               }}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="all">All</option>
               {uniqueCategories.map((c) => (
@@ -901,7 +909,7 @@ export default function AdminGalleriesPage() {
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Sort By</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">Sort By</label>
             <select
               value={sortBy}
               onChange={(e) => {
@@ -914,7 +922,7 @@ export default function AdminGalleriesPage() {
                 );
                 setPage(1);
               }}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="createdAt">Created At</option>
               <option value="updatedAt">Updated At</option>
@@ -924,14 +932,14 @@ export default function AdminGalleriesPage() {
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Direction</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">Direction</label>
             <select
               value={sortOrder}
               onChange={(e) => {
                 setSortOrder(e.target.value as "asc" | "desc");
                 setPage(1);
               }}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="desc">Desc</option>
               <option value="asc">Asc</option>
@@ -950,19 +958,19 @@ export default function AdminGalleriesPage() {
               setSortOrder("desc");
               setPage(1);
             }}
-            className="px-4 py-2 rounded-md border hover:bg-gray-50"
+            className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
           >
             Reset
           </button>
           <button
             onClick={selectAllOnPage}
-            className="px-4 py-2 rounded-md border hover:bg-gray-50"
+            className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
           >
             Select All On Page
           </button>
           <button
             onClick={clearSelection}
-            className="px-4 py-2 rounded-md border hover:bg-gray-50"
+            className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
           >
             Clear Selection
           </button>
@@ -971,7 +979,7 @@ export default function AdminGalleriesPage() {
 
       {/* Stats */}
       {stats && (
-        <div className="bg-white rounded-lg shadow border p-4 text-sm text-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4 text-sm text-gray-700 dark:text-gray-300">
           <div className="flex gap-6">
             <div>Total: {stats.totalGalleries}</div>
             <div>Public: {stats.publicCount}</div>
@@ -981,22 +989,22 @@ export default function AdminGalleriesPage() {
       )}
 
       {/* List */}
-      <div className="bg-white rounded-lg shadow border overflow-hidden">
-        <div className="px-4 py-3 border-b flex items-center justify-between">
-          <div className="font-semibold">Galleries</div>
-          <div className="text-sm text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="font-semibold text-gray-900 dark:text-white">Galleries</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             {loading ? "Loading..." : `${totalItems} total`}
           </div>
         </div>
 
-        <div className="divide-y">
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {!loading && galleries.length === 0 && (
-            <div className="px-4 py-8 text-center text-gray-500">
+            <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
               No galleries found.
             </div>
           )}
 
-          {galleries.map((g) => (
+          {galleries.map((g, idx) => (
             <div key={g._id} className="px-4 py-3 flex items-start gap-4">
               <input
                 type="checkbox"
@@ -1005,35 +1013,36 @@ export default function AdminGalleriesPage() {
                 onChange={() => toggleSelect(g._id)}
               />
               {g.coverPhoto ? (
-                <div className="relative w-28 h-18 rounded border overflow-hidden">
+                <div className="relative w-28 h-18 rounded border border-gray-300 dark:border-gray-600 overflow-hidden bg-gray-100 dark:bg-gray-700">
                   <Image
                     src={g.coverPhoto}
                     alt={g.title}
                     fill
                     className="object-cover"
                     sizes="112px"
+                    loading={idx < 6 ? "eager" : "lazy"}
                   />
                 </div>
               ) : (
-                <div className="w-28 h-18 rounded border bg-gray-50 grid place-items-center text-gray-400 text-xs">
+                <div className="w-28 h-18 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 grid place-items-center text-gray-400 dark:text-gray-500 text-xs">
                   No cover
                 </div>
               )}
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <div className="font-medium truncate">{g.title}</div>
+                  <div className="font-medium truncate text-gray-900 dark:text-white">{g.title}</div>
                   {!g.isPublic && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-700">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                       Private
                     </span>
                   )}
-                  <span className="text-[10px] px-1.5 py-0.5 rounded border text-gray-600">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400">
                     Photos {g.photoCount ?? 0}
                   </span>
                 </div>
 
-                <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1 text-xs text-gray-600">
+                <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
                   <div>Idol: {idolName(String(g.idol))}</div>
                   <div>Genre: {genreName(String(g.genre))}</div>
                   <div>Category: {g.category || "—"}</div>
@@ -1050,20 +1059,20 @@ export default function AdminGalleriesPage() {
                     {g.tags!.slice(0, 8).map((t) => (
                       <span
                         key={t}
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700"
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                       >
                         #{t}
                       </span>
                     ))}
                     {(g.tags!.length || 0) > 8 && (
-                      <span className="text-[10px] text-gray-500">
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400">
                         +{(g.tags!.length || 0) - 8}
                       </span>
                     )}
                   </div>
                 )}
 
-                <div className="mt-1 text-xs text-gray-500">
+                <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Created: {formatDate(g.createdAt)} • Updated:{" "}
                   {formatDate(g.updatedAt)}
                 </div>
@@ -1089,22 +1098,22 @@ export default function AdminGalleriesPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-4 py-3 border-t flex items-center justify-between text-sm">
-            <div>
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-sm">
+            <div className="text-gray-700 dark:text-gray-300">
               Page {page} of {totalPages}
             </div>
             <div className="flex items-center gap-2">
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="px-3 py-1.5 rounded border hover:bg-gray-50 disabled:opacity-50"
+                className="px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 text-gray-700 dark:text-gray-300"
               >
                 Previous
               </button>
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="px-3 py-1.5 rounded border hover:bg-gray-50 disabled:opacity-50"
+                className="px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 text-gray-700 dark:text-gray-300"
               >
                 Next
               </button>
