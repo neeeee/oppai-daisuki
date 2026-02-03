@@ -12,13 +12,11 @@ export default function AdminDashboard() {
 
   const [counts, setCounts] = useState<{
     videos: number | null;
-    photos: number | null;
     galleries: number | null;
     idols: number | null;
     loading: boolean;
   }>({
     videos: null,
-    photos: null,
     galleries: null,
     idols: null,
     loading: true,
@@ -38,16 +36,14 @@ export default function AdminDashboard() {
 
   const fetchCounts = async () => {
     try {
-      const [videosRes, photosRes, galleriesRes, idolsRes] = await Promise.all([
+      const [videosRes, galleriesRes, idolsRes] = await Promise.all([
         fetch("/api/videos?limit=1").then((res) => res.json()),
-        fetch("/api/photos?limit=1").then((res) => res.json()),
         fetch("/api/galleries?limit=1").then((res) => res.json()),
         fetch("/api/idols?limit=1").then((res) => res.json()),
       ]);
 
       setCounts({
         videos: videosRes.success ? videosRes.pagination?.totalItems || 0 : 0,
-        photos: photosRes.success ? photosRes.pagination?.totalItems || 0 : 0,
         galleries: galleriesRes.success
           ? galleriesRes.pagination?.totalItems || 0
           : 0,
@@ -58,7 +54,6 @@ export default function AdminDashboard() {
       logger.error("Error fetching counts:", error);
       setCounts({
         videos: 0,
-        photos: 0,
         galleries: 0,
         idols: 0,
         loading: false,
@@ -85,13 +80,6 @@ export default function AdminDashboard() {
       icon: "📺",
       href: "/admin/videos",
       color: "bg-red-500",
-    },
-    {
-      name: "Photos",
-      description: "Upload and manage photo collections",
-      icon: "📸",
-      href: "/admin/photos",
-      color: "bg-blue-500",
     },
     {
       name: "Galleries",
@@ -146,7 +134,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
@@ -162,23 +150,6 @@ export default function AdminDashboard() {
                 </p>
               </div>
               <div className="text-3xl">📺</div>
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Total Photos
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {counts.loading ? (
-                    <span className="animate-pulse bg-gray-200 rounded w-8 h-8 inline-block"></span>
-                  ) : (
-                    (counts.photos ?? 0).toLocaleString()
-                  )}
-                </p>
-              </div>
-              <div className="text-3xl">📸</div>
             </div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 transition-colors">

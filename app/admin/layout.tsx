@@ -29,7 +29,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     { href: "/admin/idols", label: "Idols" },
     { href: "/admin/genres", label: "Genres" },
     { href: "/admin/galleries", label: "Galleries" },
-    { href: "/admin/photos", label: "Photos" },
   ];
 
   useEffect(() => {

@@ -738,54 +738,8 @@ export default function AdminGalleriesPage() {
             />
           </div>
 
-          {/* Meta grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Category
-              </label>
-              <input
-                type="text"
-                value={form.category || ""}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, category: e.target.value }))
-                }
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                placeholder="e.g., Portrait, Landscape"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Photographer
-              </label>
-              <input
-                type="text"
-                value={form.photographer || ""}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, photographer: e.target.value }))
-                }
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                placeholder="Photographer name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Location
-              </label>
-              <input
-                type="text"
-                value={form.location || ""}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, location: e.target.value }))
-                }
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                placeholder="Photo location"
-              />
-            </div>
-          </div>
-
           {/* Date + Relations */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Date Taken
