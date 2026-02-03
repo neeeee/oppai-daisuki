@@ -4,7 +4,7 @@ import logger from "@/lib/utils/logger";
 
 import { useEffect, useMemo, useState } from "react";
 import { UploadDropzone } from "@/lib/uploadthing";
-import TagInput from "../../components/admin/TagInput";
+import TagInput from "@/components/admin/TagInput";
 
 type IdolOption = {
   _id: string;
@@ -167,7 +167,7 @@ export default function AdminGalleriesPage() {
         const params = new URLSearchParams();
         params.set("page", String(page));
         params.set("limit", String(limit));
-        params.set("includePrivate", "true"); // show both public and private in admin
+        params.set("includePrivate", "true");
         params.set("includeStats", "true");
         params.set("sortBy", sortBy);
         params.set("sortOrder", sortOrder);
@@ -221,6 +221,7 @@ export default function AdminGalleriesPage() {
           typeof p === "string" ? p : p.imageUrl
         )
       : [];
+
     // Extract genre IDs from genres array
     const genreIds = Array.isArray(g.genres)
       ? g.genres.map((genre) => typeof genre === "string" ? genre : genre._id)
@@ -418,6 +419,35 @@ export default function AdminGalleriesPage() {
     resetForm();
     await refreshList();
     alert(editingId ? "Gallery updated" : "Gallery created");
+  };
+
+  // Delete a photo from form and UploadThing
+  const handleDeletePhoto = async (url: string) => {
+    if (!confirm("Delete this photo? This will also remove the file from storage.")) return;
+    
+    try {
+      // Remove from form state immediately for better UX
+      setForm((p) => ({
+        ...p,
+        photos: p.photos.filter((u) => u !== url),
+      }));
+
+      // Delete from UploadThing
+      const res = await fetch("/api/uploadthing/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urls: [url] }),
+      });
+      
+      const json = await res.json();
+      if (!json?.success) {
+        logger.warn("Failed to delete file from storage:", json?.error);
+        // Don't restore the photo - it's already removed from the form
+        // The user can re-upload if needed
+      }
+    } catch (e) {
+      logger.error("Error deleting photo:", e);
+    }
   };
 
   // Helpers
@@ -660,7 +690,7 @@ export default function AdminGalleriesPage() {
                   {form.photos.map((url, idx) => (
                     <div
                       key={url}
-                      className="relative w-full aspect-square border border-gray-300 dark:border-gray-600 rounded overflow-hidden bg-gray-100 dark:bg-gray-700"
+                      className="group relative w-full aspect-square border border-gray-300 dark:border-gray-600 rounded overflow-hidden bg-gray-100 dark:bg-gray-700"
                     >
                       <Image
                         src={url}
@@ -675,6 +705,17 @@ export default function AdminGalleriesPage() {
                           target.parentElement?.classList.add("image-error");
                         }}
                       />
+                      {/* Delete button overlay */}
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePhoto(url)}
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-700 shadow-md"
+                        title="Delete photo"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                     </div>
                   ))}
                 </div>
