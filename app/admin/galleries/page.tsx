@@ -5,6 +5,7 @@ import logger from "@/lib/utils/logger";
 import { useEffect, useMemo, useState } from "react";
 import { UploadDropzone } from "@/lib/uploadthing";
 import TagInput from "@/components/admin/TagInput";
+import AlertModal, { useAlertModal } from "@/components/admin/AlertModal";
 
 type IdolOption = {
   _id: string;
@@ -134,6 +135,9 @@ export default function AdminGalleriesPage() {
     [totalItems, limit],
   );
 
+  // Alert modal
+  const { modalState, showAlert, closeAlert } = useAlertModal();
+
   // Load idols and genres
   useEffect(() => {
     const loadTaxonomies = async () => {
@@ -261,16 +265,17 @@ export default function AdminGalleriesPage() {
       } = await res.json();
       if (!json?.success) {
         if (json?.blockingGalleries?.length) {
-          alert(
+          showAlert(
             `Cannot delete. Some galleries contain photos:\n` +
               json.blockingGalleries
                 .map(
                   (b) => `- ${b.title || b._id} (${b.photoCount || 0} photos)`,
                 )
                 .join("\n"),
+            "error"
           );
         } else {
-          alert(json?.error || "Failed to delete gallery");
+          showAlert(json?.error || "Failed to delete gallery", "error");
         }
         return;
       }
@@ -282,7 +287,7 @@ export default function AdminGalleriesPage() {
       });
     } catch (e) {
       logger.error("Delete failed", e);
-      alert("Delete failed");
+      showAlert("Delete failed", "error");
     }
   };
 
@@ -305,16 +310,17 @@ export default function AdminGalleriesPage() {
       } = await res.json();
       if (!json?.success) {
         if (json?.blockingGalleries?.length) {
-          alert(
+          showAlert(
             `Cannot delete. Some galleries contain photos:\n` +
               json.blockingGalleries
                 .map(
                   (b) => `- ${b.title || b._id} (${b.photoCount || 0} photos)`,
                 )
                 .join("\n"),
+            "error"
           );
         } else {
-          alert(json?.error || "Failed to delete selected galleries");
+          showAlert(json?.error || "Failed to delete selected galleries", "error");
         }
         return;
       }
@@ -322,7 +328,7 @@ export default function AdminGalleriesPage() {
       setSelectedIds(new Set());
     } catch (e) {
       logger.error("Bulk delete failed", e);
-      alert("Bulk delete failed");
+      showAlert("Bulk delete failed", "error");
     }
   };
 
@@ -375,13 +381,13 @@ export default function AdminGalleriesPage() {
       }
       const json = await res.json();
       if (!json?.success) {
-        alert(json?.error || "Save failed");
+        showAlert(json?.error || "Save failed", "error");
         return null;
       }
       return json.data as Gallery;
     } catch (e) {
       logger.error("Save failed", e);
-      alert("Save failed");
+      showAlert("Save failed", "error");
       return null;
     } finally {
       setIsSubmitting(false);
@@ -392,7 +398,7 @@ export default function AdminGalleriesPage() {
     e.preventDefault();
 
     if (!form.title.trim()) {
-      alert("Title is required");
+      showAlert("Title is required", "warning");
       return;
     }
 
@@ -416,9 +422,10 @@ export default function AdminGalleriesPage() {
     const saved = await upsertGallery(payload);
     if (!saved) return;
 
+    const isUpdate = !!editingId;
     resetForm();
     await refreshList();
-    alert(editingId ? "Gallery updated" : "Gallery created");
+    showAlert(isUpdate ? "Gallery updated" : "Gallery created", "success");
   };
 
   // Delete a photo from form and UploadThing
@@ -641,11 +648,11 @@ export default function AdminGalleriesPage() {
                           ...p,
                           coverPhoto: res[0].ufsUrl,
                         }));
-                        alert("✅ Cover photo uploaded successfully!");
+                        showAlert("Cover photo uploaded successfully!", "success");
                       }
                     }}
                     onUploadError={(error: Error) => {
-                      alert(`❌ Cover photo upload failed: ${error.message}`);
+                      showAlert(`Cover photo upload failed: ${error.message}`, "error");
                     }}
                     appearance={{
                       button:
@@ -674,9 +681,9 @@ export default function AdminGalleriesPage() {
                   ...p,
                   photos: [...(p.photos || []), ...urls],
                 }));
-                alert(`✅ ${urls.length} photos uploaded`);
+                showAlert(`${urls.length} photos uploaded`, "success");
               }}
-              onUploadError={(err) => alert(`❌ Upload failed: ${err.message}`)}
+              onUploadError={(err) => showAlert(`Upload failed: ${err.message}`, "error")}
               appearance={{
                 button:
                   "bg-indigo-600 text-white hover:bg-indigo-700 ut-uploading:cursor-not-allowed",
@@ -1122,6 +1129,14 @@ export default function AdminGalleriesPage() {
           </div>
         )}
       </div>
+
+      <AlertModal
+        isOpen={modalState.isOpen}
+        onClose={closeAlert}
+        message={modalState.message}
+        type={modalState.type}
+        title={modalState.title}
+      />
     </div>
   );
 }

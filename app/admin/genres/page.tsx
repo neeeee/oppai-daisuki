@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { UploadDropzone } from "@/lib/uploadthing";
 import TagInput from "../../components/admin/TagInput";
+import AlertModal, { useAlertModal } from "@/components/admin/AlertModal";
 
 type Genre = {
   _id: string;
@@ -125,6 +126,9 @@ export default function AdminGenresPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Alert modal
+  const { modalState, showAlert, closeAlert } = useAlertModal();
+
   // Stats (optional)
   const [stats, setStats] = useState<{
     totalGenres: number;
@@ -235,7 +239,7 @@ export default function AdminGenresPage() {
       });
       const json = await res.json();
       if (!json?.success) {
-        alert(json?.error || "Failed to delete genre");
+        showAlert(json?.error || "Failed to delete genre", "error");
         return;
       }
       await refreshList();
@@ -246,7 +250,7 @@ export default function AdminGenresPage() {
       });
     } catch (e) {
       logger.error("Delete failed", e);
-      alert("Delete failed");
+      showAlert("Delete failed", "error");
     }
   };
 
@@ -260,14 +264,14 @@ export default function AdminGenresPage() {
       });
       const json = await res.json();
       if (!json?.success) {
-        alert(json?.error || "Failed to delete selected genres");
+        showAlert(json?.error || "Failed to delete selected genres", "error");
         return;
       }
       await refreshList();
       setSelectedIds(new Set());
     } catch (e) {
       logger.error("Bulk delete failed", e);
-      alert("Bulk delete failed");
+      showAlert("Bulk delete failed", "error");
     }
   };
 
@@ -315,13 +319,13 @@ export default function AdminGenresPage() {
       }
       const json = await res.json();
       if (!json?.success) {
-        alert(json?.error || "Save failed");
+        showAlert(json?.error || "Save failed", "error");
         return null;
       }
       return json.data as Genre;
     } catch (e) {
       logger.error("Save failed", e);
-      alert("Save failed");
+      showAlert("Save failed", "error");
       return null;
     } finally {
       setIsSubmitting(false);
@@ -332,13 +336,13 @@ export default function AdminGenresPage() {
     e.preventDefault();
 
     if (!form.name.trim()) {
-      alert("Name is required");
+      showAlert("Name is required", "warning");
       return;
     }
 
     // Prevent selecting itself as parent on edit
     if (editingId && form.parentGenre && form.parentGenre === editingId) {
-      alert("A genre cannot be its own parent");
+      showAlert("A genre cannot be its own parent", "warning");
       return;
     }
 
@@ -366,9 +370,10 @@ export default function AdminGenresPage() {
     const saved = await upsertGenre(payload);
     if (!saved) return;
 
+    const isUpdate = !!editingId;
     resetForm();
     await refreshList();
-    alert(editingId ? "Genre updated" : "Genre created");
+    showAlert(isUpdate ? "Genre updated" : "Genre created", "success");
   };
 
   // Utilities
@@ -583,7 +588,7 @@ export default function AdminGenresPage() {
                       }
                     }}
                     onUploadError={(error: Error) => {
-                      alert(`Icon upload failed: ${error.message}`);
+                      showAlert(`Icon upload failed: ${error.message}`, "error");
                     }}
                   />
                 </div>
@@ -625,7 +630,7 @@ export default function AdminGenresPage() {
                       }
                     }}
                     onUploadError={(error: Error) => {
-                      alert(`Cover image upload failed: ${error.message}`);
+                      showAlert(`Cover image upload failed: ${error.message}`, "error");
                     }}
                   />
                 </div>
@@ -1056,6 +1061,14 @@ export default function AdminGenresPage() {
           </div>
         )}
       </div>
+
+      <AlertModal
+        isOpen={modalState.isOpen}
+        onClose={closeAlert}
+        message={modalState.message}
+        type={modalState.type}
+        title={modalState.title}
+      />
     </div>
   );
 }

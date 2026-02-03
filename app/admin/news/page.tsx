@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { UploadDropzone } from "@/lib/uploadthing";
 import TagInput from "../../components/admin/TagInput";
+import AlertModal, { useAlertModal } from "@/components/admin/AlertModal";
 
 type ObjectId = string;
 
@@ -130,6 +131,9 @@ export default function AdminNewsPage() {
   const [showEditor, setShowEditor] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
+
+  // Alert modal
+  const { modalState, showAlert, closeAlert } = useAlertModal();
 
   const authorDefaultName = useMemo(() => {
     // Use email as fallback if present, otherwise "Admin"
@@ -284,7 +288,7 @@ export default function AdminNewsPage() {
       });
       const json = await res.json();
       if (!json?.success) {
-        alert(json?.error || "Failed to delete article");
+        showAlert(json?.error || "Failed to delete article", "error");
         return;
       }
       // Refresh list
@@ -292,7 +296,7 @@ export default function AdminNewsPage() {
       setTotalItems((prev) => Math.max(0, prev - 1));
     } catch (e) {
       logger.error("Fetch failed", e);
-      alert("Delete failed");
+      showAlert("Delete failed", "error");
     }
   };
 
@@ -320,13 +324,13 @@ export default function AdminNewsPage() {
       }
       const json = await res.json();
       if (!json?.success) {
-        alert(json?.error || "Save failed");
+        showAlert(json?.error || "Save failed", "error");
         return null;
       }
       return json.data as NewsArticle;
     } catch (e) {
       logger.error("Delete failed", e);
-      alert("Save failed");
+      showAlert("Save failed", "error");
       return null;
     } finally {
       setIsSubmitting(false);
@@ -337,15 +341,15 @@ export default function AdminNewsPage() {
     e.preventDefault();
 
     if (!form.title.trim()) {
-      alert("Title is required");
+      showAlert("Title is required", "warning");
       return;
     }
     if (!form.content.trim()) {
-      alert("Content is required");
+      showAlert("Content is required", "warning");
       return;
     }
     if (!form.author?.name?.trim()) {
-      alert("Author name is required");
+      showAlert("Author name is required", "warning");
       return;
     }
 
@@ -387,11 +391,12 @@ export default function AdminNewsPage() {
     const saved = await upsertArticle(payload);
     if (!saved) return;
 
+    const isUpdate = !!editingId;
     // Refresh list
     setPage(1);
     resetForm();
     await refreshList();
-    alert(editingId ? "Article updated" : "Article created");
+    showAlert(isUpdate ? "Article updated" : "Article created", "success");
   };
 
   const refreshList = async () => {
@@ -651,7 +656,7 @@ export default function AdminNewsPage() {
                     }
                   }}
                   onUploadError={(error: Error) => {
-                    alert(`Featured image upload failed: ${error.message}`);
+                    showAlert(`Featured image upload failed: ${error.message}`, "error");
                   }}
                 />
               </div>
@@ -1230,6 +1235,14 @@ Write your article in Markdown..."
           </div>
         )}
       </div>
+
+      <AlertModal
+        isOpen={modalState.isOpen}
+        onClose={closeAlert}
+        message={modalState.message}
+        type={modalState.type}
+        title={modalState.title}
+      />
     </div>
   );
 }

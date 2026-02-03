@@ -7,6 +7,7 @@ import Image from "next/image";
 import { Genre } from "@/models/Genre";
 import { UploadDropzone } from "@/lib/uploadthing";
 import TagInput from "../../components/admin/TagInput";
+import AlertModal, { useAlertModal } from "@/components/admin/AlertModal";
 
 type ObjectId = string;
 
@@ -130,6 +131,9 @@ export default function AdminIdolsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Alert modal
+  const { modalState, showAlert, closeAlert } = useAlertModal();
+
   // Load genres taxonomy
   useEffect(() => {
     const loadGenres = async () => {
@@ -247,7 +251,7 @@ export default function AdminIdolsPage() {
       });
       const json = await res.json();
       if (!json?.success) {
-        alert(json?.error || "Failed to delete idol");
+        showAlert(json?.error || "Failed to delete idol", "error");
         return;
       }
       // Refresh list locally
@@ -255,7 +259,7 @@ export default function AdminIdolsPage() {
       setTotalItems((prev) => Math.max(0, prev - 1));
     } catch (e) {
       logger.error("Delete failed", e);
-      alert("Delete failed");
+      showAlert("Delete failed", "error");
     }
   };
 
@@ -300,13 +304,13 @@ export default function AdminIdolsPage() {
       }
       const json = await res.json();
       if (!json?.success) {
-        alert(json?.error || "Save failed");
+        showAlert(json?.error || "Save failed", "error");
         return null;
       }
       return json.data as Idol;
     } catch (e) {
       logger.error("Save failed", e);
-      alert("Save failed");
+      showAlert("Save failed", "error");
       return null;
     } finally {
       setIsSubmitting(false);
@@ -317,7 +321,7 @@ export default function AdminIdolsPage() {
     e.preventDefault();
 
     if (!form.name.trim()) {
-      alert("Name is required");
+      showAlert("Name is required", "warning");
       return;
     }
 
@@ -372,9 +376,10 @@ export default function AdminIdolsPage() {
     const saved = await upsertIdol(payload);
     if (!saved) return;
 
+    const isUpdate = !!editingId;
     resetForm();
     await refreshList();
-    alert(editingId ? "Idol updated" : "Idol created");
+    showAlert(isUpdate ? "Idol updated" : "Idol created", "success");
   };
 
   return (
@@ -505,7 +510,7 @@ export default function AdminIdolsPage() {
                       }
                     }}
                     onUploadError={(error: Error) => {
-                      alert(`Profile image upload failed: ${error.message}`);
+                      showAlert(`Profile image upload failed: ${error.message}`, "error");
                     }}
                   />
                 </div>
@@ -557,7 +562,7 @@ export default function AdminIdolsPage() {
                       }
                     }}
                     onUploadError={(error: Error) => {
-                      alert(`Cover image upload failed: ${error.message}`);
+                      showAlert(`Cover image upload failed: ${error.message}`, "error");
                     }}
                   />
                 </div>
@@ -1201,6 +1206,14 @@ export default function AdminIdolsPage() {
           </div>
         )}
       </div>
+
+      <AlertModal
+        isOpen={modalState.isOpen}
+        onClose={closeAlert}
+        message={modalState.message}
+        type={modalState.type}
+        title={modalState.title}
+      />
     </div>
   );
 }

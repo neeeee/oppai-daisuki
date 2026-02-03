@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { UploadDropzone } from "@/lib/uploadthing";
 import { deleteItems } from "@/lib/admin/deleteItems";
 import TagInput from "../../components/admin/TagInput";
+import AlertModal, { useAlertModal } from "@/components/admin/AlertModal";
 import logger from "@/lib/utils/logger";
 import Image from "next/image";
 
@@ -170,6 +171,9 @@ export default function AdminVideosPage() {
 
   const [form, setForm] = useState<VideoForm>(emptyForm);
 
+  // Alert modal
+  const { modalState, showAlert, closeAlert } = useAlertModal();
+
   const fetchVideoDuration = async (videoUrl: string) => {
     if (!videoUrl) return;
 
@@ -325,13 +329,13 @@ async function handleDelete(targetIds?: string[] | string) {
   : Array.from(selected);
 
   if (ids.length === 0) {
-    alert("No items selected");
+    showAlert("No items selected", "warning");
     return;
   }
 
   const result = await deleteItems("video", ids);
   console.log(ids);
-  alert(result.message);
+  showAlert(result.message, result.success ? "success" : "error");
   if (result.success) {
     setSelected(new Set());
     fetchVideos();
@@ -341,7 +345,7 @@ async function handleDelete(targetIds?: string[] | string) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title.trim() || !form.idol) {
-      alert("Title and Idol are required");
+      showAlert("Title and Idol are required", "warning");
       return;
     }
 
@@ -387,14 +391,15 @@ async function handleDelete(targetIds?: string[] | string) {
 
       const json = await res.json();
       if (!json?.success) {
-        alert(json?.error || "Failed to save video");
+        showAlert(json?.error || "Failed to save video", "error");
         return;
       }
 
       resetForm();
       fetchVideos();
+      showAlert(editingId ? "Video updated" : "Video created", "success");
     } catch (error) {
-      alert("Error saving video");
+      showAlert("Error saving video", "error");
       logger.error("Error saving video", error);
     } finally {
       setIsSubmitting(false);
@@ -556,7 +561,7 @@ async function handleDelete(targetIds?: string[] | string) {
                           }
                         }}
                         onUploadError={(error: Error) => {
-                          alert(`Thumbnail upload failed: ${error.message}`);
+                          showAlert(`Thumbnail upload failed: ${error.message}`, "error");
                         }}
                       />
                     </div>
@@ -625,7 +630,7 @@ async function handleDelete(targetIds?: string[] | string) {
                           }
                         }}
                         onUploadError={(error: Error) => {
-                          alert(`Video upload failed: ${error.message}`);
+                          showAlert(`Video upload failed: ${error.message}`, "error");
                         }}
                       />
                     </div>
@@ -701,6 +706,7 @@ async function handleDelete(targetIds?: string[] | string) {
                   Duration
                 </label>
                 <input
+                  readOnly
                   type="text"
                   value={form.duration}
                   className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -838,47 +844,6 @@ async function handleDelete(targetIds?: string[] | string) {
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   />
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Resolution
-                  </label>
-                  <select
-                    value={form.resolution}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, resolution: e.target.value }))
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  >
-                    <option value="">-- Select Resolution --</option>
-                    {RESOLUTIONS.map((res) => (
-                      <option key={res} value={res}>
-                        {res}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* File Size */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  File Size (bytes)
-                </label>
-                <input
-                  type="number"
-                  value={form.fileSize ?? ""}
-                  onChange={(e) =>
-                    setForm((p) => ({
-                      ...p,
-                      fileSize: e.target.value
-                        ? Number(e.target.value)
-                        : undefined,
-                    }))
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  placeholder="File size in bytes"
-                />
               </div>
 
               {/* Flags */}
@@ -1244,6 +1209,14 @@ async function handleDelete(targetIds?: string[] | string) {
           )}
         </div>
       </div>
+
+      <AlertModal
+        isOpen={modalState.isOpen}
+        onClose={closeAlert}
+        message={modalState.message}
+        type={modalState.type}
+        title={modalState.title}
+      />
     </div>
   );
 }
