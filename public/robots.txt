@@ -5,5 +5,8 @@ Disallow: /api
 Disallow: /api/
 Allow: /
 
+# Sitemap location
+Sitemap: https://oppai-daisuki.net/sitemap.xml
+
 # This robots.txt prevents search engines from crawling administrative and API endpoints.
 # Public-facing pages remain crawlable.

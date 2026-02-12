@@ -1,8 +1,24 @@
-"use client";
-
-import { useEffect, useState, useCallback, useRef } from "react";
+import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import NewsClientFilters from "./NewsClientFilters";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://oppai-daisuki.net";
+
+export const metadata: Metadata = {
+  title: "News - Latest Gravure Idol News & Updates",
+  description:
+    "Stay updated with the latest Japanese gravure idol news, announcements, releases, and industry updates.",
+  keywords: ["gravure news", "idol news", "Japanese idol updates", "gravure announcements"],
+  openGraph: {
+    title: "News - Oppai Daisuki",
+    description: "Stay updated with the latest Japanese gravure idol news and announcements.",
+    url: `${siteUrl}/news`,
+  },
+  alternates: {
+    canonical: `${siteUrl}/news`,
+  },
+};
 
 interface NewsArticle {
   _id: string;
@@ -29,16 +45,6 @@ interface NewsArticle {
     trending: boolean;
     breaking: boolean;
   };
-  relatedIdols?: Array<{
-    _id: string;
-    name: string;
-    stageName?: string;
-  }>;
-  relatedGenres?: Array<{
-    _id: string;
-    name: string;
-    color: string;
-  }>;
 }
 
 interface NewsResponse {
@@ -60,200 +66,102 @@ interface NewsResponse {
   };
 }
 
-export default function NewsPage() {
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface PageProps {
+  searchParams: Promise<{
+    page?: string;
+    search?: string;
+    tag?: string;
+    category?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  }>;
+}
 
-  const [searchInput, setSearchInput] = useState(""); 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [tagInput, setTagInput] = useState("");
-  const [filterTag, setFilterTag] = useState("");
+async function getNews(searchParams: {
+  page?: string;
+  search?: string;
+  tag?: string;
+  category?: string;
+  sortBy?: string;
+  sortOrder?: string;
+}): Promise<NewsResponse> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || siteUrl;
 
-  const [sortBy, setSortBy] = useState("publishedAt");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [stats, setStats] = useState<NewsResponse["stats"] | null>(null);
+  const params = new URLSearchParams({
+    page: searchParams.page || "1",
+    limit: "12",
+    sortBy: searchParams.sortBy || "publishedAt",
+    sortOrder: searchParams.sortOrder || "desc",
+    status: "published",
+    includeStats: "true",
+  });
 
-  const isLoadingRef = useRef(false);
-  const searchTimeoutRef = useRef<null | NodeJS.Timeout>(null);
-  const tagTimeoutRef = useRef<null | NodeJS.Timeout>(null);
+  if (searchParams.search) params.append("search", searchParams.search);
+  if (searchParams.tag) params.append("tag", searchParams.tag);
+  if (searchParams.category) params.append("category", searchParams.category);
 
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      setSearchTerm(searchInput);
-    }, 500);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    }
-  }, [searchInput]);
-
-  useEffect(() => {
-    if (tagTimeoutRef.current) {
-      clearTimeout(tagTimeoutRef.current);
-    }
-
-    tagTimeoutRef.current = setTimeout(() => {
-      setFilterTag(tagInput);
-    }, 500);
-
-    return () => {
-      if (tagTimeoutRef.current) {
-        clearTimeout(tagTimeoutRef.current);
-      }
-    }
-  }, [tagInput]);
-
-  const fetchNews = useCallback(async () => {
-    if (isLoadingRef.current) return;
-
-    try {
-      isLoadingRef.current = true;
-      setLoading(true);
-      setError(null);
-
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: "12",
-        sortBy,
-        sortOrder,
-        includeStats: "true",
-        status: "published",
-      });
-
-      if (searchTerm) {
-        params.append("search", searchTerm);
-      }
-
-      if (filterCategory) {
-        params.append("category", filterCategory);
-      }
-
-      if (filterTag) {
-        params.append("tag", filterTag);
-      }
-
-      const response = await fetch(`/api/news?${params}`);
-      const data: NewsResponse = await response.json();
-
-      if (data.success) {
-        setArticles((prevArticles) =>
-          currentPage === 1 ? data.data : [...prevArticles, ...data.data]
-        );
-        setStats(data.stats);
-      } else {
-        setError("Failed to load news articles");
-      }
-    } catch {
-      setError("Network error occurred");
-    } finally {
-      setLoading(false);
-      isLoadingRef.current = false;
-    }
-  }, [currentPage, sortBy, sortOrder, searchTerm, filterCategory, filterTag]);
-
-  // Reset when filters change
-  useEffect(() => {
-    setArticles([]);
-    setCurrentPage(1);
-  }, [sortBy, sortOrder, searchTerm, filterCategory, filterTag]);
-
-  // Fetch articles when dependencies change
-  useEffect(() => {
-    fetchNews();
-  }, [fetchNews]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearchTerm(searchInput);
-    setFilterTag(tagInput);
-    setCurrentPage(1);
-    setArticles([]);
-  };
-
-  const handleClearFilters = () => {
-    setSearchInput("");
-    setSearchTerm("");
-    setFilterCategory("");
-    setFilterTag("");
-  }
-
-  const loadMoreArticles = () => {
-    setCurrentPage((prev) => prev + 1);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+  try {
+    const res = await fetch(`${baseUrl}/api/news?${params}`, {
+      next: { revalidate: 60 },
     });
-  };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+    if (!res.ok) {
+      return {
+        success: false,
+        data: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 0,
+          itemsPerPage: 12,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      };
+    }
 
-  const formatCount = (count: number | undefined) => {
-    if (!count || count === 0) return "0";
-    if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
-    return count.toString();
-  };
-
-  const featuredArticles = articles.filter(
-    (article) => article.metadata?.featured,
-  );
-  const breakingNews = articles.filter((article) => article.metadata?.breaking);
-
-  const regularArticles = articles.filter(
-    (article) =>
-      !article.metadata?.featured &&
-      !article.metadata?.breaking
-  );
-
-  if (loading && articles.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-neutral-900">
-        <div className="container mx-auto px-4 py-8">
-          <div className="animate-pulse">
-            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg w-1/3 mb-8"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-              <div className="bg-gray-200 dark:bg-gray-700 rounded-xl h-64"></div>
-              <div className="space-y-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="bg-gray-200 dark:bg-gray-700 rounded-lg h-20"
-                  ></div>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-gray-200 dark:bg-gray-700 rounded-lg h-32"
-                ></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return res.json();
+  } catch {
+    return {
+      success: false,
+      data: [],
+      pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+        itemsPerPage: 12,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    };
   }
+}
+
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function formatCount(count: number | undefined) {
+  if (!count || count === 0) return "0";
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+  return count.toString();
+}
+
+export default async function NewsPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const data = await getNews(params);
+  const currentPage = parseInt(params.page || "1", 10);
+
+  const featuredArticles = data.data.filter((a) => a.metadata?.featured);
+  const breakingNews = data.data.filter((a) => a.metadata?.breaking);
+  const regularArticles = data.data.filter(
+    (a) => !a.metadata?.featured && !a.metadata?.breaking
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-900">
@@ -268,72 +176,23 @@ export default function NewsPage() {
           </p>
 
           {/* Stats */}
-          {stats && (
+          {data.stats && (
             <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-500 dark:text-gray-400">
-              <span>{stats.publishedCount} published articles</span>
+              <span>{data.stats.publishedCount} published articles</span>
               <span>•</span>
-              <span>{stats.featuredCount} featured</span>
+              <span>{data.stats.featuredCount} featured</span>
             </div>
           )}
         </div>
 
-        {/* Search and Filters */}
-        <div className="mb-8 space-y-4">
-          <form onSubmit={handleSearch} className="flex gap-4">
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder="Search articles by title, content, or author..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <input
-              type="text"
-              placeholder="Filter by Tag"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent w-32"
-            />
-            <button
-              type="submit"
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-            >
-              Search
-            </button>
-          </form>
-
-          {/* Filter Controls */}
-          <div className="flex flex-wrap items-center gap-4">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="publishedAt">Sort by Publish Date</option>
-              <option value="updatedAt">Sort by Updated Date</option>
-              <option value="title">Sort by Title</option>
-              <option value="likeCount">Sort by Likes</option>
-              <option value="commentCount">Sort by Comments</option>
-            </select>
-
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
-              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="desc">Newest First</option>
-              <option value="asc">Oldest First</option>
-            </select>
-          </div>
-        </div>
-
-        {error && (
-          <div className="mb-8 p-4 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-lg">
-            <p className="text-red-700 dark:text-red-400">{error}</p>
-          </div>
-        )}
+        {/* Client-side Filters */}
+        <NewsClientFilters
+          initialSearch={params.search || ""}
+          initialTag={params.tag || ""}
+          initialCategory={params.category || ""}
+          initialSortBy={params.sortBy || "publishedAt"}
+          initialSortOrder={params.sortOrder || "desc"}
+        />
 
         {/* Breaking News */}
         {breakingNews.length > 0 && (
@@ -343,19 +202,14 @@ export default function NewsPage() {
             </h2>
             <div className="space-y-3">
               {breakingNews.map((article) => (
-                <Link
-                  key={article._id}
-                  href={`/news/${article.slug}`}
-                  className="block group"
-                >
+                <Link key={article._id} href={`/news/${article.slug}`} className="block group">
                   <div className="flex items-center justify-between p-3 bg-white dark:bg-neutral-800 rounded-lg hover:shadow-md transition-shadow">
                     <div className="flex-1">
                       <h3 className="font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 line-clamp-1">
                         {article.title}
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(article.publishedAt)} •{" "}
-                        {article.readingTime} min read
+                        {formatDate(article.publishedAt)} • {article.readingTime} min read
                       </p>
                     </div>
                     <div className="text-red-500 text-xl">📢</div>
@@ -374,11 +228,7 @@ export default function NewsPage() {
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {featuredArticles.slice(0, 2).map((article) => (
-                <Link
-                  key={article._id}
-                  href={`/news/${article.slug}`}
-                  className="group"
-                >
+                <Link key={article._id} href={`/news/${article.slug}`} className="group">
                   <article className="bg-white dark:bg-neutral-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
                     {article.featuredImage && (
                       <div className="aspect-video overflow-hidden">
@@ -408,18 +258,9 @@ export default function NewsPage() {
                         </p>
                       )}
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {article.author.avatar && (
-                            <Image
-                              src={article.author.avatar}
-                              alt={article.author.name}
-                              className="w-8 h-8 rounded-full"
-                            />
-                          )}
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                            {article.author.name}
-                          </span>
-                        </div>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          {article.author.name}
+                        </span>
                         <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                           <span className="flex items-center gap-1">
                             ❤️ {formatCount(article.likeCount)}
@@ -440,141 +281,156 @@ export default function NewsPage() {
         {/* All Articles */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-            {featuredArticles.length > 0 ||
-            breakingNews.length > 0
+            {featuredArticles.length > 0 || breakingNews.length > 0
               ? "All Articles"
               : "Recent Articles"}
           </h2>
 
           {regularArticles.length > 0 ? (
-            <div className="space-y-6">
-              {regularArticles.map((article) => (
-                <Link
-                  key={article._id}
-                  href={`/news/${article.slug}`}
-                  className="group block"
-                >
-                  <article className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex flex-col md:flex-row gap-4">
-                      {article.featuredImage && (
-                        <div className="md:w-48 flex-shrink-0">
-                          <div className="aspect-video overflow-hidden rounded-lg">
-                            <Image
-                              src={article.featuredImage}
-                              alt={article.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-4 mb-2 text-sm text-gray-500 dark:text-gray-400">
-                          <time dateTime={article.publishedAt}>
-                            {formatDate(article.publishedAt)} •{" "}
-                            {formatTime(article.publishedAt)}
-                          </time>
-                          <span>•</span>
-                          <span>{article.readingTime} min read</span>
-                          {article.category && (
-                            <>
-                              <span>•</span>
-                              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
-                                {article.category}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2 line-clamp-2">
-                          {article.title}
-                        </h3>
-                        {article.excerpt && (
-                          <p className="text-gray-600 dark:text-gray-300 line-clamp-2 mb-3">
-                            {article.excerpt}
-                          </p>
-                        )}
-
-                        {/* Tags */}
-                        {article.tags && article.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-3">
-                            {article.tags.slice(0, 3).map((tag) => (
-                              <span
-                                key={tag}
-                                className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full"
-                              >
-                                #{tag}
-                              </span>
-                            ))}
-                            {article.tags.length > 3 && (
-                              <span className="text-xs text-gray-400">
-                                +{article.tags.length - 3}
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            {article.author.avatar && (
+            <>
+              <div className="space-y-6">
+                {regularArticles.map((article) => (
+                  <Link key={article._id} href={`/news/${article.slug}`} className="group block">
+                    <article className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex flex-col md:flex-row gap-4">
+                        {article.featuredImage && (
+                          <div className="md:w-48 flex-shrink-0">
+                            <div className="aspect-video overflow-hidden rounded-lg">
                               <Image
-                                src={article.author.avatar}
-                                alt={article.author.name}
-                                className="w-6 h-6 rounded-full"
+                                src={article.featuredImage}
+                                alt={article.title}
+                                width={192}
+                                height={108}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
-                            )}
-                            <span className="text-sm text-gray-700 dark:text-gray-300">
-                              {article.author.name}
-                            </span>
+                            </div>
                           </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-4 mb-2 text-sm text-gray-500 dark:text-gray-400">
+                            <time dateTime={article.publishedAt}>
+                              {formatDate(article.publishedAt)}
+                            </time>
+                            <span>•</span>
+                            <span>{article.readingTime} min read</span>
+                            {article.category && (
+                              <>
+                                <span>•</span>
+                                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
+                                  {article.category}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          <h3 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2 line-clamp-2">
+                            {article.title}
+                          </h3>
+                          {article.excerpt && (
+                            <p className="text-gray-600 dark:text-gray-300 line-clamp-2 mb-3">
+                              {article.excerpt}
+                            </p>
+                          )}
+                          {article.tags && article.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {article.tags.slice(0, 3).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full"
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {article.author.name}
+                          </span>
                         </div>
                       </div>
-                    </div>
-                  </article>
-                </Link>
-              ))}
-            </div>
+                    </article>
+                  </Link>
+                ))}
+              </div>
+
+              {/* Server-rendered Pagination */}
+              <div className="mt-12">
+                <ServerPagination
+                  currentPage={currentPage}
+                  totalPages={data.pagination.totalPages}
+                  baseUrl="/news"
+                  searchParams={params}
+                />
+              </div>
+            </>
           ) : (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📰</div>
               <p className="text-gray-500 dark:text-gray-400 text-lg">
-                {searchTerm || filterCategory || filterTag
+                {params.search || params.category || params.tag
                   ? "No articles match your search criteria."
                   : "No articles available."}
               </p>
-              {(searchTerm || filterCategory || filterTag) && (
-                <button
-                  onClick={handleClearFilters}
-                  className="mt-4 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+              {(params.search || params.category || params.tag) && (
+                <Link
+                  href="/news"
+                  className="mt-4 inline-block text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
                 >
                   Clear filters
-                </button>
+                </Link>
               )}
             </div>
           )}
         </div>
-
-        {/* Load More Button */}
-        {articles.length > 0 && articles.length >= 12 && (
-          <div className="text-center py-8">
-            <button
-              onClick={loadMoreArticles}
-              disabled={loading}
-              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? "Loading..." : "Load More Articles"}
-            </button>
-          </div>
-        )}
-
-        {/* Loading indicator */}
-        {loading && articles.length > 0 && (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-500 dark:text-gray-400 mt-2">
-              Loading more articles...
-            </p>
-          </div>
-        )}
       </div>
     </div>
+  );
+}
+
+function ServerPagination({
+  currentPage,
+  totalPages,
+  baseUrl,
+  searchParams,
+}: {
+  currentPage: number;
+  totalPages: number;
+  baseUrl: string;
+  searchParams: Record<string, string | undefined>;
+}) {
+  if (totalPages <= 1) return null;
+
+  const buildUrl = (page: number) => {
+    const params = new URLSearchParams();
+    params.set("page", page.toString());
+    if (searchParams.search) params.set("search", searchParams.search);
+    if (searchParams.tag) params.set("tag", searchParams.tag);
+    if (searchParams.category) params.set("category", searchParams.category);
+    if (searchParams.sortBy) params.set("sortBy", searchParams.sortBy);
+    if (searchParams.sortOrder) params.set("sortOrder", searchParams.sortOrder);
+    return `${baseUrl}?${params.toString()}`;
+  };
+
+  return (
+    <nav className="flex justify-center items-center gap-4" aria-label="Pagination">
+      {currentPage > 1 && (
+        <Link
+          href={buildUrl(currentPage - 1)}
+          className="px-4 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
+        >
+          Previous
+        </Link>
+      )}
+      <span className="text-gray-700 dark:text-gray-300">
+        Page {currentPage} of {totalPages}
+      </span>
+      {currentPage < totalPages && (
+        <Link
+          href={buildUrl(currentPage + 1)}
+          className="px-4 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
+        >
+          Next
+        </Link>
+      )}
+    </nav>
   );
 }
